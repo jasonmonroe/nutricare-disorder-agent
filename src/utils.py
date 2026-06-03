@@ -1,0 +1,91 @@
+# src/utils.py
+
+from datetime import UTC, datetime
+import os
+import random
+import time
+
+from src.config import (
+    AI_ROLE, 
+    APP_TITLE, 
+    GROQ_API_KEY, 
+    HF_TOKEN, 
+    LLAMA_KEY, 
+    MAX_RUN_ID, 
+    MEM0_API_KEY, 
+    MIN_RUN_ID, 
+    MSEC, 
+    OPENAI_API_BASE, 
+    OPENAI_API_KEY, 
+    SECS_IN_MIN
+)
+
+
+def get_run_id() -> str:
+    """ Generates a unique ID for the current run. """
+    return str(random.randint(MIN_RUN_ID, MAX_RUN_ID))
+
+
+def start_timer() -> float:
+    """
+    Start a timer
+    """
+    return time.time()
+
+def get_time(start_time_float: float) -> str:
+    diff = abs(time.time() - start_time_float)
+    _, remainder = divmod(diff, SECS_IN_MIN*SECS_IN_MIN)
+    minutes, seconds = divmod(remainder, SECS_IN_MIN)
+    fractional_seconds = seconds - int(seconds)
+
+    ms = fractional_seconds * MSEC
+    return f"{int(minutes)}m {int(seconds)}s {int(ms)}ms"
+
+def show_timer(start_time_int: float) -> None:
+    print(f"⌚ Run Time: {get_time(start_time_int)}")
+
+def show_banner(title: str, section: str = '') -> None:
+    """Prints a stylized banner for console readability."""
+    padding = 4
+    strlen = len(title) + padding
+    line = '+-' + '-' * strlen + '-+'
+
+    print('')
+    print(line)
+    print('|  ' + title.upper() + '  |')
+    print(line)
+
+    if section:
+        print('| ' + section)
+
+    print('')
+
+def show_title_banner() -> str:
+    return f"""
+        +-------------------------------------+
+        |{APP_TITLE:^35}|
+        |{AI_ROLE:^35}|
+        +-------------------------------------+"""
+
+
+def set_os_environ():
+    # --- Environment Keys ---
+    # Note: This line is for WRITING (or modifying) a variable within the Python process's environment.
+    # Set the cleaned value back into the environment for libraries like LangChain to find
+    os.environ["HF_TOKEN"] = HF_TOKEN.strip()
+    os.environ["GROQ_API_KEY"] = GROQ_API_KEY.strip()
+    os.environ["LLAMA_KEY"] = LLAMA_KEY.strip()
+    os.environ["MEM0_API_KEY"] = MEM0_API_KEY.strip()
+    os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE.strip()
+    os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY.strip()
+    os.environ["CHROMA_TELEMETRY_DISABLED"] = "1"
+    # --- Environment Keys ---
+
+
+    # --- HELPER FUNCTIONS
+def show_datetime() -> str:
+    now_utc = datetime.now(UTC)
+
+    return now_utc.strftime("%b %d %Y %I:%M:%S %p %Z")
+
+

@@ -4,9 +4,8 @@
 .env
 .idea
 .iml
-.venv
-venv
-__pycache__
-*.pyc
-
-project-final
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.pyc
+.vscode
