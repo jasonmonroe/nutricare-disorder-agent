@@ -1,18 +1,73 @@
 # pipelines/agent.py
+
 import nest_asyncio
+
+from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_core.vectorstores import VectorStore, VectorStoreRetriever
+
+from models.agentic_rag_tool import AgenticRAGTool
 from models.chroma import ChromaModel
 from models.llama import LlamaModel
 from models.openai import OpenAIModel
+from models.nutrition_bot import NutritionBot
+
+from src.config import AI_ROLE, AI_TITLE, EXIT_CMD
+from src.utils import show_datetime, start_timer, get_time
 
 
-def build(show_logs: bool=False):
+"""
+Section 2: Building an Intelligent Nutrition Disorder Agent with Advanced Retrieval and Safety Mechanisms
+"""
 
-    # Initialize streamlit persistent state
-    print(f'DEBUG: show_logs:{show_logs}')
+
+@tool
+def agentic_rag(query: str, llm: ChatOpenAI, retriever: VectorStoreRetriever):
+    """
+    Runs the RAG-based agent with conversation history for context-aware responses.
+
+    Args:
+        query (str): The current user query.
+        llm (ChatOpenAI): The language model to use.
+        retriever (VectorStoreRetriever): The vector store retriever.
+
+    Returns:
+        Dict[str, Any]: The updated state with the generated response and conversation history.
+        :param query:
+        :param retriever:
+        :param llm:
+    """
+    # Initialize state with necessary parameters
+    inputs = {
+        "query": query,
+        "expanded_query": "",
+        "context": [],
+        "response": "",
+        "precision_score": 0.0,
+        "groundedness_score": 0.0,
+        "groundedness_loop_count": 0,
+        "precision_loop_count": 0,
+        "feedback": "",
+        "query_feedback": "",
+        "loop_max_iter": 4,
+        "AI_ROLE": AI_ROLE
+    }
+
+    agentic_rag_tool = AgenticRAGTool(llm, retriever)
+    workflow_app = agentic_rag_tool.compile()
+
+    return workflow_app.invoke(inputs)
+
+def build(llm: ChatOpenAI):
+    """
+    Builds the agentic app by compile workflow object.
+    :param show_logs:
+    :return:
+    """
 
     openai_model = OpenAIModel()
     llm = openai_model.load_llm()
-    llama = LlamaModel(llm, openai_model.embedding_model)
+    #llama = LlamaModel(llm, openai_model.embedding_model)
 
     # --- INITIALIZE CHROMA VECTOR STORAGE FOR RETRIEVING DOCUMENTS
     # Retrieve `nutritional` database created from Google Colab
@@ -29,12 +84,87 @@ def build(show_logs: bool=False):
     nest_asyncio.apply()
 
     # --- Visualize Workflow --- #
-    workflow_app = None
+    agentic_rag_tool = AgenticRAGTool(llm, chroma_db.retriever)
+    workflow_app = agentic_rag_tool.compile()
+    agentic_rag_tool.display_workflow(workflow_app)
+
+    return workflow_app
 
 
+def start(llm: ChatOpenAI, llama: LlamaModel, show_logs: bool=False) -> None:
+    """
+    Starts the agentic app.
+    A conversational agent that answers nutrition-disorder-related questions
+    using a RAG-based workflow with safety filtering and user session handling.
+    :param show_logs:
+    :return:
+    """
+
+    # Initialize streamlit persistent state
+    print(f'DEBUG: show_logs:{show_logs}')
+
+    """
+    A conversational agent that answers nutrition-disorder-related questions
+    using a RAG-based workflow with safety filtering and user session handling.
+    """
+
+    print(f"""
+        +-------------------------------------+
+        | {AI_TITLE:^45}|
+        +-------------------------------------+
+        | Welcome! I'm your dedicated AI Nutrition Agent. |
+        | Ask me anything about nutrition disorders. You can inquire about |
+        | symptoms, causes, treatment options, or preventative measures. |
+        | I'm ready to help with your health-related questions. |
+        |
+        | Type '{EXIT_CMD}' to end the conversation. |
+        +-------------------------------------+
+    """)
+
+    openai_model = OpenAIModel()
+    llm = openai_model.load_llm()
+    #llm_chatbot = openai_model.load_chatbot_llm()
+    llama = LlamaModel(llm, openai_model.embedding_model)
 
 
+    chatbot = NutritionBot()  # Initialize chatbot instance
+    chatbot.agent_executor.verbose = show_logs  # Set logging preferences
 
+    # This provides a way to initiate a chat as different users.
+    user_id = input("Agent: Login by providing customer name ")  # Get user ID for tracking conversation sessions
 
-def start():
-    pass
+    print(f"\n--- Session Start: {show_datetime()} ---\n")
+
+    while True:
+        # Get user input
+        print("Agent: How can I help you?\n")
+        user_query = input(f"{user_id}: ")
+
+        # Set timer for each question
+        q_time = start_timer()
+
+        # Define the logic for exiting the loop' [if the user types in exit]
+        if user_query.lower() == EXIT_CMD:
+            print("\nAgent: Goodbye! Feel free to return if you have more questions.")
+            print(f"--- Session End: {show_datetime()} ---")
+            break
+
+        # Filter input through Llama Guard - returns "SAFE" or "UNSAFE"
+        filtered_result = llama.filter_input_with_llama_guard(user_query) # Call function to filter input
+        filtered_result = filtered_result.replace("\n", " ")   # Normalize the result
+
+        # Check if filtered_result is SAFE or UNSAFE
+        if filtered_result in ["SAFE", "BYPASS_SAFE"]:
+            # Process the user query using the RAG workflow
+            try:
+                response = chatbot.handle_customer_query(user_id, user_query)  # Call chatbot handler function
+                print(f"Agent: {response}\n")
+
+            except Exception as e:
+                print("Agent: Sorry, I encountered an error while processing your query. Please try again.")
+                print(f"Customer Query Error: {e}\n")
+        else:
+            print(f"Agent: I apologize, but I cannot process that input `{filtered_result}` as it may be inappropriate. Please try again.")
+
+        # Show answer duration per query
+        print(f"[Answered in {get_time(q_time)}]\n")

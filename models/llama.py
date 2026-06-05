@@ -1,42 +1,52 @@
 # models/llama.py
 
 
-# Vendors
-
+# Vendor Libraries
+from groq import Groq
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # LlamaParse & LlamaIndex imports
 from llama_parse import LlamaParse  # Document parsing library
 from llama_index.core import Settings, SimpleDirectoryReader  # Core functionalities of the LlamaIndex
-from groq import Groq
 
 # Local
+from src.config import (
+    GROQ_API_KEY,
+    LLAMA_KEY,
+    LLAMA_MODEL,
+    LLAMA_UNSAFE_CODES
+)
 
-from src.config import GROQ_API_KEY, LLAMA_KEY, LLAMA_MODEL, LLAMA_UNSAFE_CODES
+"""
+This guide provides information and resources to help you set up Llama including how to access the model, hosting, 
+how-to and integration guides. Additionally, you will find supplemental materials to further assist you while building 
+with Llama.
 
+https://www.llama.com/docs/overview/
+"""
 
-class LlamaModel():
+class LlamaModel:
     def __init__(self, llm: ChatOpenAI, embedding_model: OpenAIEmbeddings):
+        """
+        Initialize the Llama Guard client with the API key.  Set the LLM and embedding model in the LlamaIndex settings.
+
+        :param llm:
+        :param embedding_model:
+        """
         self.llama_guard_client = Groq(api_key=GROQ_API_KEY)
         self.parser = self._get_parser()
 
-
-        # --- FILTER INPUT WITH LLAMA GUARD
-        # Initialize the Llama Guard client with the API key
-
-
-        # Set the LLM and embedding model in the LlamaIndex settings.
         Settings.llm = llm
         Settings.embedding = embedding_model
-        
 
-        
- 
+    def _get_parser(self) -> LlamaParse:
+        """
+        Initialize LlamaParse with desired settings
+        :return:
+        """
 
-    def _get_parser(self):
-        # Initialize LlamaParse with desired settings
         return LlamaParse(
-            result_type="markdown",  # Specify the result format
+            result_type='markdown',  # Specify the result format
             skip_diagonal_text=True, # Skip diagonal text in the PDFs
             fast_mode=False,         # Use normal mode for parsing
             num_workers=9,           # Number of workers for parallel processing
@@ -44,10 +54,10 @@ class LlamaModel():
             api_key=LLAMA_KEY        # API key for LlamaParse
         )
 
-
-    # Function to filter user input with Llama Guard
     def filter_input_with_llama_guard(self, user_input_str: str, model=LLAMA_MODEL) -> str:
         """
+        Function to filter user input with Llama Guard
+
         Filters user input using Llama Guard to ensure it is safe.
         Whitelist "UNSAFE" codes: S6, S7, S8, S13 so that you can handle the customer query.
 

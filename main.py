@@ -237,10 +237,6 @@ Section 1: Comprehensive Data Parsing and Preparation for Efficient Nutritional 
 
 
 
-"""
-Section 2: Building an Intelligent Nutrition Disorder Agent with Advanced Retrieval and Safety Mechanisms
-"""
-
 
 
 
@@ -282,6 +278,15 @@ if __name__ == 'main':
 
     show_title_banner()
     args = _parse_args(sys.argv[1:])
+
+    # --- Load all models --- #
+
+    dataset = {
+        'llm': '',
+        'llama': '',
+        'chrome_db': '',
+
+    }
 
     if args is None:
         run_data_retrieval_pipeline()

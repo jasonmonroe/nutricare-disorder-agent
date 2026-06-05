@@ -1,84 +1,52 @@
 # models/agentic_rag_tool.py
 
- 
+# Python Libraries
+import json
+from typing import Dict, List
+from pydantic import BaseModel
+from IPython.display import Image, display
 
-from typing import Dict, List, Tuple, Any, TypedDict  # Python typing for function annotations
-
-
-# Vendors
+# Vendor Libraries
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 
 # LangChain Imports
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
-from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END, START  # State graph for managing states in LangChain
 
 # Local
 from models.agentic_state import AgentState
-from src.config import AI_ROLE
+from src.config import AI_ROLE, EVAL_THRESHOLD
 
 
-@tool
-def agentic_rag(query: str):
-    """
-    Runs the RAG-based agent with conversation history for context-aware responses.
+class AgentRagTool:
+    def __init__(self, llm, retriever):
 
-    Args:
-        query (str): The current user query.
+        self.llm = llm
+        self.retriever = retriever
 
-    Returns:
-        Dict[str, Any]: The updated state with the generated response and conversation history.
-    """
-    # Initialize state with necessary parameters
-    inputs = {
-        "query": query,
-        "expanded_query": "",
-        "context": [],
-        "response": "",
-        "precision_score": 0.0,
-        "groundedness_score": 0.0,
-        "groundedness_loop_count": 0,
-        "precision_loop_count": 0,
-        "feedback": "",
-        "query_feedback": "",
-        "loop_max_iter": 4,
-        "AI_ROLE": AI_ROLE
-    }
+    def compile(self):
+        return self._create().compile()
 
-    return WORKFLOW_APP.invoke(inputs)
-
-    
-class AgentRagTool():
-    def __init__(self):
-
-        # --- VISUALIZE WORKFLOW
-        self.WORKFLOW_APP = self.create_workflow().compile()
-        
-    
-
-        #return WORKFLOW_APP.invoke(inputs)
-
-        
-
-        # --- INITIALIZE AGENTIC RETRIEVAL AUGMENTED GENERATION (RAG)
-
-
-        #--- CREATE WORKFLOW
-
-    # Used for LineGraph (library of Agentic RAG), a workflow is modeled as a StateGraph, which is simply a state machine (like a complex flowchart).
-    def create_workflow() -> StateGraph:
+    #
+    def _create(self) -> StateGraph:
+        """
+        Used for LineGraph (library of Agentic RAG), a workflow is modeled as a StateGraph, which is simply a state
+        machine (like a complex flowchart).
+        :return: StateGraph
+        """
 
         """Creates the updated workflow for the AI nutrition agent."""
         workflow = StateGraph(AgentState)
 
         # Add processing nodes
-        workflow.add_node("expand_query", expand_query)                     # Step 1: Expand user query.
-        workflow.add_node("retrieve_context", retrieve_context)             # Step 2: Retrieve relevant documents.
-        workflow.add_node("craft_response", craft_response)                 # Step 3: Generate a response based on retrieved data.
-        workflow.add_node("score_groundedness", score_groundedness)         # Step 4: Evaluate response grounding.
-        workflow.add_node("refine_response", refine_response)               # Step 5: Improve response if it's weakly grounded.
-        workflow.add_node("check_precision", check_precision)               # Step 6: Evaluate response precision.
-        workflow.add_node("refine_query", refine_query)                     # Step 7: Improve query if response lacks precision.
-        workflow.add_node("max_iterations_reached", max_iterations_reached) # Step 8: Handle max iterations.
+        workflow.add_node("expand_query", self.expand_query)                     # Step 1: Expand user query.
+        workflow.add_node("retrieve_context", self.retrieve_context)             # Step 2: Retrieve relevant documents.
+        workflow.add_node("craft_response", self.craft_response)                 # Step 3: Generate a response based on retrieved data.
+        workflow.add_node("score_groundedness", self.score_groundedness)         # Step 4: Evaluate response grounding.
+        workflow.add_node("refine_response", self.refine_response)               # Step 5: Improve response if it's weakly grounded.
+        workflow.add_node("check_precision", self.check_precision)               # Step 6: Evaluate response precision.
+        workflow.add_node("refine_query", self.refine_query)                     # Step 7: Improve query if response lacks precision.
+        workflow.add_node("max_iterations_reached", self.max_iterations_reached) # Step 8: Handle max iterations.
 
         # Define the entry point where to start
         workflow.set_entry_point("expand_query")
@@ -91,7 +59,7 @@ class AgentRagTool():
         # Conditional edges based on groundedness check
         workflow.add_conditional_edges(
             "score_groundedness",
-            should_continue_groundedness,  # Use the conditional function
+            self.should_continue_groundedness,  # Use the conditional function
             {
                 "check_precision": "check_precision",              # If well-grounded, proceed to precision check.
                 "refine_response": "refine_response",              # If not, refine the response.
@@ -104,7 +72,7 @@ class AgentRagTool():
         # Conditional edges based on precision check
         workflow.add_conditional_edges(
             "check_precision",
-            should_continue_precision,  # Use the conditional function
+            self.should_continue_precision,  # Use the conditional function
             {
                 "pass": END,                     # If precise, complete the workflow.
                 "refine_query": "refine_query",  # If imprecise, refine the query.
@@ -116,34 +84,23 @@ class AgentRagTool():
         workflow.add_edge("max_iterations_reached", END)
 
         return workflow
-
-
-
-
-    # Sets a flag to show debugging and query logs for agent.
-    # Used for Google Colab Only
-    def set_agent_logs() -> bool:
-
-        input_str = input("Show query logs? (Y/N) ").strip().upper()
-
-        if input_str == "Y":
-            show_logs = True
-        else:
-            show_logs = False
-
-        return show_logs
             
 
-
     # --- MAX ITERATIONS REACHED
-    def max_iterations_reached(state: AgentState) -> AgentState:
+    def max_iterations_reached(self, state: AgentState) -> AgentState:
+        """
+        Handles the case where max iterations are reached.
+
+        Args:
+        :param state: state of agent
+        :return: returns state response
+        """
         """Handles the case where max iterations are reached."""
         state['response'] = "We need more context to provide an accurate answer."
         return state
 
 
-
-    def expand_query(state: AgentState) -> AgentState:
+    def expand_query(self, state: AgentState) -> AgentState:
         """
         Expands the user query to improve retrieval of nutrition-disorder-related information using few-shot prompting.
 
@@ -192,13 +149,13 @@ class AgentRagTool():
             ("user", "Original User Query: {query}")
         ])
 
-        chain = expand_prompt | llm | StrOutputParser()
+        chain = expand_prompt | self.llm | StrOutputParser()
 
         # Invoke the chain
         state['expanded_query'] = chain.invoke({
             "query": original_query,
             # Note: Feedback is injected via the system_message,
-            "ROLE": state['ROLE'],
+            "ROLE": state['AI_ROLE'],
         })
 
         # Clear the feedback for the next node
@@ -208,7 +165,7 @@ class AgentRagTool():
 
 
     # --- RETRIEVE CONTEXT
-    def retrieve_context(state: AgentState) -> AgentState:
+    def retrieve_context(self, state: AgentState) -> AgentState:
         """
         Retrieves context from the vector store using the expanded or original query.
 
@@ -225,7 +182,7 @@ class AgentRagTool():
         print("Query used for retrieval:", query)  # Debugging: Print the query
 
         # Retrieve documents from the vector store
-        retrieved_docs = retriever.invoke(query)
+        retrieved_docs = self.retriever.invoke(query)
 
         print("Retrieved documents:", retrieved_docs)  # Debugging: Print the raw docs object
 
@@ -244,7 +201,7 @@ class AgentRagTool():
 
 
     # --- CRAFT RESPONSE
-    def craft_response(state: Dict) -> Dict:
+    def craft_response(self, state: Dict) -> Dict:
         """
         Generates a response using the retrieved context, focusing on nutrition disorders.
 
@@ -277,7 +234,7 @@ class AgentRagTool():
             ("user", "Query: {query}\nContext: {context}\n\nfeedback: {feedback}")
         ])
 
-        chain = response_prompt | llm
+        chain = response_prompt | self.llm
         response = chain.invoke({
             "query": state['query'],
             "context": "\n".join([doc["content"] for doc in state['context']]),
@@ -293,7 +250,7 @@ class AgentRagTool():
 
 
     # --- SCORE GROUNDEDNESS
-    def score_groundedness(state: Dict) -> Dict:
+    def score_groundedness(self, state: Dict) -> Dict:
         """
         Checks whether the response is grounded in the retrieved context.
 
@@ -319,7 +276,7 @@ class AgentRagTool():
             ("user", "Context: {context}\nResponse: {response}\n\nGroundedness score:")
         ])
 
-        chain = groundedness_prompt | llm | StrOutputParser()
+        chain = groundedness_prompt | self.llm | StrOutputParser()
         groundedness_score = float(chain.invoke({
             "context": "\n".join([doc["content"] for doc in state['context']]),
             "response": state['response'],
@@ -338,7 +295,7 @@ class AgentRagTool():
 
 
     # --- CHECK PRECISION
-    def check_precision(state: Dict) -> Dict:
+    def check_precision(self, state: Dict) -> Dict:
         """
         Checks whether the response precisely addresses the user’s query.
 
@@ -367,7 +324,7 @@ class AgentRagTool():
             ("user", "Query: {query}\nResponse: {response}\n\nPrecision score:")
         ])
 
-        chain = precision_prompt | llm | StrOutputParser()
+        chain = precision_prompt | self.llm | StrOutputParser()
         precision_score = float(chain.invoke({
             "query": state['query'],
             "response": state['response'],
@@ -378,13 +335,13 @@ class AgentRagTool():
         state['precision_loop_count'] += 1
 
         print("precision_score:", precision_score)
-        print("######## Precision Incremented ##########")
+        print("# --- Precision Incremented --- #")
 
         return state
 
 
     # --- REFINE RESPONSE
-    def refine_response(state: Dict) -> Dict:
+    def refine_response(self, state: Dict) -> Dict:
         """
         Suggests improvements for the generated response.
 
@@ -412,7 +369,7 @@ class AgentRagTool():
                     "What improvements can be made to enhance accuracy and completeness?")
         ])
 
-        chain = refine_response_prompt | llm | StrOutputParser()
+        chain = refine_response_prompt | self.llm | StrOutputParser()
 
         # Store response suggestions in a structured format
         feedback = f"Previous Response: {state['response']}\nSuggestions: {chain.invoke({'query': state['query'], 'response': state['response'], 'ROLE': state['ROLE']})}"
@@ -426,7 +383,7 @@ class AgentRagTool():
 
 
     # --- REFINE QUERY
-    def refine_query(state: Dict) -> Dict:
+    def refine_query(self, state: Dict) -> Dict:
         """
         Suggests improvements for the expanded query, returning them in a structured JSON format.
 
@@ -457,6 +414,7 @@ class AgentRagTool():
 
         - Your output MUST be a JSON object that strictly adheres to the format defined by the tool.
         """
+        system_message = system_message.strip()
 
         # Use the LangChain JsonOutputParser for reliable structured output
         json_parser = JsonOutputParser(pydantic_object=QuerySuggestions)
@@ -466,7 +424,7 @@ class AgentRagTool():
             ("user", "Original Query: {query}\nExpanded Query to Critique: {expanded_query}\n\nProvide your JSON suggestions:")
         ])
 
-        chain = refine_query_prompt | llm | json_parser
+        chain = refine_query_prompt | self.llm | json_parser
 
         # Invoke the chain to get structured suggestions
         suggestions = chain.invoke({
@@ -488,13 +446,19 @@ class AgentRagTool():
     # --- HAS MAX ITERATIONS REACHED?
     # Checks if the maximum number of iterations has been reached
     # Note: This method must be before should_* methods.
-    def has_max_iterations_reached(state: Dict, var: str) -> bool:
+    def has_max_iterations_reached(self, state: Dict, var: str) -> bool:
         return state[var] >= state["loop_max_iter"]
 
 
     # --- CHECK GROUNDEDNESS
-    def should_continue_groundedness(state):
+    def should_continue_groundedness(self, state) -> str:
+        """
+        Decides if groundedness is enough or needs improvement.
 
+        Args:
+        :param state:
+        :return: string of next node to invoke
+        """
         """Decides if groundedness is enough or needs improvement."""
 
         print("--- should_continue_groundedness ---")
@@ -506,17 +470,23 @@ class AgentRagTool():
             return "check_precision"
 
         else:
-            if has_max_iterations_reached(state, "groundedness_loop_count"):
+            if self.has_max_iterations_reached(state, "groundedness_loop_count"):
                 return "max_iterations_reached"
             else:
-                print(f"--- Groundedness Score Threshold Not met. Refining Response -----")
+                print("--- Groundedness Score Threshold Not met. Refining Response -----")
 
                 return "refine_response"
 
 
     # --- CHECK PRECISION
-    def should_continue_precision(state: Dict) -> str:
+    def should_continue_precision(self, state: Dict) -> str:
+        """
+        Decides if precision is enough or needs improvement.
 
+        Args:
+        :param state:
+        :return string of next node to invoke
+        """
         """Decides if precision is enough or needs improvement."""
 
         print("--- should_continue_precision ---")
@@ -526,34 +496,40 @@ class AgentRagTool():
             return "pass"  # Complete the workflow
 
         else:
-            if has_max_iterations_reached(state, "precision_loop_count"):  # Maximum allowed loops
+            if self.has_max_iterations_reached(state, "precision_loop_count"):  # Maximum allowed loops
                 return "max_iterations_reached"
             else:
-                print(f"--- Precision Score Threshold Not met. Refining Query ---")  # Debugging
+                print("--- Precision Score Threshold not met. Refining Query ---")
 
                 return "refine_query"  # Refine the query
 
 
     # --- MAX ITERATIONS REACHED
-    def max_iterations_reached(state: AgentState) -> AgentState:
-        """Handles the case where max iterations are reached."""
+    def max_iterations_reached(self, state: AgentState) -> AgentState:
+        """
+        Handles the case where max iterations are reached.
+
+        Args:
+        :param state:
+        :return:
+        """
+
         state['response'] = "We need more context to provide an accurate answer."
         return state
 
 
-    def display_workflow(self):
-        display(Image(WORKFLOW_APP.get_graph().draw_mermaid_png()))
-
-    
-    @staticmethod
-    def queries(): list
-        return []
-        # Agentic Rag Queries
+    def display_workflow(self, app) -> None:
+        display(Image(app.get_graph().draw_mermaid_png()))
 
 
 
+
+    # @todo - is this needed?
     def run_agent(self):
         return self.nutrition_disorder_agent()
-        
+
+    # @todo - is this needed?
     def nutrition_disorder_agent(self):
         pass
+
+

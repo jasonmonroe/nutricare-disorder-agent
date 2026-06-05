@@ -1,28 +1,25 @@
 # models/nutrition_bot.py
 
-
+# Python Libraries
 from typing import Dict, List, Tuple, Any, TypedDict  # Python typing for function annotations
-
-# Vendors
 from datetime import datetime
 from mem0 import MemoryClient
 
+# Vendor Libraries
 # LangChain imports
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser  # String output parser
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 
-# Local
- 
-from models.agentic_rag_tool import agentic_rag
+# Local Libraries
 from models.openai import OpenAIModel
+from pipelines.agent import agentic_rag
 from src.config import MEM0_API_KEY, RETRIEVAL_LIMIT
 
 
 class NutritionBot:
     def __init__(self):
         """
-     
         Initialize the NutritionBot class, setting up memory, the LLM client, tools, and the agent executor.
         """
 
@@ -32,12 +29,6 @@ class NutritionBot:
         # Initialize the OpenAI client using the provided credentials
         open_ai_model = OpenAIModel()
         self.client = open_ai_model.load_chatbot_llm()
-        #self.client = ChatOpenAI(
-        #    model_name=OPENAI_MODEL,  # Specify the model to use (e.g., a GPT-4 optimized version)
-        #    openai_api_key=OPENAI_API_KEY,  # API key for authentication
-        #    base_url = OPENAI_API_BASE,
-        #    temperature=0  # Controls randomness in responses; 0 ensures deterministic results
-        #)
 
         # Define tools available to the chatbot, such as web search
         tools = [agentic_rag]
@@ -58,8 +49,8 @@ class NutritionBot:
 
         # Build the prompt template for the agent
         prompt = CoreChatPromptTemplate.from_messages([
-            ("system", system_prompt),             # System instructions
-            ("human", "{input}"),                  # Placeholder for human input
+            ("system", system_prompt),  # System instructions
+            ("human", "{input}"),  # Placeholder for human input
             ("placeholder", "{agent_scratchpad}")  # Placeholder for intermediate reasoning steps
         ])
 
@@ -69,8 +60,7 @@ class NutritionBot:
         # Wrap the agent in an executor to manage tool interactions and execution flow
         self.agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-
-    def store_customer_interaction(self, user_id: str, message: str, response: str, metadata: Dict = None):
+    def store_customer_interaction(self, user_id: str, message: str, response: str, metadata: dict) -> None:
         """
         Store customer interaction in memory for future reference.
 
@@ -100,8 +90,7 @@ class NutritionBot:
             metadata=metadata
         )
 
-
-    def get_relevant_history(self, user_id: str, query: str) -> List[Dict]:
+    def get_relevant_history(self, user_id: str, query: str) -> dict[str, Any]:
         """
         Retrieve past interactions relevant to the current query.
 
@@ -117,7 +106,6 @@ class NutritionBot:
             user_id=user_id,  # Restrict search to the specific user
             limit=RETRIEVAL_LIMIT  # Complete the code to define the limit for retrieved interactions
         )
-
 
     def handle_customer_query(self, user_id: str, query: str) -> str:
         """

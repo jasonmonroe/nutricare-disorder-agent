@@ -1,13 +1,10 @@
 # models/chroma.py
 
-
 import logging
 import os
 import random
 
 # Vendors
-
-#import chromadb  # High-performance vector database for storing/querying dense vectors
 import chromadb
 from langchain_classic.chains.query_constructor.schema import AttributeInfo
 from langchain_community.chat_models.openai import ChatOpenAI
@@ -15,17 +12,19 @@ from langchain_community.chat_models.openai import ChatOpenAI
 # LangChain community & experimental imports
 from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader  # Document loaders for PDFs
 from langchain_community.vectorstores import Chroma
+from langchain_core.vectorstores import VectorStore, VectorStoreRetriever
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain.retrievers.self_query.base import SelfQueryRetriever  # Base classes for self-querying retrievers
-
 from langchain_openai import OpenAIEmbeddings
+
 from src.config import (
-    SEMANTIC_THRESH_LIMIT, VECTOR_COLLECTION_NAME, VECTOR_RESULT_CNT, VECTORS_DIR, I_QUES, DOCUMENT_CHUNK_BATCH_SIZE,
+    SEMANTIC_THRESH_LIMIT,
+    VECTOR_RESULT_CNT,
+    VECTORS_DIR,
+    I_QUES,
+    DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_DIR
 )
-
-
-# Implementations of vector stores like Chroma
 
 
 class ChromaModel:
@@ -43,7 +42,6 @@ class ChromaModel:
         self.chromadb_client = chromadb.EphemeralClient()
         self.collection_name = dataset['collection_name']
         self.document_content_description = ''
-        #self.metadata = {}
         self.metadata_info = {}
 
         # --- INITIALIZE CHROMA VECTOR STORAGE FOR RETRIEVING DOCUMENTS --- #
@@ -104,19 +102,29 @@ class ChromaModel:
                 print("---\n")
 
 
-
-
     def _get_semantic_text_splitter(self, embedding_model):
-        # This initializes the semantic text splitter, controlling how the text is divided into meaningful chunks.
+        """
+        Initializes the semantic text splitter, controlling how the text is divided into meaningful chunks.
+        :param embedding_model:
+        :return:
+        """
+
         return SemanticChunker(
             embedding_model,  # Fill in the embedding model
             breakpoint_threshold_type='percentile',  # Choose the threshold type (e.g., 'percentile')
             breakpoint_threshold_amount=SEMANTIC_THRESH_LIMIT  # Set the chunking threshold (e.g., 80, 85)
         )
 
-    # Initializes vector retriever and gets vectorized data stored in Chroma
-    # The `persist directory` is from the root repository path, not the Google Colab path.
-    def get_retriever(self, embedding_model: OpenAIEmbeddings, collection_name: str):
+
+    def get_retriever(self, collection_name: str, embedding_model: OpenAIEmbeddings) -> VectorStoreRetriever:
+        """
+        Initializes vector retriever and gets vectorized data stored in Chroma
+        The `persist directory` is from the root repository path, not the Google Colab path.
+
+        :param collection_name:
+        :param embedding_model:
+        :return: VectorStoreRetriever
+        """
         vector_storage = Chroma(
             collection_name=collection_name,
             embedding_function=embedding_model,
@@ -130,6 +138,11 @@ class ChromaModel:
         )
 
     def _get_structured_retriever(self, llm: ChatOpenAI ) -> SelfQueryRetriever:
+        """
+        Creates LangChain Structured Receiver
+        :param llm:
+        :return: SelfQueryRetriever
+        """
         return SelfQueryRetriever.from_llm(
             llm,
             self.semantic_storage,
@@ -155,9 +168,14 @@ class ChromaModel:
         )
 
     def _get_structured_hyp_retriever(self, llm: ChatOpenAI) -> SelfQueryRetriever:
+        """
+        Creates LangChain Structured Receiver
+        :param llm:
+        :return: SelfQueryRetriever
+        """
         return SelfQueryRetriever.from_llm(
             llm,                           # LLM model
-            self.vector_storage,                   # Vectorstore
+            self.vector_storage,          # Vectorstore
             "Hypothetical Questions for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization",
             [
                 AttributeInfo(
@@ -184,6 +202,12 @@ class ChromaModel:
         )
 
     def get_semantic_chunks(self, folder_path) -> list:
+        """
+        Gets semantic chunks from directory.
+
+        :param folder_path:
+        :return:
+        """
         semantic_chunks = []
 
         # Step 3: Initialize the PyPDFDirectoryLoader for the folder
@@ -231,9 +255,3 @@ class ChromaModel:
         for i in range(0, len(documents), batch_size):
             batch = documents[i : i + batch_size]
             self.vector_storage.add_documents(batch)
-
-
-
-
-    #def get_hypothetical_questions(self):
-    #    pass

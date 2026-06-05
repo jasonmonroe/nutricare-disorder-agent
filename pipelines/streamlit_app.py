@@ -1,26 +1,57 @@
 # src/streamlit.py
 
-# https://streamlit.io/
-# Documentation: https://docs.streamlit.io/
+# https://streamlit.io
+# Documentation: https://docs.streamlit.io
 
-# Basic
+# Python Libraries
+import os
+import zipfile
 
-# Vendors
+# Vendor Libraries
 import streamlit as st
 
-# Local
-
+# Local Libraries
 from models.nutrition_bot import NutritionBot
-from src.config import AI_TITLE, EXIT_CMD
+from src.config import (
+    AI_TITLE,
+    EXIT_CMD,
+    HF_TOKEN,
+    GROQ_API_KEY,
+    LLAMA_KEY,
+    MEM0_API_KEY,
+    OPENAI_API_KEY,
+    OPENAI_API_BASE,
+    DOCUMENT_DIR,
+    DOCUMENT_ZIP, APP_TITLE
+)
 from src.utils import show_datetime
 
 
+
+# Cache ChatBot Instance
+@st.cache_resource
+def get_chatbot_instance() -> NutritionBot:
+    """
+    Initializes and caches the NutritionBot instance.
+
+    :return:
+    """
+    print("# --- Loading NutritionBot --- #")
+
+    return NutritionBot()
+
+
 class StreamLitApp():
-    def __init__(self) -> None:
-        self.init_state()
+    def __init__(self, llama) -> None:
+
+        self.llama = llama
+
+        self.start_session()
+        self.check_program_keys()
+        self.check_document_file()
 
 
-    def init_state(self):
+    def start_session(self) -> None:
         # --- INITIALIZE PERSISTENT STATE ---
         session_keys_valid = None
         session_doc_found = None
@@ -46,14 +77,6 @@ class StreamLitApp():
 
             if not doc_found:
                 st.stop()
-
-    def load_nutrition_bot(self):
-        # Cache ChatBot Instance
-        @st.cache_resource
-        def get_chatbot_instance():
-            """Initializes and caches the NutritionBot instance."""
-            print("--- Initializing NutritionBot ---")
-            return NutritionBot()
 
     # Checks if all necessary keys are being used
     def check_program_keys(self) -> bool:
@@ -114,19 +137,24 @@ class StreamLitApp():
             print(f"Document directory found: `{DOCUMENT_DIR}`.")
             return True
 
-    def run(self) -> None:
-        """
-        A Streamlit-based UI for the Nutrition Disorder Specialist Agent.
-        """
+
+    def show_title(self) -> None:
         st.title(f"{AI_TITLE}")
         st.markdown("<hr style='margin: 0'>", unsafe_allow_html=True)
-        st.info(body="""
-        Welcome! I'm your **Dedicated AI Nutrition Agent**.
+        st.info(body=f"""
+        Welcome! I'm your **{APP_TITLE}**.
         I specialize in providing information about **nutrition disorders**, including **symptoms, causes, treatment options, and preventative measures.**
         I'm ready to answer your health-related questions.
         """, icon="📢")
 
         st.warning(body=f"Type **{EXIT_CMD}** at anytime to end the conversation.", icon="🪬") # Used EXIT_CMD constant here
+
+
+    def run(self) -> None:
+        """
+        A Streamlit-based UI for the Nutrition Disorder Specialist Agent.
+        """
+        self.show_title()
 
         # Initialize the session state for chat history and user_id if they don't exist
         if 'chat_history' not in st.session_state:
@@ -137,28 +165,8 @@ class StreamLitApp():
 
         # Login form: Only if the user is not logged in
         if st.session_state.user_id is None:
-            with st.form("login_form", clear_on_submit=True):
-                st.write(f"Session Start: {show_datetime()}")
-                user_id = st.text_input("Agent: Please enter your name to begin:").strip()
+            self._unknown_user()
 
-                # Don't let the username themselves a keyword
-                if EXIT_CMD in user_id:
-                    st.error(body="You cannot name yourself a keyword.", icon="🚨")
-                    st.stop()
-
-                submit_button = st.form_submit_button("Login")
-
-                if submit_button and user_id:
-                    st.session_state.user_id = user_id
-                    st.session_state.chat_history.append({
-                        "role": "assistant",
-                        "content": f"Agent: Welcome, {user_id}! How can I help you with nutrition disorders today?"
-                    })
-                    st.session_state.login_submitted = True  # Set flag to trigger rerun
-
-            if st.session_state.get("login_submitted", False):
-                st.session_state.pop("login_submitted")
-                st.rerun()
         else:
             # Display chat history
             for message in st.session_state.chat_history:
@@ -170,20 +178,7 @@ class StreamLitApp():
 
             if user_query:
                 if user_query.lower() == EXIT_CMD:
-                    st.session_state.chat_history.append({"role": "user", "content": EXIT_CMD})
-
-                    with st.chat_message("User"):
-                        st.write(EXIT_CMD)
-
-                    goodbye_msg = "Agent: Goodbye! Feel free to return if you have more questions about nutrition disorders."
-                    st.session_state.chat_history.append({"role": "assistant", "content": goodbye_msg})
-
-                    with st.chat_message("assistant"):
-                        st.write(goodbye_msg)
-
-                    st.session_state.user_id = None
-                    st.rerun()
-                    return
+                    self._exit_app()
 
                 st.session_state.chat_history.append({"role": "user", "content": user_query})
                 with st.chat_message("User"):
@@ -193,52 +188,81 @@ class StreamLitApp():
                 thinking.info(body="Thinking. . .", icon="🤔")
 
                 # Filter input using Llama Guard
-                filtered_result = filter_input_with_llama_guard(user_query)
+                filtered_result = self.llama.filter_input_with_llama_guard(user_query)
                 filtered_result = filtered_result.replace("\n", " ")  # Normalize the result
 
                 # Check if input is safe based on allowed statuses
-                if filtered_result in ["SAFE", "BYPASS_SAFE", ""]:
-                    try:
-
-                        # Get the cached chatbot instance
-                        st.session_state.chatbot = get_chatbot_instance()
-                        response = st.session_state.chatbot.handle_customer_query(
-                            st.session_state.user_id,
-                            user_query
-                        )
-
-                        with st.chat_message("assistant"):
-                            st.write(response)
-                        st.session_state.chat_history.append({"role": "assistant", "content": response})
-
-                    except Exception as e:
-                        error_msg = f"Sorry, I encountered an error while processing your query. Please try again."
-                        error_str = f"Error: {str(e)}"
-                        with st.chat_message("assistant"):
-                            st.error(body=error_str, icon="😩")
-                        st.session_state.chat_history.append({"role": "assistant", "content": error_msg + " " + error_str})
-
-                else:
-                    # Unsafe queries are handled here!
-                    inappropriate_msg = "I apologize, but I cannot process that input as it may be inappropriate. Please try again."
-                    with st.chat_message("assistant"):
-                        st.warning(body=inappropriate_msg, icon="🤬")
-
-                    st.session_state.chat_history.append({"role": "assistant", "content": inappropriate_msg})
+                self._handle_input(filtered_result, user_query)
 
                 thinking.empty()
 
 
+    def _unknown_user(self) -> None:
+        with st.form("login_form", clear_on_submit=True):
+            st.write(f"Session Start: {show_datetime()}")
+            user_id = st.text_input("Agent: Please enter your name to begin:").strip()
+
+            # Don't let the username themselves a keyword
+            if EXIT_CMD in user_id:
+                st.error(body="You cannot name yourself a keyword.", icon="🚨")
+                st.stop()
+
+            submit_button = st.form_submit_button("Login")
+
+            if submit_button and user_id:
+                st.session_state.user_id = user_id
+                st.session_state.chat_history.append({
+                    "role": "assistant",
+                    "content": f"Agent: Welcome, {user_id}! How can I help you with nutrition disorders today?"
+                })
+                st.session_state.login_submitted = True  # Set flag to trigger rerun
+
+        if st.session_state.get("login_submitted", False):
+            st.session_state.pop("login_submitted")
+            st.rerun()
 
 
+    def _handle_input(self, filtered_result, user_query):
+        if filtered_result in ["SAFE", "BYPASS_SAFE", ""]:
+            try:
 
+                # Get the cached chatbot instance
+                st.session_state.chatbot = get_chatbot_instance()
+                response = st.session_state.chatbot.handle_customer_query(
+                    st.session_state.user_id,
+                    user_query
+                )
 
+                with st.chat_message("assistant"):
+                    st.write(response)
+                st.session_state.chat_history.append({"role": "assistant", "content": response})
 
-    
+            except Exception as e:
+                error_msg = "Sorry, I encountered an error while processing your query. Please try again."
+                error_str = f"Error: {str(e)}"
+                with st.chat_message("assistant"):
+                    st.error(body=error_str, icon="😩")
+                st.session_state.chat_history.append({"role": "assistant", "content": error_msg + " " + error_str})
 
+        else:
+            # Unsafe queries are handled here!
+            inappropriate_msg = "I apologize, but I cannot process that input as it may be inappropriate. Please try again."
+            with st.chat_message("assistant"):
+                st.warning(body=inappropriate_msg, icon="🤬")
 
+            st.session_state.chat_history.append({"role": "assistant", "content": inappropriate_msg})
 
+    def _exit_app(self) -> None:
+        st.session_state.chat_history.append({"role": "user", "content": EXIT_CMD})
 
+        with st.chat_message("User"):
+            st.write(EXIT_CMD)
 
+        goodbye_msg = "Agent: Goodbye! Feel free to return if you have more questions about nutrition disorders."
+        st.session_state.chat_history.append({"role": "assistant", "content": goodbye_msg})
 
+        with st.chat_message("assistant"):
+            st.write(goodbye_msg)
 
+        st.session_state.user_id = None
+        st.rerun()
