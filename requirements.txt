@@ -1,21 +1,21 @@
 # requirements.txt
 
-numpy==1.26.4
-openai==1.55.3
-langchain==0.2.7
-langchain-community==0.2.7
-langchain-huggingface==0.0.3
-langchain-experimental==0.0.62
-langchain-openai==0.1.14
-chromadb==0.5.0
-sentence-transformers==3.0.1
-python-dotenv==1.0.1
-lark==1.1.9
+numpy>=1.26.0
+openai>=1.50.0
+langchain>=0.2.0
+langchain-community>=0.2.0
+langchain-huggingface
+langchain-experimental
+langchain-openai
+chromadb>=0.5.0
+sentence-transformers
+python-dotenv
+lark
 llama-index-core
-llama-parse==0.5.11
+llama-parse
 llama-index-readers-file
 llama-index-llms-langchain
-langgraph==0.0.60
+langgraph
 groq
 mem0ai
-streamlit==1.35.0
+streamlit

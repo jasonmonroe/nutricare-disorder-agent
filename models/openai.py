@@ -1,47 +1,63 @@
 # models/openai.py
 
 
-# Initialize the OpenAI Embeddings
-# see: https://docs.langchain.com/oss/python/integrations/text_embedding/openai
-embedding_model = OpenAIEmbeddings(
-    openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
-    openai_api_key=OPENAI_API_KEY,   # Fill in the API key
-    model=OPENAI_EMB_MODEL,          # Fill in the model name
-    max_retries=8,                   # openai client retries, Added for robustness (was =3)
-    request_timeout=60,              # avoid timeouts on backoff
-)
-# This initializes the OpenAI embeddings model using the specified endpoint, API key, and model name.
 
-# Initialize the Chat OpenAI model
-llm = ChatOpenAI(
-    base_url=OPENAI_API_BASE,         # Fill in the endpoint
-    openai_api_key=OPENAI_API_KEY,  # Fill in the API key
-    model=OPENAI_MODEL,               # Fill in the deployment name (e.g., gpt-4o-mini)
-    streaming=False,
-    max_tokens=None,
-
-    # New additions for robustness and quality:
-    temperature=0.0,                 # Set for factual, deterministic output
-    max_retries=5,                   # Retry failed calls
-    # Timeout after 60 seconds
-)
-# This initializes the Chat OpenAI model using the provided endpoint, API key, deployment name.
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from src.config import OPENAI_API_BASE, OPENAI_API_KEY, OPENAI_EMB_MODEL, OPENAI_MODEL
 
 
-class OpenAI:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
+class OpenAIModel():
 
-    def generate_text(self, prompt: str) -> str:
-        return self.api_key.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
+
+    # https://openai.com
+    # Documentation: https://developers.openai.com/api/docs
+
+
+    def __init__(self):
+        self.embedding_model = self._get_embedding_model()
+
+    def _get_embedding_model(self) -> OpenAIEmbeddings:
+
+        # Initialize the OpenAI Embeddings
+        # see: https://docs.langchain.com/oss/python/integrations/text_embedding/openai
+        self.embedding_model = OpenAIEmbeddings(
+            openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
+            openai_api_key=OPENAI_API_KEY,   # Fill in the API key
+            model=OPENAI_EMB_MODEL,          # Fill in the model name
+            max_retries=8,                   # openai client retries, Added for robustness (was =3)
+            request_timeout=60,              # avoid timeouts on backoff
         )
 
 
-        
+    def load_llm(self) -> ChatOpenAI:
+        # This initializes the OpenAI embeddings model using the specified endpoint, API key, and model name.
+        # This initializes the Chat OpenAI model using the provided endpoint, API key, deployment name.
 
-    def filter_response(resp, index=None) -> str:
+        # Initialize the Chat OpenAI model
+        return ChatOpenAI(
+            base_url=OPENAI_API_BASE,         # Fill in the endpoint
+            openai_api_key=OPENAI_API_KEY,  # Fill in the API key
+            model=OPENAI_MODEL,               # Fill in the deployment name (e.g., gpt-4o-mini)
+            streaming=False,
+            max_tokens=None,
+
+            # New additions for robustness and quality:
+            temperature=0.0,                 # Set for factual, deterministic output
+            max_retries=5,                   # Retry failed calls
+            # Timeout after 60 seconds
+        )
+
+    def load_chatbot_llm(self) -> ChatOpenAI:
+        # Note: This is for Nutrition Bot
+        return ChatOpenAI(
+            model_name=OPENAI_MODEL,  # Specify the model to use (e.g., a GPT-4 optimized version)
+            openai_api_key=OPENAI_API_KEY,  # API key for authentication
+            base_url = OPENAI_API_BASE,
+            temperature=0  # Controls randomness in responses; 0 ensures deterministic results
+        )
+
+
+    def filter_response(self, resp: str, index=None) -> str:
         # 1. Check if the response is already a string (raw output)
         if isinstance(resp, str):
             content = resp.strip()

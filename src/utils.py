@@ -88,4 +88,23 @@ def show_datetime() -> str:
 
     return now_utc.strftime("%b %d %Y %I:%M:%S %p %Z")
 
+def handle_rate_limit_error(e, subject: str, current_sleep_time: int) -> tuple[int, bool]:
+    """
+    Checks for a Rate Limit Error (429), calculates a new sleep time,
+    and returns the new sleep time and a flag indicating the hit.
+    """
+    i= 0
+    print(f"{i}) Exception invoking a response for {subject}! Error: {e}")
 
+    rate_limit_hit = False
+    new_sleep_time = current_sleep_time
+
+    if "Error code: 429" in str(e):
+        # Increase sleep time by 15%
+        rate_limit_hit = True
+        new_sleep_time = current_sleep_time + round(current_sleep_time * 0.15)
+        print(f"FATAL: Rate limit hit. Updating sleep time from {current_sleep_time} to {new_sleep_time} seconds...")
+        if new_sleep_time > SECS_IN_MIN:
+            new_sleep_time = SECS_IN_MIN
+
+    return new_sleep_time, rate_limit_hit

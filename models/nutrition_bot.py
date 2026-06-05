@@ -1,8 +1,22 @@
 # models/nutrition_bot.py
 
 
-# --- DECLARE NUTRITION BOT
-from src.config import RETRIEVAL_LIMIT
+from typing import Dict, List, Tuple, Any, TypedDict  # Python typing for function annotations
+
+# Vendors
+from datetime import datetime
+from mem0 import MemoryClient
+
+# LangChain imports
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser  # String output parser
+from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+
+# Local
+ 
+from models.agentic_rag_tool import agentic_rag
+from models.openai import OpenAIModel
+from src.config import MEM0_API_KEY, RETRIEVAL_LIMIT
 
 
 class NutritionBot:
@@ -16,12 +30,14 @@ class NutritionBot:
         self.memory = MemoryClient(api_key=MEM0_API_KEY)  # Complete the code to define the memory client API key
 
         # Initialize the OpenAI client using the provided credentials
-        self.client = ChatOpenAI(
-            model_name=OPENAI_MODEL,  # Specify the model to use (e.g., a GPT-4 optimized version)
-            openai_api_key=OPENAI_API_KEY,  # API key for authentication
-            base_url = OPENAI_API_BASE,
-            temperature=0  # Controls randomness in responses; 0 ensures deterministic results
-        )
+        open_ai_model = OpenAIModel()
+        self.client = open_ai_model.load_chatbot_llm()
+        #self.client = ChatOpenAI(
+        #    model_name=OPENAI_MODEL,  # Specify the model to use (e.g., a GPT-4 optimized version)
+        #    openai_api_key=OPENAI_API_KEY,  # API key for authentication
+        #    base_url = OPENAI_API_BASE,
+        #    temperature=0  # Controls randomness in responses; 0 ensures deterministic results
+        #)
 
         # Define tools available to the chatbot, such as web search
         tools = [agentic_rag]
@@ -139,7 +155,7 @@ class NutritionBot:
         """
 
         # Generate a response using the agent
-        response = self.agent_executor.invoke({"input": prompt})
+        response = self.agent_executor.invoke({"input": prompt.strip()})
 
         # Store the current interaction for future reference
         self.store_customer_interaction(

@@ -1,6 +1,7 @@
 # src/config.py
 
 import os
+import random
 
 # --- CONSTANTS ---- #
 APP_TITLE = 'Nutricare Disorder Agent'
@@ -31,9 +32,8 @@ MEM0_API_KEY = os.getenv("MEM0_API_KEY")  # Fill in your Mem0 API key
 
 # OpenAI
 # see: https://openai.com/api/
-# see: https://olympus.mygreatlearning.com/courses/129359/modules/items/7809007?pb_id=18908
 OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")  # Fill in the OpenAI API base URL (e.g., "https://api.openai.com/v1")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Fill in your OpenAI API Token (from My Great Learning)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Fill in your OpenAI API Token (from your account)
 OPENAI_EMB_MODEL = "text-embedding-3-small"  # embedding models "text-embedding-ada-002", "text-embedding-3-large"
 OPENAI_MODEL = "gpt-4o-mini"  # Fill in the OpenAI model name (e.g., "gpt-4o-mini")
 
@@ -42,13 +42,46 @@ EXIT_CMD = "exit"
 
 RETRIEVAL_LIMIT = 5
 
+VECTOR_COLLECTION_NAME = "nutritional"
 VECTOR_RESULT_CNT = 3
 VECTOR_RESULT_CNT = 3
 
 # Define the Google Drive and other directory paths
-COLLECTION_NAME = "nutritional"
-DOCUMENT_DIR = "Nutritional Medical Reference"
-DOCUMENT_ZIP = "Nutritional_Medical_Reference.zip" # Zip file name
+
+DOCUMENT_DIR = "data/nutritional-medical-reference"
+DOCUMENT_FILE = 'nutritional-disorders.pdf'
+DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
+
+
+
+# Batch sizes (per batch) for processing documents and text chunks
+DOCUMENT_CHUNK_BATCH_SIZE = 100
+DOCUMENT_CHUNK_TEXT_BATCH_SIZE = 50
+#CHUNK_DOC_BATCH_SIZE = 100
+#CHUNK_TEXT_BATCH_SIZE = 50
+EMPTY_RESP = "[]" # Empty response
+
+RETRIEVAL_LIMIT = 5
+SECS_IN_MIN = 60 # secs in min
+SEMANTIC_THRESH_LIMIT = random.randint(80, 85)
+VECTORS_DIR= "vector_storage/"
+
+# Used for searching the document for pairing subject for building an effective RAG system.
+# This query asks a specific question about vitamin deficiencies and memory impairment.
+# Match keywords and map them with embedding models.
+SIMILARITY_SEARCH_QUERY = "What nutritional deficiency, such as folate deficiency or that caused by alcoholism, is clinically linked to anemia, and what specific standard diagnostic metric is used for its confirmation?"
+
+# Prompt variables
+PROMPT_INSTR = """
+    Important:
+    Generate only a Python list of relevant questions (e.g., ['Question 1', 'Question 2']).
+    *Do NOT mention or output anything before or after the list, including commentary, markdown blocks, or extra punctuation.
+    If the content cannot answer any question(s), your output MUST be the empty Python list: [].
+    """.strip()
+
+
+
+
 
 # Prompt variables
 AI_ROLE = "Nutrition Disorder Specialist"
@@ -81,7 +114,7 @@ LLAMA_UNSAFE_CODES = ["S1", "S2", "S3", "S4", "S5", "S9", "S10", "S11", "S12"]
 
 # Miscellaneous constants
 MILLI_IN_SECS = MSEC = 1000
-SECS_IN_MIN = 60 # secs in min
+
 MIN_RUN_ID=10000
 MAX_RUN_ID=99999
 
@@ -118,6 +151,7 @@ I_SLEEPING = '😴'
 I_SMILING = '😊'
 I_STAR = '⭐'
 I_SURPRISED = '😲'
+I_TIMER = '⏱'
 I_THINKING = '🤔'
 I_THUMBS_DOWN = '👎'
 I_THUMBS_UP = '👍'

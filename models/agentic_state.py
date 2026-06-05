@@ -1,6 +1,9 @@
 # models/agentic_state.py
 
 # --- DEFINE AGENT STATE
+from typing import Any, Dict, List, TypedDict
+
+
 class AgentState(TypedDict):
     query: str  # The current user query
     expanded_query: str  # The expanded version of the user query
