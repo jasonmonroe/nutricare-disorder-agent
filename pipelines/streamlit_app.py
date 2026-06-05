@@ -27,7 +27,6 @@ from src.config import (
 from src.utils import show_datetime
 
 
-
 # Cache ChatBot Instance
 @st.cache_resource
 def get_chatbot_instance() -> NutritionBot:
@@ -41,7 +40,7 @@ def get_chatbot_instance() -> NutritionBot:
     return NutritionBot()
 
 
-class StreamLitApp():
+class StreamLitApp:
     def __init__(self, llama) -> None:
 
         self.llama = llama
@@ -49,7 +48,6 @@ class StreamLitApp():
         self.start_session()
         self.check_program_keys()
         self.check_document_file()
-
 
     def start_session(self) -> None:
         # --- INITIALIZE PERSISTENT STATE ---
@@ -107,8 +105,6 @@ class StreamLitApp():
 
         return True
 
-
-    # @todo - should this helper file be in src/utils.py or in the streamlist class?
     # Checks if the document directory exists
     def check_document_file(self) -> bool:
 
@@ -137,7 +133,6 @@ class StreamLitApp():
             print(f"Document directory found: `{DOCUMENT_DIR}`.")
             return True
 
-
     def show_title(self) -> None:
         st.title(f"{AI_TITLE}")
         st.markdown("<hr style='margin: 0'>", unsafe_allow_html=True)
@@ -145,7 +140,7 @@ class StreamLitApp():
         Welcome! I'm your **{APP_TITLE}**.
         I specialize in providing information about **nutrition disorders**, including **symptoms, causes, treatment options, and preventative measures.**
         I'm ready to answer your health-related questions.
-        """, icon="📢")
+        """.strip(), icon="📢")
 
         st.warning(body=f"Type **{EXIT_CMD}** at anytime to end the conversation.", icon="🪬") # Used EXIT_CMD constant here
 
@@ -196,7 +191,6 @@ class StreamLitApp():
 
                 thinking.empty()
 
-
     def _unknown_user(self) -> None:
         with st.form("login_form", clear_on_submit=True):
             st.write(f"Session Start: {show_datetime()}")
@@ -221,8 +215,7 @@ class StreamLitApp():
             st.session_state.pop("login_submitted")
             st.rerun()
 
-
-    def _handle_input(self, filtered_result, user_query):
+    def _handle_input(self, filtered_result, user_query) -> None:
         if filtered_result in ["SAFE", "BYPASS_SAFE", ""]:
             try:
 

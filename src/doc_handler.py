@@ -2,36 +2,40 @@
 
 import os
 import re
-
 import json
 import hashlib
 import random
 
+from langchain_classic.chains.query_constructor.schema import AttributeInfo
 # LangChain Imports
-
+# Vendor Libraries
 from langchain_core.documents import Document  # Document data structures
 from llama_parse import LlamaParse  # Document parsing library
 
-from src.config import DOCUMENT_DIR, VECTORS_DIR
+# Local Libraries
+from src.config import DOCUMENT_DIR
 
 
 class DocHandler():
     def __init__(self, llama_parser: LlamaParse):
         self.folder_path = DOCUMENT_DIR
-        self.documents = []
-        self.metadata = self._get_metadata()
-        self.metadata_info = {}
+        self.documents = [] # Set outside the class
+        self.metadata_info = self._get_metadata_info()
+
         json_objs = self._parse(llama_parser)
         self.page_texts, self.tables = self._extract_tables(json_objs)
+        self.document_content_description = "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
 
-
-        self._content_desc = "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
-
-    def _create(self, content: str, metadata: dict) -> Document:
+    def create(self, content: str, metadata: dict) -> Document:
         """
-        # Creates and returns a Document object with metadata
-        # see: https://api.python.langchain.com/en/latest/documents/langchain_core.documents.base.Document.html
+        Creates and returns a Document object with metadata
+        see: https://api.python.langchain.com/en/latest/documents/langchain_core.documents.base.Document.html
+
+        :param content:
+        :param metadata:
+        :return:
         """
+
         metadata["doc_id"] = self.gen_id(metadata["source"], metadata["page"], content)
 
         if "type" not in metadata:
@@ -51,7 +55,7 @@ class DocHandler():
         return str(hashlib.sha256(id_str.encode('utf-8')).hexdigest())
 
     # Show a random document sample
-    def show_sample(self, samp_docs: dict, samp_title: str = "") -> None:
+    def show_sample(self, samp_docs: list, samp_title: str = "") -> None:
         doc_cnt = len(samp_docs)
         index = random.randint(0, doc_cnt - 1)
         print(f"Index = {index}, Count = {doc_cnt}")
@@ -67,10 +71,10 @@ class DocHandler():
             print(f"\nIndex {index} is out of range for the list with length {doc_cnt}.")
 
     def get_semantic_chunks(self, semantic_chunks):
-        return [self._create(d.page_content, d.metadata) for i, d in enumerate(semantic_chunks)]
+        return [self.create(d.page_content, d.metadata) for i, d in enumerate(semantic_chunks)]
 
     #
-    def show_documents(self):
+    def show_documents(self) -> None:
         # Display retrieved documents
         for i in self.documents:
             print("Source:", i.metadata['source'])  # Fill in the correct key for source (e.g., 'source')
@@ -97,8 +101,14 @@ class DocHandler():
         return json_objs
 
     def _extract_tables(self, json_objs) -> tuple:
-        # Revised Cell to properly get text from document pages: {page_texts}.
-        # Initialize dictionaries to store page texts and tables
+        """
+        Revised Cell to properly get text from document pages: {page_texts}.
+        Initialize dictionaries to store page texts and tables.
+
+        :param json_objs:
+        :return:
+        """
+
         page_texts, tables = {}, {}
 
         # Extract tables and adjacent text from the parsed JSON objects
@@ -199,5 +209,22 @@ class DocHandler():
                 for row in table_rows:
                     print(f"\t{row}")
 
-    def _get_metadata(self) -> list:
-        pass
+
+    def _get_metadata_info(self) -> list:
+        return [
+            AttributeInfo(
+                name="page",  # Fill in the metadata field name (e.g., "Category")
+                description="page number of document",  # Describe what this field represents
+                type="integer"  # Fill in the data type (e.g., "string", "integer")
+            ),
+            AttributeInfo(
+                name="source",
+                description="file path of document",
+                type="string"
+            ),
+            AttributeInfo(
+                name="page_content",
+                description="raw text of (sectional) document",
+                type="string"
+            )
+        ]

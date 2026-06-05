@@ -40,11 +40,8 @@ OPENAI_MODEL = "gpt-4o-mini"  # Fill in the OpenAI model name (e.g., "gpt-4o-min
 EVAL_THRESHOLD = 0.8
 EXIT_CMD = "exit"
 
-RETRIEVAL_LIMIT = 5
+VECTOR_RESULT_CNT = 3
 
-VECTOR_COLLECTION_NAME = "nutritional"
-VECTOR_RESULT_CNT = 3
-VECTOR_RESULT_CNT = 3
 
 # Define the Google Drive and other directory paths
 
@@ -52,19 +49,15 @@ DOCUMENT_DIR = "data/nutritional-medical-reference"
 DOCUMENT_FILE = 'nutritional-disorders.pdf'
 DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
 
-
-
 # Batch sizes (per batch) for processing documents and text chunks
 DOCUMENT_CHUNK_BATCH_SIZE = 100
 DOCUMENT_CHUNK_TEXT_BATCH_SIZE = 50
-#CHUNK_DOC_BATCH_SIZE = 100
-#CHUNK_TEXT_BATCH_SIZE = 50
 EMPTY_RESP = "[]" # Empty response
 
 RETRIEVAL_LIMIT = 5
 SECS_IN_MIN = 60 # secs in min
 SEMANTIC_THRESH_LIMIT = random.randint(80, 85)
-VECTORS_DIR= "vector_storage/"
+VECTORS_DIR= "db/"
 
 # Used for searching the document for pairing subject for building an effective RAG system.
 # This query asks a specific question about vitamin deficiencies and memory impairment.
@@ -78,9 +71,6 @@ PROMPT_INSTR = """
     *Do NOT mention or output anything before or after the list, including commentary, markdown blocks, or extra punctuation.
     If the content cannot answer any question(s), your output MUST be the empty Python list: [].
     """.strip()
-
-
-
 
 
 # Prompt variables
@@ -111,10 +101,8 @@ AI_TITLE = "SMART NUTRITION DISORDER SPECIALIST BOT"
 #
 LLAMA_UNSAFE_CODES = ["S1", "S2", "S3", "S4", "S5", "S9", "S10", "S11", "S12"]
 
-
 # Miscellaneous constants
 MILLI_IN_SECS = MSEC = 1000
-
 MIN_RUN_ID=10000
 MAX_RUN_ID=99999
 

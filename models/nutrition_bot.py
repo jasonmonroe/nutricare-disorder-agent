@@ -1,7 +1,7 @@
 # models/nutrition_bot.py
 
 # Python Libraries
-from typing import Dict, List, Tuple, Any, TypedDict  # Python typing for function annotations
+from typing import Dict, List, Any
 from datetime import datetime
 from mem0 import MemoryClient
 
@@ -18,17 +18,19 @@ from src.config import MEM0_API_KEY, RETRIEVAL_LIMIT
 
 
 class NutritionBot:
-    def __init__(self):
+    def __init__(self, llm_chatbot):
         """
-        Initialize the NutritionBot class, setting up memory, the LLM client, tools, and the agent executor.
+         Initialize the NutritionBot class, setting up memory, the LLM client, tools, and the agent executor.
+
+        :param llm_chatbot:
         """
 
         # Initialize a memory client to store and retrieve customer interactions
         self.memory = MemoryClient(api_key=MEM0_API_KEY)  # Complete the code to define the memory client API key
 
         # Initialize the OpenAI client using the provided credentials
-        open_ai_model = OpenAIModel()
-        self.client = open_ai_model.load_chatbot_llm()
+        #open_ai_model = OpenAIModel()
+        self.client = llm_chatbot
 
         # Define tools available to the chatbot, such as web search
         tools = [agentic_rag]
@@ -49,7 +51,7 @@ class NutritionBot:
 
         # Build the prompt template for the agent
         prompt = CoreChatPromptTemplate.from_messages([
-            ("system", system_prompt),  # System instructions
+            ("system", system_prompt.strip()),  # System instructions
             ("human", "{input}"),  # Placeholder for human input
             ("placeholder", "{agent_scratchpad}")  # Placeholder for intermediate reasoning steps
         ])

@@ -2,24 +2,21 @@
 
 import nest_asyncio
 
+# Vendor Libraries
 from langchain_core.tools import tool
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from langchain_core.vectorstores import VectorStore, VectorStoreRetriever
 
+# Local Libraries
 from models.agentic_rag_tool import AgenticRAGTool
-from models.chroma import ChromaModel
-from models.llama import LlamaModel
-from models.openai import OpenAIModel
 from models.nutrition_bot import NutritionBot
 
 from src.config import AI_ROLE, AI_TITLE, EXIT_CMD
 from src.utils import show_datetime, start_timer, get_time
 
-
 """
 Section 2: Building an Intelligent Nutrition Disorder Agent with Advanced Retrieval and Safety Mechanisms
 """
-
 
 @tool
 def agentic_rag(query: str, llm: ChatOpenAI, retriever: VectorStoreRetriever):
@@ -58,13 +55,14 @@ def agentic_rag(query: str, llm: ChatOpenAI, retriever: VectorStoreRetriever):
 
     return workflow_app.invoke(inputs)
 
-def build(llm: ChatOpenAI):
+def build(dataset: dict):
     """
     Builds the agentic app by compile workflow object.
+    :param dataset:
     :param show_logs:
     :return:
     """
-
+    """
     openai_model = OpenAIModel()
     llm = openai_model.load_llm()
     #llama = LlamaModel(llm, openai_model.embedding_model)
@@ -78,6 +76,12 @@ def build(llm: ChatOpenAI):
         'embedding_model': openai_model.embedding_model,
         'collection_name': 'nutritional'
     })
+    """
+
+    chroma_db = dataset['chroma_db']
+    openai_model = dataset['openai_model']
+    llm = openai_model.llm
+
 
     # Stage 2 - Start Program
     # Apply the nested async loop to allow async code execution in the notebook
@@ -91,21 +95,14 @@ def build(llm: ChatOpenAI):
     return workflow_app
 
 
-def start(llm: ChatOpenAI, llama: LlamaModel, show_logs: bool=False) -> None:
+def start(dataset: dict) -> None:
     """
-    Starts the agentic app.
-    A conversational agent that answers nutrition-disorder-related questions
-    using a RAG-based workflow with safety filtering and user session handling.
-    :param show_logs:
+    Starts the agentic app!
+
+    A conversational agent that answers nutrition-disorder-related questions using a RAG-based workflow with safety
+    filtering and user session handling.
+    :param dataset:
     :return:
-    """
-
-    # Initialize streamlit persistent state
-    print(f'DEBUG: show_logs:{show_logs}')
-
-    """
-    A conversational agent that answers nutrition-disorder-related questions
-    using a RAG-based workflow with safety filtering and user session handling.
     """
 
     print(f"""
@@ -121,13 +118,15 @@ def start(llm: ChatOpenAI, llama: LlamaModel, show_logs: bool=False) -> None:
         +-------------------------------------+
     """)
 
-    openai_model = OpenAIModel()
-    llm = openai_model.load_llm()
-    #llm_chatbot = openai_model.load_chatbot_llm()
-    llama = LlamaModel(llm, openai_model.embedding_model)
+    # Initialize streamlit persistent state
+    show_logs = dataset['log']
+    print(f'DEBUG: show_logs:{show_logs}')
 
+    openai_model = dataset['openai_model']
+    llm_chatbot = openai_model.llm_chatbot
+    llama = dataset['llama']
 
-    chatbot = NutritionBot()  # Initialize chatbot instance
+    chatbot = NutritionBot(llm_chatbot)  # Initialize chatbot instance
     chatbot.agent_executor.verbose = show_logs  # Set logging preferences
 
     # This provides a way to initiate a chat as different users.

@@ -40,20 +40,31 @@ class ChromaModel:
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
         self.chromadb_client = chromadb.EphemeralClient()
-        self.collection_name = dataset['collection_name']
-        self.document_content_description = ''
+
+        self.collection_name = None
+        self.document_content_description = None
+        self.embedding_model = None
+        self.llm = None
         self.metadata_info = {}
+
+        # Set all attributes to what's in the dataset.
+        self._set_attrs(dataset)
 
         # --- INITIALIZE CHROMA VECTOR STORAGE FOR RETRIEVING DOCUMENTS --- #
         # Retrieve `nutritional` database created from Google Colab
-        self.retriever = self.get_retriever(self.collection_name, dataset['embedding_model'])
-        self.structured_retriever = self._get_structured_retriever(dataset['llm'])
-        self.structured_hyp_retriever = self._get_structured_hyp_retriever(dataset['llm'])
-        self.semantic_text_splitter = self._get_semantic_text_splitter(dataset['embedding_model'])
-        self.semantic_storage = self._get_semantic_storage(dataset['embedding_model'])
-        self.vector_storage = self._get_vector_storage(dataset['embedding_model'])
+        #self.retriever = self.get_retriever(self.collection_name, dataset['embedding_model'])
+        #self.structured_retriever = self._get_structured_retriever(dataset['llm'])
+        #self.structured_hyp_retriever = self._get_structured_hyp_retriever(dataset['llm'])
+        #self.semantic_text_splitter = self._get_semantic_text_splitter(dataset['embedding_model'])
+        #self.semantic_storage = self._get_semantic_storage(dataset['embedding_model'])
+        #self.vector_storage = self._get_vector_storage(dataset['embedding_model'])
 
-        self._set_attrs(dataset)
+        self.retriever = self.get_retriever()
+        self.structured_retriever = self._get_structured_retriever()
+        self.structured_hyp_retriever = self._get_structured_hyp_retriever()
+        self.semantic_text_splitter = self._get_semantic_text_splitter(self.embedding_model)
+        self.semantic_storage = self._get_semantic_storage()
+        self.vector_storage = self._get_vector_storage()
 
     @staticmethod
     def queries() -> list:
@@ -66,18 +77,37 @@ class ChromaModel:
             "What are the laboratory and clinical standards for diagnosing Vitamin D deficiency? Specifically address adult patients."
         ]
 
-
     def _set_attrs(self, dataset: dict) -> None:
         for key, value in dataset.items():
             if hasattr(self, key):
+                print(f'DEBUG: setting {key} to {value}')
                 setattr(self, key, value)
 
-    def processed_data(self) -> dict:
-        # Data stored from parent class that's returned to each child/grand child class
-        return {}
+            if key == 'llm':
+                openai_model = dataset['openai_model']
+                self.llm = openai_model.llm
+
+    def export(self) -> dict:
+        """
+        Exports attributes to be injected into child classes
+        :return:
+        """
+        return {
+            'collection_name': self.collection_name,
+            'document_content_description': self.document_content_description,
+            'embedding_model': self.embedding_model,
+            'llm': self.llm,
+            'metadata_info': self.metadata_info,
+        }
 
     def query_questions(self, is_hyp: bool=False, pluck=False) -> None:
 
+        """
+        Query questions using either structured hypothetical retriever or structured retriever.
+        :param is_hyp:
+        :param pluck:
+        :return: None
+        """
         if is_hyp:
             retriever = self.structured_hyp_retriever
             print('--- Hypothetical Retriever ---')
@@ -87,7 +117,6 @@ class ChromaModel:
 
         # Only invoke a random question plucked from the list of queries
         if pluck:
-
             ques_idx = random.choice(self.queries())
             ques = self.queries()[ques_idx]
             semantic_chunks_retrieved = retriever.invoke(ques)
@@ -116,7 +145,7 @@ class ChromaModel:
         )
 
 
-    def get_retriever(self, collection_name: str, embedding_model: OpenAIEmbeddings) -> VectorStoreRetriever:
+    def get_retriever(self) -> VectorStoreRetriever:
         """
         Initializes vector retriever and gets vectorized data stored in Chroma
         The `persist directory` is from the root repository path, not the Google Colab path.
@@ -126,9 +155,9 @@ class ChromaModel:
         :return: VectorStoreRetriever
         """
         vector_storage = Chroma(
-            collection_name=collection_name,
-            embedding_function=embedding_model,
-            persist_directory=f"{collection_name}_db"
+            collection_name=self.collection_name,
+            embedding_function=self.embedding_model,
+            persist_directory=f"{self.collection_name}_db"
         )
 
         # Create a retriever from the vector store
@@ -137,14 +166,14 @@ class ChromaModel:
             search_kwargs={"k": VECTOR_RESULT_CNT}
         )
 
-    def _get_structured_retriever(self, llm: ChatOpenAI ) -> SelfQueryRetriever:
+    def _get_structured_retriever(self) -> SelfQueryRetriever:
         """
         Creates LangChain Structured Receiver
         :param llm:
         :return: SelfQueryRetriever
         """
         return SelfQueryRetriever.from_llm(
-            llm,
+            self.llm,
             self.semantic_storage,
             "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization",
             [
@@ -167,14 +196,14 @@ class ChromaModel:
             verbose=True
         )
 
-    def _get_structured_hyp_retriever(self, llm: ChatOpenAI) -> SelfQueryRetriever:
+    def _get_structured_hyp_retriever(self) -> SelfQueryRetriever:
         """
         Creates LangChain Structured Receiver
         :param llm:
         :return: SelfQueryRetriever
         """
         return SelfQueryRetriever.from_llm(
-            llm,                           # LLM model
+            self.llm,                           # LLM model
             self.vector_storage,          # Vectorstore
             "Hypothetical Questions for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization",
             [
@@ -204,6 +233,7 @@ class ChromaModel:
     def get_semantic_chunks(self, folder_path) -> list:
         """
         Gets semantic chunks from directory.
+        Note: This method is called outside this class.
 
         :param folder_path:
         :return:
@@ -229,27 +259,33 @@ class ChromaModel:
     def _format_dir(self, path: str) -> str:
         return f"./{VECTORS_DIR}/{path}_db"
 
-    def _get_semantic_storage(self, embedding_model: OpenAIEmbeddings) -> Chroma:
+    def _get_semantic_storage(self) -> Chroma:
         return Chroma(
-            embedding_function=embedding_model,
+            embedding_function=self.embedding_model,
             collection_name="semantic_chunks",
             persist_directory=self._format_dir("research")
         )
 
-    def add_semantic_documents(self, semantic_chunks: dict):
+    def add_semantic_documents(self, semantic_chunks: dict) -> None:
+        """
+        Note: called outside the class
+
+        :param semantic_chunks:
+        :return:
+        """
         batch_size = DOCUMENT_CHUNK_BATCH_SIZE  # Adjust the batch size as needed
         for i in range(0, len(semantic_chunks), batch_size):
             batch = semantic_chunks[i: i + batch_size]
             self.semantic_storage.add_documents(batch)
 
-    def _get_vector_storage(self, embedding_model: OpenAIEmbeddings):
+    def _get_vector_storage(self) -> Chroma:
         return Chroma(
-            embedding_function=embedding_model,
+            embedding_function=self.embedding_model,
             collection_name=self.collection_name,
             persist_directory=self._format_dir(self.collection_name)
         )
 
-    def add_vector_documents(self, documents):
+    def add_vector_documents(self, documents) -> None:
         # Note: documents are either  hypothetical_questions or table_hypothetical questions
         batch_size = DOCUMENT_CHUNK_BATCH_SIZE
         for i in range(0, len(documents), batch_size):

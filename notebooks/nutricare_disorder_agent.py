@@ -798,7 +798,6 @@ collection_name = "hypothetical_questions"
 
 # Add IDs to the hypothetical questions for text semantic chunks
 documents = hypothetical_questions
-#documents2 = [create_document(chunk.page_content, chunk.metadata) for i, chunk in enumerate(hypothetical_questions)]
 
 # Store the document chunks in Chroma vectorstore in batches
 vectorstore = Chroma(
@@ -3203,7 +3202,7 @@ api.upload_folder(
     repo_type="space",
 
     # Optional: Add a short commit message
-    commit_description="Pushing nutritonal database from vector storage and uploading it to HuggingFace.co"
+    commit_description="Pushing nutritional database from vector storage and uploading it to HuggingFace.co"
 )
 
 # Upload Dockerfile

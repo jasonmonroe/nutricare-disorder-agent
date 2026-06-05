@@ -1,46 +1,41 @@
 # pipelines/data_processor.py
+
 from __future__ import annotations
 
 import nest_asyncio
 import warnings
-
-from notebooks.nutricare_disorder_agent import hypothetical_questions_retrieved
-from storages.question_generator import QuestionGenerator
-from storages.table_question_generator import TableQuestionGenerator
-
-warnings.filterwarnings('ignore', category=DeprecationWarning)
-
 from zipfile import ZipFile
 
-
-# Vendors
-
-
-
 # Local Libraries
-from models.chroma import ChromaModel
-from models.llama import LlamaModel
-from models.openai import OpenAIModel
+from storages.question_generator import QuestionGenerator
+from storages.table_question_generator import TableQuestionGenerator
 
 from src.config import (
     DOCUMENT_ZIP,
     DOCUMENT_FILE,
     DOCUMENT_DIR,
     SIMILARITY_SEARCH_QUERY,
-    VECTOR_RESULT_CNT
+    VECTOR_RESULT_CNT, DOCUMENT_CHUNK_TEXT_BATCH_SIZE, DOCUMENT_CHUNK_BATCH_SIZE
 )
 from src.doc_handler import DocHandler
 from src.eda import show_histogram
 
-def run():
-    # Config setup
 
-    # Initialize streamlit persistent state
+def run(dataset: dict) -> None:
+    """
+    Run the data retrieval pipeline.
+    Section 1: Comprehensive Data Parsing and Preparation for Efficient Nutritional Information Retrieval
 
-    openai_model = OpenAIModel()
-    llm = openai_model.load_llm()
-    llama = LlamaModel(llm, openai_model.embedding_model)
+    :param dataset:
+    :return:
+    """
+    warnings.filterwarnings('ignore', category=DeprecationWarning)
 
+    # Pluck all the datasets needed to run this
+    ##llm = dataset['llm']
+    #openai_model = dataset['openai_model']
+    llama = dataset['llama']
+    chroma_db = dataset['chroma_db']
 
     # Apply the nested async loop to allow async code execution in the notebook
     nest_asyncio.apply()
@@ -61,16 +56,9 @@ def run():
     doc_handle = DocHandler(llama.parser)
     doc_handle.show_tables()
 
-
     # === Vectorization & Storage === #
 
     # Create vector storage for nutritional information
-    chroma_db = ChromaModel({
-        'llm': llm,
-        'embedding_model': openai_model.embedding_model,
-        'collection_name': 'nutritional'
-    })
-
     semantic_chunks = chroma_db.get_semantic_chunks(doc_handle.folder_path)
     document_chunks = doc_handle.get_semantic_chunks(semantic_chunks)
 
@@ -78,6 +66,7 @@ def run():
     show_histogram(document_chunks)
 
     # Text chunking using semantic chunker
+    # Note: Is hyp = False
     chroma_db.add_semantic_documents(document_chunks)
 
     # Perform similarity search in the vectorstore
@@ -87,46 +76,55 @@ def run():
     )
 
     doc_handle.show_documents()
-    chroma_db.query_questions()
+
+    # Use structured receiver when quering all/random questions
+    chroma_db.query_questions(is_hyp=False, pluck=False)
 
     # Get hypothetical questions and add them to the vector storage
-    questions = QuestionGenerator({
-        'llm': llm,
-        'doc_handle': doc_handle,
-        'embedding_model': openai_model.embedding_model,
-        'collection_name': 'hypothetical_questions',
-        'document_content_description': "Hypothetical Questions for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
-        #'semantic_chunks': document_chunks
-    })
+    document_content_desc =  DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
 
-    hypothetical_questions = questions.get_hypothetical_questions(document_chunks)
-    doc_handle.show_sample(hypothetical_questions, questions.collection_name.title())
-    chroma_db.add_vector_documents(hypothetical_questions)
+    chroma_dataset = chroma_db.export()
+    questions_dataset = {
+        'batch_size': DOCUMENT_CHUNK_BATCH_SIZE,
+        'collection_name': 'hypothetical_questions',
+        'doc_handle': doc_handle,
+        'document_content_description': 'Hypothetical Questions for ' + document_content_desc,
+        #'embedding_model': chroma_db.embedding_model,
+        #'llm': llm,
+        #'metadata_info': doc_handle.metadata_info
+    }
+
+    dataset = {**chroma_dataset, **questions_dataset}
+    questions = QuestionGenerator(dataset)
+    hypothetical_questions_doc = questions.get_hypothetical_questions(document_chunks)
+    doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name.title())
+    chroma_db.add_vector_documents(hypothetical_questions_doc)
+
 
     # Get table hypothetical questions and add them to the vector storage
-    table_questions = TableQuestionGenerator({
-        'llm': llm,
-        'doc_handle': doc_handle,
-        'embedding_model': openai_model.embedding_model,
+    table_questions_dataset = {
+        'batch_size': DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
         'collection_name': 'table_hypothetical_questions',
-        #'tables': doc_handle.tables
+        'doc_handle': doc_handle,
+        'document_content_description': 'Hypothetical Table Questions for ' + document_content_desc,
+        #'embedding_model': chroma_db.embedding_model,
+        #'llm': llm,
+        #'metadata_info': doc_handle.metadata_info
+    }
+    dataset = {**chroma_dataset, **table_questions_dataset}
+    table_questions = TableQuestionGenerator(dataset)
+    table_hypothetical_questions_doc = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
+    doc_handle.show_sample(table_hypothetical_questions_doc, table_questions.collection_name.title())
+    chroma_db.add_vector_documents(table_hypothetical_questions_doc)
 
-    })
 
-    table_hypothetical_questions = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
-    doc_handle.show_sample(table_hypothetical_questions, table_questions.collection_name.title())
-    chroma_db.add_vector_documents(table_hypothetical_questions)
+    # --- Backup documents to Google Drive --- #
+    # Code will come later...
+    # --- Backup documents to Google Drive --- #
 
-    # Backup documents
 
     # Sample a random user query using hypothetical retriever
-    chroma_db.query_questions(is_hyp=True)
+    # Note: To randomly pluck a question set pluck param to True
+    chroma_db.query_questions(is_hyp=True, pluck=False)
 
-
-
-
-def retrieve():
-    pass
-
-def store():
-    pass
+    print('DBUG: Exiting data_processor:run() ...')

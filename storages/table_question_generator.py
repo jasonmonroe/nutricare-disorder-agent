@@ -1,6 +1,7 @@
 # storage/table_question_generator.py
 import random
 
+from langchain_classic.chains.query_constructor.schema import AttributeInfo
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
 from notebooks.nutricare_disorder_agent import page_texts
@@ -37,17 +38,26 @@ def _prompt():
     """
 
 class TableQuestionGenerator(ChromaModel):
+    print('TableQuestionGenerator')
     def __init__(self, dataset: dict):
         super().__init__(dataset)
-        self.doc_handle = dataset['doc_handle']
-        #self.collection_name = dataset['collection_name']
-        self.metadata = []
-        #self.metadata_info = self._get_metadata_info()
-        self.title = ''
-        self.batch_size = DOCUMENT_CHUNK_TEXT_BATCH_SIZE
-        self.document_content_description = "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
+
+        self.batch_size = None
+        self.doc_handle = None
+        self.document_content_description = None
+        self.llm = None
         self.prompt = _prompt()
-        self.llm = dataset['llm']
+        self.title = 'Hypothetical Table Questions'
+
+        #self.doc_handle = dataset['doc_handle']
+        #self.collection_name = dataset['collection_name']
+        #self.metadata = []
+        #self.metadata_info = dataset['metadata_info']
+        #self.title = 'Hypothetical Questions for Tables'
+        #self.batch_size = DOCUMENT_CHUNK_TEXT_BATCH_SIZE
+        #self.document_content_description = dataset['document_content_description']
+        #self.prompt = _prompt()
+        #self.llm = dataset['llm']
 
 
     def get_hypothetical_questions(self, page_texts, tables):
@@ -58,7 +68,6 @@ class TableQuestionGenerator(ChromaModel):
 
         hypothetical_questions_prompt = _prompt()
 
-        openai_model = OpenAIModel()
         # Generate hypothetical questions for each table in the documents
         for document in tables:  # Iterate over all processed documents
             for page_number in tables[document]:  # Iterate over pages in the document
@@ -76,7 +85,7 @@ class TableQuestionGenerator(ChromaModel):
                     )
 
                     response = self.llm.invoke(formatted_response)
-                    questions = openai_model.filter_response(response, page_number)
+                    questions = OpenAIModel.filter_response(response, page_number)
 
                 except Exception as e:
                     handle_rate_limit_error(e, self.collection_name, sleep_time)
@@ -99,11 +108,13 @@ class TableQuestionGenerator(ChromaModel):
 
                     # Create a Document object for each set of generated questions
                     table_hypothetical_questions.append(
-                        self.doc_handle._create(questions, questions_metadata)
+                        self.doc_handle.create(questions, questions_metadata)
                     )
 
         show_timer(start_time)
 
         print(table_hypothetical_questions)
         return table_hypothetical_questions
+
+
 

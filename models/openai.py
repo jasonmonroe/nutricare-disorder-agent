@@ -1,26 +1,28 @@
 # models/openai.py
 
-
+# https://openai.com
+# Documentation: https://developers.openai.com/api/docs
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from src.config import OPENAI_API_BASE, OPENAI_API_KEY, OPENAI_EMB_MODEL, OPENAI_MODEL
+from src.config import (
+    OPENAI_API_BASE,
+    OPENAI_API_KEY,
+    OPENAI_EMB_MODEL,
+    OPENAI_MODEL
+)
 
 
-class OpenAIModel():
-
-
-    # https://openai.com
-    # Documentation: https://developers.openai.com/api/docs
-
-
+class OpenAIModel:
     def __init__(self):
         self.embedding_model = self._get_embedding_model()
+        self.llm = self._load_llm()
+        self.llm_chatbot = self._load_llm_chatbot()
 
     def _get_embedding_model(self) -> OpenAIEmbeddings:
 
         # Initialize the OpenAI Embeddings
         # see: https://docs.langchain.com/oss/python/integrations/text_embedding/openai
-        self.embedding_model = OpenAIEmbeddings(
+        return  OpenAIEmbeddings(
             openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
             openai_api_key=OPENAI_API_KEY,   # Fill in the API key
             model=OPENAI_EMB_MODEL,          # Fill in the model name
@@ -29,7 +31,7 @@ class OpenAIModel():
         )
 
 
-    def load_llm(self) -> ChatOpenAI:
+    def _load_llm(self) -> ChatOpenAI:
         # This initializes the OpenAI embeddings model using the specified endpoint, API key, and model name.
         # This initializes the Chat OpenAI model using the provided endpoint, API key, deployment name.
 
@@ -47,7 +49,7 @@ class OpenAIModel():
             # Timeout after 60 seconds
         )
 
-    def load_chatbot_llm(self) -> ChatOpenAI:
+    def _load_llm_chatbot(self) -> ChatOpenAI:
         # Note: This is for Nutrition Bot
         return ChatOpenAI(
             model_name=OPENAI_MODEL,  # Specify the model to use (e.g., a GPT-4 optimized version)
@@ -57,6 +59,7 @@ class OpenAIModel():
         )
 
 
+    @staticmethod
     def filter_response(self, resp: str, index=None) -> str:
         # 1. Check if the response is already a string (raw output)
         if isinstance(resp, str):
