@@ -261,11 +261,15 @@ def run_streamlit_pipeline():
 
 
 def _parse_args(command_line_args: list[str]):
-
+    """
+    Parse arguments presents in command line.
+    :param command_line_args:
+    :return:
+    """
     if len(command_line_args) == 0:
         return None
 
-    args_list = ['--data', '--build', '--start', '--deploy', '--run']
+    args_list = ['--data', '--build', '--start', '--deploy', '--run', '--log']
 
     return {arg.strip('--'): (arg in command_line_args) for arg in args_list}
 
@@ -286,7 +290,7 @@ if __name__ == 'main':
             if arg == 'data' or arg is None:
                 run_data_retrieval_pipeline()
             if arg == 'build':
-                run_build_agent_pipeline()
+                run_build_agent_pipeline(args['log'])
             if arg == 'start':
                 run_start_agent_pipeline()
             if arg == 'deploy':

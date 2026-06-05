@@ -50,7 +50,7 @@ class ChromaModel:
         # Retrieve `nutritional` database created from Google Colab
         self.retriever = self.get_retriever(self.collection_name, dataset['embedding_model'])
         self.structured_retriever = self._get_structured_retriever(dataset['llm'])
-        self.structured_hyp_retriever = self._get_structured_hype_retriever(dataset['llm'])
+        self.structured_hyp_retriever = self._get_structured_hyp_retriever(dataset['llm'])
         self.semantic_text_splitter = self._get_semantic_text_splitter(dataset['embedding_model'])
         self.semantic_storage = self._get_semantic_storage(dataset['embedding_model'])
         self.vector_storage = self._get_vector_storage(dataset['embedding_model'])
@@ -154,7 +154,7 @@ class ChromaModel:
             verbose=True
         )
 
-    def _get_structured_hyp_retriever(self, llm: ChatOpenAI):
+    def _get_structured_hyp_retriever(self, llm: ChatOpenAI) -> SelfQueryRetriever:
         return SelfQueryRetriever.from_llm(
             llm,                           # LLM model
             self.vector_storage,                   # Vectorstore

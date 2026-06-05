@@ -5,8 +5,8 @@ import nest_asyncio
 import warnings
 
 from notebooks.nutricare_disorder_agent import hypothetical_questions_retrieved
-from storage.question_generator import QuestionGenerator
-from storage.table_question_generator import TableQuestionGenerator
+from storages.question_generator import QuestionGenerator
+from storages.table_question_generator import TableQuestionGenerator
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 

@@ -1034,7 +1034,7 @@ def expand_query(state: AgentState) -> AgentState:
         Dict: The updated state with the expanded query.
     """
 
-    if show_logs == True:
+    if show_logs:
         print("\n-------- expand_query ---------")
 
     original_query = state['query']
@@ -1057,7 +1057,7 @@ def expand_query(state: AgentState) -> AgentState:
     """
 
     if query_feedback:
-        if show_logs == True:
+        if show_logs:
             print("---Using feedback to refine query---")
 
         system_message += f"""
@@ -1158,14 +1158,14 @@ def retrieve_context(state: AgentState) -> AgentState:
 
     query = state['expanded_query']
 
-    if show_logs == True:
+    if show_logs:
         print("\n-------- retrieve_context --------")
         print("Query used for retrieval:", query)  # Debugging: Print the query
 
     # Retrieve documents from the vector store
     retrieved_docs = retriever.invoke(query)
 
-    if show_logs == True:
+    if show_logs:
         print("Retrieved documents:", retrieved_docs)  # Debugging: Print the raw docs object
 
     # Extract both page_content and metadata from each document
@@ -1177,7 +1177,7 @@ def retrieve_context(state: AgentState) -> AgentState:
         for doc in retrieved_docs
     ]
 
-    if show_logs == True:
+    if show_logs:
         print("Extracted context with metadata:", state['context'])  # Debugging: Print the extracted context
 
     return state
@@ -1193,7 +1193,7 @@ def craft_response(state: Dict) -> Dict:
         Dict: The updated state with the generated response.
     """
 
-    if show_logs == True:
+    if show_logs:
         print("\n-------- craft_response --------")
 
     system_message = """
@@ -1227,7 +1227,7 @@ def craft_response(state: Dict) -> Dict:
 
     state['response'] = response
 
-    if show_logs == True:
+    if show_logs:
         print("intermediate response: ", response)
 
     return state
@@ -1243,7 +1243,7 @@ def score_groundedness(state: Dict) -> Dict:
         Dict: The updated state with the groundedness score.
     """
 
-    if show_logs == True:
+    if show_logs:
         print("\n-------- check_groundedness --------")
 
     system_message = """You are a meticulous AI {ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
@@ -1269,7 +1269,7 @@ def score_groundedness(state: Dict) -> Dict:
 
     state['groundedness_loop_count'] += 1
 
-    if show_logs == True:
+    if show_logs:
         print("groundedness_score: ", groundedness_score)
         print("######## Groundedness Incremented ##########")
 
@@ -1288,7 +1288,7 @@ def check_precision(state: Dict) -> Dict:
         Dict: The updated state with the precision score.
     """
 
-    if show_logs == True:
+    if show_logs:
         print("\n-------- check_precision --------")
 
     system_message = """
@@ -1317,7 +1317,7 @@ def check_precision(state: Dict) -> Dict:
     state['precision_score'] = precision_score
     state['precision_loop_count'] += 1
 
-    if show_logs == True:
+    if show_logs:
         print("precision_score:", precision_score)
         print("######## Precision Incremented ##########")
 
@@ -1334,7 +1334,7 @@ def refine_response(state: Dict) -> Dict:
         Dict: The updated state with response refinement suggestions.
     """
 
-    if show_logs == True:
+    if show_logs:
         print("\n-------- refine_response --------")
 
     system_message = """
@@ -1357,7 +1357,7 @@ def refine_response(state: Dict) -> Dict:
     # Store response suggestions in a structured format
     feedback = f"Previous Response: {state['response']}\nSuggestions: {chain.invoke({'query': state['query'], 'response': state['response'], 'ROLE': state['ROLE']})}"
 
-    if show_logs == True:
+    if show_logs:
         print("feedback: ", feedback)
         print(f"State: {state}")
 
@@ -1376,7 +1376,7 @@ def refine_query(state: Dict) -> Dict:
         Dict: The updated state with JSON-formatted query refinement suggestions.
     """
 
-    if show_logs == True:
+    if show_logs:
         print("\n--- refine_query ---")
 
     # Define the desired JSON schema for the output
@@ -1432,7 +1432,7 @@ def refine_query(state: Dict) -> Dict:
 
     state['query_feedback'] = suggestions_str
 
-    if show_logs == True:
+    if show_logs:
         print(f"Query Feedback Generated (JSON):\n{suggestions_str}")
 
     return state
@@ -1445,12 +1445,12 @@ def should_continue_groundedness(state):
 
   """Decides if groundedness is enough or needs improvement."""
 
-  if show_logs == True:
+  if show_logs:
       print("\n-------- should_continue_groundedness --------")
       print("groundedness loop count: ", state['groundedness_loop_count'])
 
   if state["groundedness_score"] >= EVAL_THRESHOLD:  # Threshold for groundedness
-      if show_logs == True:
+      if show_logs:
           print("Moving to precision")
 
       return "check_precision"
@@ -1458,7 +1458,7 @@ def should_continue_groundedness(state):
       if is_max_iterations_reached(state, "groundedness_loop_count"):
             return "max_iterations_reached"
       else:
-          if show_logs == True:
+          if show_logs:
               print(f"-------- Groundedness Score Threshold Not met. Refining Response ----------")
 
           return "refine_response"
@@ -1467,7 +1467,7 @@ def should_continue_precision(state: Dict) -> str:
 
     """Decides if precision is sufficient or needs improvement."""
 
-    if show_logs == True:
+    if show_logs:
         print("\n-------- should_continue_precision --------")
         print("precision loop count: ", state['precision_loop_count'])
 
@@ -1477,7 +1477,7 @@ def should_continue_precision(state: Dict) -> str:
         if is_max_iterations_reached(state, "precision_loop_count"):  # Maximum allowed loops
             return "max_iterations_reached"
         else:
-            if show_logs == True:
+            if show_logs:
                 print(f"-------- Precision Score Threshold Not met. Refining Query ----------")  # Debugging
 
             return "refine_query"  # Refine the query
@@ -1784,7 +1784,7 @@ class NutritionBot:
             context += "---\n"
 
         # Print context for debugging purposes
-        if show_logs == True:
+        if show_logs:
             print("Context: ", context)
 
         # Prepare a prompt combining past context and the current query

@@ -4,7 +4,7 @@ import random
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
 from notebooks.nutricare_disorder_agent import page_texts
-from src.config import DOCUMENT_CHUNK_TEXT_BATCH_SIZE, AI_ROLE, PROMPT_INSTR, EMPTY_RESP
+from src.config import DOCUMENT_CHUNK_TEXT_BATCH_SIZE, AI_ROLE, PROMPT_INSTR, EMPTY_RESP, DOCUMENT_DIR
 from src.utils import handle_rate_limit_error, show_timer, start_timer
 
 
