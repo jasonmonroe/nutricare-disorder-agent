@@ -9,7 +9,7 @@ from langchain.chains.query_constructor.base import AttributeInfo
 # Local Libraries
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
-from src.config import DOCUMENT_CHUNK_TEXT_BATCH_SIZE, DOCUMENT_DIR, AI_ROLE, PROMPT_INSTR, EMPTY_RESP, I_QUES
+from src.config import AI_ROLE, PROMPT_INSTR, EMPTY_RESP, I_QUES
 from src.utils import handle_rate_limit_error, show_timer
 
 
@@ -39,7 +39,6 @@ class QuestionGenerator(ChromaModel):
         self.llm = None
         self.prompt = _prompt()
         self.title = 'Hypothetical Questions'
-        #self.openai_model = OpenAIModel()
 
         self._set_attrs(dataset)
 
@@ -61,7 +60,7 @@ class QuestionGenerator(ChromaModel):
         for batch_start in range(0, len(semantic_chunks), self.batch_size):
             batch = semantic_chunks[batch_start: batch_start + self.batch_size]
 
-            # List to store documents with hypothetical questions
+            # List to store documents with hypothetical questions.
             batched_hypothetical_questions = []
 
             for i, document in enumerate(batch, start=batch_start):

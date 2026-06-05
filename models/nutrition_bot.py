@@ -12,7 +12,6 @@ from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 
 # Local Libraries
-from models.openai import OpenAIModel
 from pipelines.agent import agentic_rag
 from src.config import MEM0_API_KEY, RETRIEVAL_LIMIT
 
@@ -47,11 +46,11 @@ class NutritionBot:
                           Always use the agentic_rag tool to retrieve up-to-date and evidence-based nutrition insights.
                           Keep track of ongoing issues and follow-ups to ensure continuity in support.
                           Your primary goal is to help customers make informed nutrition decisions that align with their health conditions and personal preferences.
-        """
+        """.strip()
 
         # Build the prompt template for the agent
         prompt = CoreChatPromptTemplate.from_messages([
-            ("system", system_prompt.strip()),  # System instructions
+            ("system", system_prompt),  # System instructions
             ("human", "{input}"),  # Placeholder for human input
             ("placeholder", "{agent_scratchpad}")  # Placeholder for intermediate reasoning steps
         ])

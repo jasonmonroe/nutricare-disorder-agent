@@ -49,17 +49,6 @@ class TableQuestionGenerator(ChromaModel):
         self.prompt = _prompt()
         self.title = 'Hypothetical Table Questions'
 
-        #self.doc_handle = dataset['doc_handle']
-        #self.collection_name = dataset['collection_name']
-        #self.metadata = []
-        #self.metadata_info = dataset['metadata_info']
-        #self.title = 'Hypothetical Questions for Tables'
-        #self.batch_size = DOCUMENT_CHUNK_TEXT_BATCH_SIZE
-        #self.document_content_description = dataset['document_content_description']
-        #self.prompt = _prompt()
-        #self.llm = dataset['llm']
-
-
     def get_hypothetical_questions(self, page_texts, tables):
         start_time = start_timer()
         rate_limit_hit = False

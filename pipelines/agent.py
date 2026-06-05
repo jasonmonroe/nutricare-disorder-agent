@@ -5,7 +5,7 @@ import nest_asyncio
 # Vendor Libraries
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
-from langchain_core.vectorstores import VectorStore, VectorStoreRetriever
+from langchain_core.vectorstores import VectorStoreRetriever
 
 # Local Libraries
 from models.agentic_rag_tool import AgenticRAGTool
