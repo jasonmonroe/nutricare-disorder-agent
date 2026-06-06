@@ -5,7 +5,7 @@ from pydantic import Field
 import os
 import random
 
-# Vendors
+# Vendor Libraries
 import chromadb
 
 # --- FIXED MODERN LANGCHAIN IMPORTS ---
@@ -26,12 +26,12 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoad
 from langchain_experimental.text_splitter import SemanticChunker
 
 from src.config import (
+    DOCUMENT_CHUNK_BATCH_SIZE,
+    DOCUMENT_DIR,
+    I_QUES,
     SEMANTIC_THRESH_LIMIT,
     VECTOR_RESULT_CNT,
     VECTORS_DIR,
-    I_QUES,
-    DOCUMENT_CHUNK_BATCH_SIZE,
-    DOCUMENT_DIR
 )
 
 
@@ -132,6 +132,7 @@ class ChromaModel:
      
         :return: SemanticChunker
         """
+        
         return SemanticChunker(
             self.embedding_model,
             breakpoint_threshold_type='percentile',
@@ -144,6 +145,7 @@ class ChromaModel:
         The `persist directory` is from the root repository path, not the Google Colab path.
         :return: VectorStoreRetriever
         """
+
         vector_storage = Chroma(
             collection_name=self.collection_name,
             embedding_function=self.embedding_model,
@@ -226,6 +228,7 @@ class ChromaModel:
         :param folder_path:
         :return:
         """
+
         semantic_chunks = []
         pdf_loader = PyPDFDirectoryLoader(folder_path)
         chunks = pdf_loader.load_and_split(self.semantic_text_splitter)
@@ -238,6 +241,7 @@ class ChromaModel:
         :param path: path of directory
         :return: full string of directory path formatted
         """
+
         return f"./{VECTORS_DIR}/{path}_db"
 
     def _get_semantic_storage(self) -> Chroma:
@@ -251,7 +255,7 @@ class ChromaModel:
         """
         Note: called outside the class
         :param semantic_chunks:
-        :return:
+        :return: None
         """
         batch_size = DOCUMENT_CHUNK_BATCH_SIZE
         for i in range(0, len(semantic_chunks), batch_size):

@@ -67,7 +67,6 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 import numpy as np
 np.float_ = np.float64
 
-
 # Local Libraries
 from models.chroma import ChromaModel
 from models.llama import LlamaModel

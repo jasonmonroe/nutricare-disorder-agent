@@ -13,9 +13,9 @@ from storages.table_question_generator import TableQuestionGenerator
 from src.config import (
     DOCUMENT_CHUNK_TEXT_BATCH_SIZE, 
     DOCUMENT_CHUNK_BATCH_SIZE,
-    DOCUMENT_ZIP,
-    DOCUMENT_FILE,
     DOCUMENT_DIR,
+    DOCUMENT_FILE,
+    DOCUMENT_ZIP,
     SIMILARITY_SEARCH_QUERY,
     VECTOR_RESULT_CNT,  
 )

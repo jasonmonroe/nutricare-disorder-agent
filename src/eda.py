@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-def show_histogram(semantic_chunks):
+def show_histogram(semantic_chunks: list):
     
     """Displays a refined histogram of semantic chunk lengths with statistical markers."""
     # Set professional aesthetic theme

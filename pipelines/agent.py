@@ -1,5 +1,7 @@
 # pipelines/agent.py
 
+from typing import Any
+from langgraph.graph.state import CompiledStateGraph
 import nest_asyncio
 
 # Local Libraries
@@ -14,19 +16,18 @@ from src.utils import show_datetime, start_timer, get_time
 Section 2: Building an Intelligent Nutrition Disorder Agent with Advanced Retrieval and Safety Mechanisms
 """
 
-def build(dataset: dict):
+def build(dataset: dict) -> CompiledStateGraph[Any, None, Any, Any]:
     """
     Builds the agentic app by compile workflow object.
     :param dataset:
     :param show_logs:
     :return:
-    """
-    """
+     
     openai_model = OpenAIModel()
     llm = openai_model.load_llm()
     #llama = LlamaModel(llm, openai_model.embedding_model)
 
-    # --- INITIALIZE CHROMA VECTOR STORAGE FOR RETRIEVING DOCUMENTS
+    # --- INITIALIZE CHROMA VECTOR STORAGE FOR RETRIEVING DOCUMENTS ---
     # Retrieve `nutritional` database created from Google Colab
 
     # Create vector storage for nutritional information
@@ -61,7 +62,7 @@ def start(dataset: dict) -> None:
     A conversational agent that answers nutrition-disorder-related questions using a RAG-based workflow with safety
     filtering and user session handling.
     :param dataset:
-    :return:
+    :return: None
     """
 
     print(f"""

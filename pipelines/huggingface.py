@@ -20,7 +20,7 @@ class Huggingface:
         self.api.upload_file(
             path_or_fileobj="requirements.txt",
             path_in_repo="requirements.txt",
-            repo_id=HF_REPO_ID,
+            repo_id=self._repo_id,
             repo_type=self._repo_type,
             commit_description="Ran requirements cell to create file and uploading it to HuggingFace.co"
         )

@@ -14,15 +14,20 @@ import streamlit as st
 from models.nutrition_bot import NutritionBot
 from src.config import (
     AI_TITLE,
+    APP_TITLE,
+    DOCUMENT_DIR,
+    DOCUMENT_ZIP, 
     EXIT_CMD,
-    HF_TOKEN,
     GROQ_API_KEY,
+    I_ANGRY,
+    I_BOT,
+    I_FROWN,
+    I_THINKING,
+    HF_TOKEN,
     LLAMA_KEY,
     MEM0_API_KEY,
     OPENAI_API_KEY,
     OPENAI_API_BASE,
-    DOCUMENT_DIR,
-    DOCUMENT_ZIP, APP_TITLE
 )
 from src.utils import show_datetime
 
@@ -33,7 +38,7 @@ def get_chatbot_instance() -> NutritionBot:
     """
     Initializes and caches the NutritionBot instance.
 
-    :return:
+    :return: NutritionBot
     """
     print("# --- Loading NutritionBot --- #")
 
@@ -60,7 +65,7 @@ class StreamLitApp:
         if session_doc_found not in st.session_state:
             st.session_state[session_doc_found] = session_doc_found
 
-        # --- VALIDATE API CREDENTIALS KEYS AND CHECK THE SOURCE FILE
+        # --- VALIDATE API CREDENTIALS KEYS AND CHECK THE SOURCE FILE --- #
         if st.session_state[session_keys_valid] is None:
             is_valid = self.check_program_keys()
             st.session_state[session_keys_valid] = is_valid
@@ -68,7 +73,7 @@ class StreamLitApp:
             if not is_valid:
                 st.stop()
 
-        # --- FIND & REFERENCE DOCUMENT FOR CHUNKING
+        # --- FIND & REFERENCE DOCUMENT FOR CHUNKING  --- #
         if st.session_state[session_doc_found] is None:
             doc_found = self.check_document_file()
             st.session_state[session_doc_found] = doc_found
@@ -137,7 +142,7 @@ class StreamLitApp:
         st.title(f"{AI_TITLE}")
         st.markdown("<hr style='margin: 0'>", unsafe_allow_html=True)
         st.info(body=f"""
-        Welcome! I'm your **{APP_TITLE}**.
+        Welcome! I'm your **{I_BOT}{APP_TITLE}**.
         I specialize in providing information about **nutrition disorders**, including **symptoms, causes, treatment options, and preventative measures.**
         I'm ready to answer your health-related questions.
         """.strip(), icon="📢")
@@ -180,7 +185,7 @@ class StreamLitApp:
                     st.write(f"{st.session_state.user_id}: {user_query}")
 
                 thinking = st.empty()
-                thinking.info(body="Thinking. . .", icon="🤔")
+                thinking.info(body="Thinking. . .", icon="{I_THINKING}")
 
                 # Filter input using Llama Guard
                 filtered_result = self.llama.filter_input_with_llama_guard(user_query)
@@ -234,14 +239,14 @@ class StreamLitApp:
                 error_msg = "Sorry, I encountered an error while processing your query. Please try again."
                 error_str = f"Error: {str(e)}"
                 with st.chat_message("assistant"):
-                    st.error(body=error_str, icon="😩")
+                    st.error(body=error_str, icon="{I_FROWN}")
                 st.session_state.chat_history.append({"role": "assistant", "content": error_msg + " " + error_str})
 
         else:
             # Unsafe queries are handled here!
             inappropriate_msg = "I apologize, but I cannot process that input as it may be inappropriate. Please try again."
             with st.chat_message("assistant"):
-                st.warning(body=inappropriate_msg, icon="🤬")
+                st.warning(body=inappropriate_msg, icon="{I_ANGRY}")
 
             st.session_state.chat_history.append({"role": "assistant", "content": inappropriate_msg})
 

@@ -7,7 +7,7 @@ from mem0 import MemoryClient
 
 # Vendor Libraries
 # LangChain imports
-from langchain_core.output_parsers import StrOutputParser, JsonOutputParser  # String output parser
+#from langchain_core.output_parsers import StrOutputParser, JsonOutputParser  # String output parser
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 #from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_classic.agents import create_tool_calling_agent, AgentExecutor

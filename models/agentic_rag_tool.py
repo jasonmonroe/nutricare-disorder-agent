@@ -62,7 +62,7 @@ class AgenticRagTool:
             self.should_continue_groundedness,  # Use the conditional function
             {
                 "check_precision": "check_precision",              # If well-grounded, proceed to precision check.
-                "refine_response": "refine_response",              # If not, refine the response.
+                "refine_response": "refine_response",                # If not, refine the response.
                 "max_iterations_reached": "max_iterations_reached" # If max loops reached, exit.
             }
         )
@@ -72,11 +72,11 @@ class AgenticRagTool:
         # Conditional edges based on precision check
         workflow.add_conditional_edges(
             "check_precision",
-            self.should_continue_precision,  # Use the conditional function
+            self.should_continue_precision,                        # Use the conditional function
             {
-                "pass": END,                     # If precise, complete the workflow.
-                "refine_query": "refine_query",  # If imprecise, refine the query.
-                "max_iterations_reached": "max_iterations_reached"    # If max loops reached, exit.
+                "pass": END,                                       # If precise, complete the workflow.
+                "refine_query": "refine_query",                      # If imprecise, refine the query.
+                "max_iterations_reached": "max_iterations_reached" # If max loops reached, exit.
             }
         )
 
@@ -95,7 +95,7 @@ class AgenticRagTool:
         :param state: state of agent
         :return: returns state response
         """
-        """Handles the case where max iterations are reached."""
+         
         state['response'] = "We need more context to provide an accurate answer."
         return state
 
@@ -520,16 +520,3 @@ class AgenticRagTool:
 
     def display_workflow(self, app) -> None:
         display(Image(app.get_graph().draw_mermaid_png()))
-
-
-
-
-    # @todo - is this needed?
-    def run_agent(self):
-        return self.nutrition_disorder_agent()
-
-    # @todo - is this needed?
-    def nutrition_disorder_agent(self):
-        pass
-
-

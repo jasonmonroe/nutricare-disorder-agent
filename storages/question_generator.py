@@ -5,15 +5,11 @@ import time
 
 # Vendor Libraries
 
-
 # Local Libraries
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
 from src.config import AI_ROLE, PROMPT_INSTR, EMPTY_RESP, I_QUES
 from src.utils import handle_rate_limit_error, show_timer
-
-
-
 
 
 class QuestionGenerator(ChromaModel):
@@ -25,7 +21,7 @@ class QuestionGenerator(ChromaModel):
         self.doc_handle = None
         self.document_content_description = None
         self.llm = None
-        self.prompt = _prompt()
+        self.prompt = self._prompt()
         self.title = 'Hypothetical Questions'
 
         self._set_attrs(dataset)
