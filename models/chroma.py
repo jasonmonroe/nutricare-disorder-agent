@@ -59,7 +59,7 @@ class ChromaModel:
         self._set_attrs(dataset)
 
         self.retriever = self.get_retriever()
-        self.semantic_text_splitter = self._get_semantic_text_splitter(self.embedding_model)
+        self.semantic_text_splitter = self._get_semantic_text_splitter()
         self.semantic_storage = self._get_semantic_storage()
         self.vector_storage = self._get_vector_storage()
 
@@ -104,18 +104,14 @@ class ChromaModel:
     def query_questions(self, is_hyp: bool = False, pluck: bool = False) -> None:
         """
         Query questions using either structured hypothetical retriever or structured retriever.
-        :param is_hyp:
-        :param pluck:
+        :param is_hyp: is retriever hypothetical or not?
+        :param pluck: do we query all questions or pluck a random to test the retriever?
         :return: None
         """
-        if is_hyp:
-            retriever = self.structured_hyp_retriever
-            print('--- Hypothetical Retriever ---')
-        else:
-            retriever = self.structured_retriever
-            print('--- Retriever ---')
 
-        # --- FIXED LOGICAL BUG ---
+        retriever = self.structured_hyp_retriever if is_hyp else self.structured_retriever
+        print('--- Hypothetical Retriever ---' if is_hyp else '--- Retriever ---')
+
         # random.choice pulls the exact text string from the list directly, not the index integer.
         if pluck:
             ques = random.choice(self.queries())
@@ -130,14 +126,14 @@ class ChromaModel:
                 print(f"Retrieved Documents: {semantic_chunks_retrieved}")
                 print("---\n")
 
-    def _get_semantic_text_splitter(self, embedding_model):
+    def _get_semantic_text_splitter(self):
         """
         Initializes the semantic text splitter, controlling how the text is divided into meaningful chunks.
-        :param embedding_model:
-        :return:
+     
+        :return: SemanticChunker
         """
         return SemanticChunker(
-            embedding_model,
+            self.embedding_model,
             breakpoint_threshold_type='percentile',
             breakpoint_threshold_amount=SEMANTIC_THRESH_LIMIT
         )
@@ -151,6 +147,7 @@ class ChromaModel:
         vector_storage = Chroma(
             collection_name=self.collection_name,
             embedding_function=self.embedding_model,
+            #persist_directory=self._format_dir("research")
             persist_directory=f"{self.collection_name}_db"
         )
 
@@ -237,6 +234,10 @@ class ChromaModel:
         return semantic_chunks
 
     def _format_dir(self, path: str) -> str:
+        """
+        :param path: path of directory
+        :return: full string of directory path formatted
+        """
         return f"./{VECTORS_DIR}/{path}_db"
 
     def _get_semantic_storage(self) -> Chroma:
