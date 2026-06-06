@@ -44,6 +44,8 @@ def run(dataset: dict) -> None:
 
     # === Document Ingestion & Processing ===
 
+    print(f'\nUnzipping {DOCUMENT_ZIP}...')
+    
     # Unzipping the nutrition medical reference documents into the Nutritional Medical Reference folder
     # Loading the temp.zip and creating a zip object
     with ZipFile(DOCUMENT_ZIP, 'r') as zip_handle:

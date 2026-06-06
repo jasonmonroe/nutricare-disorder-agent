@@ -79,14 +79,21 @@ class ChromaModel:
         ]
 
     def _set_attrs(self, dataset: dict) -> None:
+        """
+        Update class attributes dynamically.
+        
+        :param dataset
+        :return None
+        """
         for key, value in dataset.items():
             if hasattr(self, key):
-                print(f'DEBUG: setting {key} to {value}')
+                #print(f'DEBUG: setting {key} to {value}')
                 setattr(self, key, value)
 
-            if key == 'llm':
-                openai_model = dataset['openai_model']
-                self.llm = openai_model.llm
+        if self.llm is None and 'openai_model' in dataset:
+            openai_model = dataset['openai_model']
+            self.llm = openai_model.llm
+            
 
     def export(self) -> dict:
         """
@@ -158,7 +165,7 @@ class ChromaModel:
             search_kwargs={"k": VECTOR_RESULT_CNT}
         )
 
-    def _get_structured_retriever(self) -> SelfQueryRetriever:
+    def _get_structured_retriever(self) :
         """
         Creates LangChain Structured Retriever
         :return: SelfQueryRetriever
@@ -187,7 +194,7 @@ class ChromaModel:
             verbose=True
         )
 
-    def _get_structured_hyp_retriever(self) -> SelfQueryRetriever:
+    def _get_structured_hyp_retriever(self) :
         """
         Creates LangChain Structured Receiver
         :return: SelfQueryRetriever

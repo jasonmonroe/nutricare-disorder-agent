@@ -135,7 +135,8 @@ if __name__ == '__main__':
         'llama': llama,
         'openai_model': openai_model,
     }
-
+    print(dataset) 
+    sys.exit(0)
     # Execute based on parsed flags
     if args.get('data'):
         run_data_retrieval_pipeline(dataset)
