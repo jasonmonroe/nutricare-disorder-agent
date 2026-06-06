@@ -68,13 +68,10 @@ import numpy as np
 np.float_ = np.float64
 
 # Local Libraries
-from models.chroma import ChromaModel
-from models.llama import LlamaModel
-from models.openai import OpenAIModel
-
+from models import ChromaModel, LlamaModel, OpenAIModel
 from pipelines.agent import build as run_build_agent_pipeline, start as run_start_agent_pipeline
 from pipelines.data_processor import run as run_data_retrieval_pipeline
-from pipelines.huggingface import Huggingface
+from pipelines.huggingface import Huggingface 
 from pipelines.streamlit_app import StreamLitApp
 
 from src.utils import get_run_id, show_title_banner, start_timer, show_timer
@@ -99,7 +96,8 @@ def _parse_args(command_line_args: list[str]) -> dict:
     :return:
     """
     if len(command_line_args) == 0:
-        return {}
+        print(f'{I_WARNING} No args present... exiting. {I_WARNING}')
+        sys.exit(0)
 
     args_list = ['--data', '--build', '--start', '--deploy', '--run', '--log']
     return {arg.strip('--'): (arg in command_line_args) for arg in args_list}
@@ -113,11 +111,7 @@ if __name__ == '__main__':
 
     show_title_banner()
     args = _parse_args(sys.argv[1:])
-
-    if not any(args.values()):
-        print(f'{I_WARNING} No args present... exiting. {I_WARNING}')
-        sys.exit(0)
-
+        
     # --- Load all models --- #
     openai_model = OpenAIModel()
 
@@ -130,13 +124,13 @@ if __name__ == '__main__':
 
     llama = LlamaModel(openai_model.llm, openai_model.embedding_model)
 
+
     dataset = {
         'chroma_db': chroma_db,
         'llama': llama,
         'openai_model': openai_model,
     }
-    print(dataset) 
-    sys.exit(0)
+    
     # Execute based on parsed flags
     if args.get('data'):
         run_data_retrieval_pipeline(dataset)

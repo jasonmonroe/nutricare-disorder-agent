@@ -10,7 +10,7 @@ from mem0 import MemoryClient
 #from langchain_core.output_parsers import StrOutputParser, JsonOutputParser  # String output parser
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 #from langchain.agents import create_tool_calling_agent, AgentExecutor
-from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
+from langchain.agents import create_tool_calling_agent, AgentExecutor
 
 
 # Local Libraries
@@ -89,7 +89,7 @@ class NutritionBot:
             metadata=metadata
         )
 
-    def get_relevant_history(self, user_id: str, query: str) -> dict[str, Any]:
+    def get_relevant_history(self, user_id: str, query: str) -> List[Dict]:
         """
         Retrieve past interactions relevant to the current query.
 

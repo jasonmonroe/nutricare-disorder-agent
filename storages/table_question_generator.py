@@ -1,7 +1,7 @@
 # storage/table_question_generator.py
 import random
 
-from langchain_classic.chains.query_constructor.schema import AttributeInfo
+from langchain.chains.query_constructor.base import AttributeInfo
 
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel

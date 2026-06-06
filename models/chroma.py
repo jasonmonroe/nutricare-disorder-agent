@@ -1,27 +1,33 @@
 # models/chroma.py
 
 import logging
-from pydantic import Field
 import os
 import random
 
 # Vendor Libraries
 import chromadb
 
-# --- FIXED MODERN LANGCHAIN IMPORTS ---
+
+# --- FIXED MODERN LANGCHAIN CORE & EXTENSION IMPORTS ---
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStoreRetriever
-from langchain_chroma import Chroma  # Dedicated native package for local Chroma DB execution
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings  # Specialized provider sub-package
-from langchain_classic.chains.query_constructor.base import AttributeInfo
+from langchain_chroma import Chroma  
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
+# The canonical, native namespace for Self-Query schema tokens in LangChain v1.x:
+#from langchain_core.structured_query import AttributeInfo  
+from langchain.chains.query_constructor.schema import AttributeInfo
 
 # Self-Query and Document Compression routing via standardized engine namespaces
-from langchain_classic.retrievers.self_query.base import SelfQueryRetriever
-from langchain_classic.retrievers.document_compressors import LLMChainExtractor
-from langchain_classic.retrievers.document_compressors.cross_encoder_rerank import CrossEncoderReranker
-from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
+from langchain.retrievers.self_query.base import SelfQueryRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
 
-# Core asset loading layers maintained inside the generic community layer
+
+# FIXED: Rerankers are now imported from the community collection explicitly
+from langchain_community.document_compressors.cross_encoder_rerank import CrossEncoderReranker
+from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
+
+# Core asset loading layers maintained inside generic community spaces
 from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader
 from langchain_experimental.text_splitter import SemanticChunker
 
@@ -47,7 +53,7 @@ class ChromaModel:
         os.environ["CHROMA_SERVER_NO_TELEMETRY"] = "true"
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
-        self.chromadb_client = chromadb.EphemeralClient()
+        self.chromadb_client = chromadb.PersistentClient()
 
         self.collection_name = None
         self.document_content_description = None
@@ -87,13 +93,11 @@ class ChromaModel:
         """
         for key, value in dataset.items():
             if hasattr(self, key):
-                #print(f'DEBUG: setting {key} to {value}')
                 setattr(self, key, value)
 
         if self.llm is None and 'openai_model' in dataset:
             openai_model = dataset['openai_model']
             self.llm = openai_model.llm
-            
 
     def export(self) -> dict:
         """
@@ -115,11 +119,9 @@ class ChromaModel:
         :param pluck: do we query all questions or pluck a random to test the retriever?
         :return: None
         """
-
         retriever = self.structured_hyp_retriever if is_hyp else self.structured_retriever
         print('--- Hypothetical Retriever ---' if is_hyp else '--- Retriever ---')
 
-        # random.choice pulls the exact text string from the list directly, not the index integer.
         if pluck:
             ques = random.choice(self.queries())
             semantic_chunks_retrieved = retriever.invoke(ques)
@@ -139,7 +141,6 @@ class ChromaModel:
      
         :return: SemanticChunker
         """
-        
         return SemanticChunker(
             self.embedding_model,
             breakpoint_threshold_type='percentile',
@@ -152,11 +153,9 @@ class ChromaModel:
         The `persist directory` is from the root repository path, not the Google Colab path.
         :return: VectorStoreRetriever
         """
-
         vector_storage = Chroma(
             collection_name=self.collection_name,
             embedding_function=self.embedding_model,
-            #persist_directory=self._format_dir("research")
             persist_directory=f"{self.collection_name}_db"
         )
 
@@ -165,9 +164,9 @@ class ChromaModel:
             search_kwargs={"k": VECTOR_RESULT_CNT}
         )
 
-    def _get_structured_retriever(self) :
+    def _get_structured_retriever(self):
         """
-        Creates LangChain Structured Retriever
+        Creates LangChain Structured Receiver
         :return: SelfQueryRetriever
         """
         return SelfQueryRetriever.from_llm(
@@ -194,7 +193,7 @@ class ChromaModel:
             verbose=True
         )
 
-    def _get_structured_hyp_retriever(self) :
+    def _get_structured_hyp_retriever(self):
         """
         Creates LangChain Structured Receiver
         :return: SelfQueryRetriever
@@ -235,7 +234,6 @@ class ChromaModel:
         :param folder_path:
         :return:
         """
-
         semantic_chunks = []
         pdf_loader = PyPDFDirectoryLoader(folder_path)
         chunks = pdf_loader.load_and_split(self.semantic_text_splitter)
@@ -248,7 +246,6 @@ class ChromaModel:
         :param path: path of directory
         :return: full string of directory path formatted
         """
-
         return f"./{VECTORS_DIR}/{path}_db"
 
     def _get_semantic_storage(self) -> Chroma:

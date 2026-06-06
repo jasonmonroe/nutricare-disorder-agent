@@ -1,6 +1,5 @@
 # models/llama.py
 
-
 # Vendor Libraries
 from groq import Groq
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -17,15 +16,17 @@ from src.config import (
     LLAMA_UNSAFE_CODES
 )
 
-"""
-This guide provides information and resources to help you set up Llama including how to access the model, hosting, 
-how-to and integration guides. Additionally, you will find supplemental materials to further assist you while building 
-with Llama.
-
-https://www.llama.com/docs/overview/
-"""
 
 class LlamaModel:
+
+    """
+    This guide provides information and resources to help you set up Llama including how to access the model, hosting, 
+    how-to and integration guides. Additionally, you will find supplemental materials to further assist you while building 
+    with Llama.
+
+    https://www.llama.com/docs/overview/
+    """
+
     def __init__(self, llm: ChatOpenAI, embedding_model: OpenAIEmbeddings):
         """
         Initialize the Llama Guard client with the API key.  Set the LLM and embedding model in the LlamaIndex settings.
@@ -33,6 +34,7 @@ class LlamaModel:
         :param llm:
         :param embedding_model:
         """
+
         self.llama_guard_client = Groq(api_key=GROQ_API_KEY)
         self.parser = self._get_parser()
 
@@ -42,7 +44,7 @@ class LlamaModel:
     def _get_parser(self) -> LlamaParse:
         """
         Initialize LlamaParse with desired settings
-        :return:
+        :return: LLamaParse
         """
 
         return LlamaParse(
@@ -82,6 +84,7 @@ class LlamaModel:
             # Return the filtered input
             result = llama_response.choices[0].message.content.strip()
             print(f"Guard result: {result}")
+
             if "unsafe" in result:
                 if any(code.strip() in LLAMA_UNSAFE_CODES for code in result.replace("unsafe ", "").strip().split(",")):
                     return "BYPASS_SAFE"

@@ -39,9 +39,9 @@ OPENAI_MODEL = "gpt-4o-mini"  # Fill in the OpenAI model name (e.g., "gpt-4o-min
 
 EVAL_THRESHOLD = 0.8
 EXIT_CMD = "exit"
+EMPTY_RESP = "[]" # Empty response
 
 VECTOR_RESULT_CNT = 3
-
 
 # Define the Google Drive and other directory paths
 
@@ -52,7 +52,7 @@ DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
 # Batch sizes (per batch) for processing documents and text chunks
 DOCUMENT_CHUNK_BATCH_SIZE = 100
 DOCUMENT_CHUNK_TEXT_BATCH_SIZE = 50
-EMPTY_RESP = "[]" # Empty response
+
 
 RETRIEVAL_LIMIT = 5
 SECS_IN_MIN = 60 # secs in min

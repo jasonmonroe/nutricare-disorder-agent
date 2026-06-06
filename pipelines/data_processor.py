@@ -11,13 +11,14 @@ from storages.question_generator import QuestionGenerator
 from storages.table_question_generator import TableQuestionGenerator
 
 from src.config import (
-    DOCUMENT_CHUNK_TEXT_BATCH_SIZE, 
+    DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
     DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_DIR,
     DOCUMENT_FILE,
     DOCUMENT_ZIP,
+    I_DB,
     SIMILARITY_SEARCH_QUERY,
-    VECTOR_RESULT_CNT,  
+    VECTOR_RESULT_CNT, I_DISK,
 )
 from src.doc_handler import DocHandler
 from src.eda import show_histogram
@@ -33,9 +34,9 @@ def run(dataset: dict) -> None:
     """
     warnings.filterwarnings('ignore', category=DeprecationWarning)
 
+    print(f'# --- {I_DB} Running data processor pipeline {I_DB} --- #')
+
     # Pluck all the datasets needed to run this
-    ##llm = dataset['llm']
-    #openai_model = dataset['openai_model']
     llama = dataset['llama']
     chroma_db = dataset['chroma_db']
 
@@ -44,7 +45,7 @@ def run(dataset: dict) -> None:
 
     # === Document Ingestion & Processing ===
 
-    print(f'\nUnzipping {DOCUMENT_ZIP}...')
+    print(f'\nUnzipping {I_DISK} {DOCUMENT_ZIP}...')
     
     # Unzipping the nutrition medical reference documents into the Nutritional Medical Reference folder
     # Loading the temp.zip and creating a zip object
