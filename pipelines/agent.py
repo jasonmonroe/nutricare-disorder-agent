@@ -2,58 +2,17 @@
 
 import nest_asyncio
 
-# Vendor Libraries
-from langchain_core.tools import tool
-from langchain_openai import ChatOpenAI
-from langchain_core.vectorstores import VectorStoreRetriever
-
 # Local Libraries
-from models.agentic_rag_tool import AgenticRAGTool
+from models.agentic_rag_tool import AgenticRagTool
 from models.nutrition_bot import NutritionBot
+from tools.agentic_rag import make_agentic_rag_tool
 
-from src.config import AI_ROLE, AI_TITLE, EXIT_CMD
+from src.config import AI_TITLE, EXIT_CMD
 from src.utils import show_datetime, start_timer, get_time
 
 """
 Section 2: Building an Intelligent Nutrition Disorder Agent with Advanced Retrieval and Safety Mechanisms
 """
-
-@tool
-def agentic_rag(query: str, llm: ChatOpenAI, retriever: VectorStoreRetriever):
-    """
-    Runs the RAG-based agent with conversation history for context-aware responses.
-
-    Args:
-        query (str): The current user query.
-        llm (ChatOpenAI): The language model to use.
-        retriever (VectorStoreRetriever): The vector store retriever.
-
-    Returns:
-        Dict[str, Any]: The updated state with the generated response and conversation history.
-        :param query:
-        :param retriever:
-        :param llm:
-    """
-    # Initialize state with necessary parameters
-    inputs = {
-        "query": query,
-        "expanded_query": "",
-        "context": [],
-        "response": "",
-        "precision_score": 0.0,
-        "groundedness_score": 0.0,
-        "groundedness_loop_count": 0,
-        "precision_loop_count": 0,
-        "feedback": "",
-        "query_feedback": "",
-        "loop_max_iter": 4,
-        "AI_ROLE": AI_ROLE
-    }
-
-    agentic_rag_tool = AgenticRAGTool(llm, retriever)
-    workflow_app = agentic_rag_tool.compile()
-
-    return workflow_app.invoke(inputs)
 
 def build(dataset: dict):
     """
@@ -88,7 +47,7 @@ def build(dataset: dict):
     nest_asyncio.apply()
 
     # --- Visualize Workflow --- #
-    agentic_rag_tool = AgenticRAGTool(llm, chroma_db.retriever)
+    agentic_rag_tool = AgenticRagTool(llm, chroma_db.retriever)
     workflow_app = agentic_rag_tool.compile()
     agentic_rag_tool.display_workflow(workflow_app)
 
@@ -119,14 +78,17 @@ def start(dataset: dict) -> None:
     """)
 
     # Initialize streamlit persistent state
-    show_logs = dataset['log']
+    show_logs = dataset.get('show_log', False)
     print(f'DEBUG: show_logs:{show_logs}')
 
     openai_model = dataset['openai_model']
     llm_chatbot = openai_model.llm_chatbot
+    llm = openai_model.llm
     llama = dataset['llama']
+    chroma_db = dataset['chroma_db']
 
-    chatbot = NutritionBot(llm_chatbot)  # Initialize chatbot instance
+    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever)
+    chatbot = NutritionBot(llm_chatbot, tools=[rag_tool])
     chatbot.agent_executor.verbose = show_logs  # Set logging preferences
 
     # This provides a way to initiate a chat as different users.

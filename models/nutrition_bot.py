@@ -9,15 +9,16 @@ from mem0 import MemoryClient
 # LangChain imports
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser  # String output parser
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
-from langchain.agents import create_tool_calling_agent, AgentExecutor
+#from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
+
 
 # Local Libraries
-from pipelines.agent import agentic_rag
 from src.config import MEM0_API_KEY, RETRIEVAL_LIMIT
 
 
 class NutritionBot:
-    def __init__(self, llm_chatbot):
+    def __init__(self, llm_chatbot, tools: list):
         """
          Initialize the NutritionBot class, setting up memory, the LLM client, tools, and the agent executor.
 
@@ -30,9 +31,6 @@ class NutritionBot:
         # Initialize the OpenAI client using the provided credentials
         #open_ai_model = OpenAIModel()
         self.client = llm_chatbot
-
-        # Define tools available to the chatbot, such as web search
-        tools = [agentic_rag]
 
         # Define the system prompt to set the behavior of the chatbot
         system_prompt = """You are a caring and knowledgeable Medical Support Agent, specializing in nutrition disorder-related guidance. Your goal is to provide accurate, empathetic, and tailored nutritional recommendations while ensuring a seamless customer experience.

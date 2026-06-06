@@ -4,7 +4,7 @@ import random
 import time
 
 # Vendor Libraries
-from langchain.chains.query_constructor.base import AttributeInfo
+
 
 # Local Libraries
 from models.chroma import ChromaModel
@@ -13,20 +13,8 @@ from src.config import AI_ROLE, PROMPT_INSTR, EMPTY_RESP, I_QUES
 from src.utils import handle_rate_limit_error, show_timer
 
 
-def _prompt() -> str:
-    return """
-        You are an AI {AI_ROLE} specialized in generating precise, clinically relevant questions for information retrieval.
-        Your task is to analyze the provided TEXT CHUNK and generate a list of exactly three hypothetical questions for which the chunk contains the complete answer.
-        
-        **QUESTION STYLE REQUIREMENTS:**
-        1. Questions must be factual and directly address **diagnostic criteria, treatment dosages, clinical findings, or defining concepts** mentioned in the TEXT CHUNK.
-        2. Phrasing must be natural and sound like a question a {AI_ROLE} would actually ask.
-        
-        TEXT CHUNK:
-        {docs}
-        
-        {PROMPT_INSTR}
-        """
+
+
 
 class QuestionGenerator(ChromaModel):
     print('QuestionGenerator')
@@ -49,11 +37,27 @@ class QuestionGenerator(ChromaModel):
                     setattr(self, key, value)
     """
 
+    @staticmethod
+    def _prompt() -> str:
+        return """
+            You are an AI {AI_ROLE} specialized in generating precise, clinically relevant questions for information retrieval.
+            Your task is to analyze the provided TEXT CHUNK and generate a list of exactly three hypothetical questions for which the chunk contains the complete answer.
+            
+            **QUESTION STYLE REQUIREMENTS:**
+            1. Questions must be factual and directly address **diagnostic criteria, treatment dosages, clinical findings, or defining concepts** mentioned in the TEXT CHUNK.
+            2. Phrasing must be natural and sound like a question a {AI_ROLE} would actually ask.
+            
+            TEXT CHUNK:
+            {docs}
+            
+            {PROMPT_INSTR}
+            """
+
     def get_hypothetical_questions(self, semantic_chunks) -> list:
         start_time = time.time()
         rate_limit_hit = False
         sleep_time = random.randint(25, 45)
-        hypothetical_questions_prompt = _prompt()
+        hypothetical_questions_prompt = self._prompt().strip()
 
         hypothetical_questions = []
         print(f'--- Getting Hypothetical Questions {I_QUES}')

@@ -1,6 +1,6 @@
-from __future__ import annotations  # MUST BE LINE 1
+from __future__ import annotations 
 
-from src.config import I_WARNING
+from src.config import I_TIMER, I_WARNING
 
 """
 Nutrition Disorder Specialist Streamlit Application.
@@ -106,11 +106,10 @@ def _parse_args(command_line_args: list[str]) -> dict:
     return {arg.strip('--'): (arg in command_line_args) for arg in args_list}
 
 
-# --- QUICK BUG-PREVENTION TIP ---
 # Ensure your entry block checks against '__main__', not 'main'
 if __name__ == '__main__':
     run_id = get_run_id()
-    print(f'\n----- ⏱️ START RUN ID: {run_id} ⏱️ -----\n')
+    print(f'\n----- {I_TIMER} START RUN ID: {run_id} {I_TIMER} -----\n')
     start_time = start_timer()
 
     show_title_banner()
@@ -133,7 +132,7 @@ if __name__ == '__main__':
     llama = LlamaModel(openai_model.llm, openai_model.embedding_model)
 
     dataset = {
-        'chrome_db': chroma_db,
+        'chroma_db': chroma_db,
         'llama': llama,
         'openai_model': openai_model,
     }
@@ -157,4 +156,4 @@ if __name__ == '__main__':
         run_streamlit_pipeline(llama)
 
     show_timer(start_time)
-    print(f'\n----- ⏱️ END RUN ID: {run_id} ⏱️ -----')
+    print(f'\n----- {I_TIMER} END RUN ID: {run_id} {I_TIMER} -----')

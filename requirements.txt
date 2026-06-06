@@ -1,12 +1,16 @@
 # requirements.txt
 
 numpy>=1.26.0
+matplotlib
+seaborn
 openai>=1.50.0
 langchain>=0.2.0
+langchain-classic
 langchain-community>=0.2.0
 langchain-huggingface
 langchain-experimental
 langchain-openai
+langchain-chroma
 chromadb>=0.5.0
 sentence-transformers
 python-dotenv

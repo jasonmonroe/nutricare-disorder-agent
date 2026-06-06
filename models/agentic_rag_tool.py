@@ -18,7 +18,7 @@ from models.agentic_state import AgentState
 from src.config import AI_ROLE, EVAL_THRESHOLD
 
 
-class AgentRagTool:
+class AgenticRagTool:
     def __init__(self, llm, retriever):
 
         self.llm = llm

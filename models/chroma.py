@@ -1,21 +1,29 @@
 # models/chroma.py
 
 import logging
+from pydantic import Field
 import os
 import random
 
 # Vendors
 import chromadb
-from langchain_classic.chains.query_constructor.schema import AttributeInfo
-from langchain_community.chat_models.openai import ChatOpenAI
 
-# LangChain community & experimental imports
-from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader  # Document loaders for PDFs
-from langchain_community.vectorstores import Chroma
-from langchain_core.vectorstores import VectorStore, VectorStoreRetriever
+# --- FIXED MODERN LANGCHAIN IMPORTS ---
+from langchain_core.documents import Document
+from langchain_core.vectorstores import VectorStoreRetriever
+from langchain_chroma import Chroma  # Dedicated native package for local Chroma DB execution
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings  # Specialized provider sub-package
+from langchain_classic.chains.query_constructor.base import AttributeInfo
+
+# Self-Query and Document Compression routing via standardized engine namespaces
+from langchain_classic.retrievers.self_query.base import SelfQueryRetriever
+from langchain_classic.retrievers.document_compressors import LLMChainExtractor
+from langchain_classic.retrievers.document_compressors.cross_encoder_rerank import CrossEncoderReranker
+from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
+
+# Core asset loading layers maintained inside the generic community layer
+from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain.retrievers.self_query.base import SelfQueryRetriever  # Base classes for self-querying retrievers
-from langchain_openai import OpenAIEmbeddings
 
 from src.config import (
     SEMANTIC_THRESH_LIMIT,
@@ -50,21 +58,14 @@ class ChromaModel:
         # Set all attributes to what's in the dataset.
         self._set_attrs(dataset)
 
-        # --- INITIALIZE CHROMA VECTOR STORAGE FOR RETRIEVING DOCUMENTS --- #
-        # Retrieve `nutritional` database created from Google Colab
-        #self.retriever = self.get_retriever(self.collection_name, dataset['embedding_model'])
-        #self.structured_retriever = self._get_structured_retriever(dataset['llm'])
-        #self.structured_hyp_retriever = self._get_structured_hyp_retriever(dataset['llm'])
-        #self.semantic_text_splitter = self._get_semantic_text_splitter(dataset['embedding_model'])
-        #self.semantic_storage = self._get_semantic_storage(dataset['embedding_model'])
-        #self.vector_storage = self._get_vector_storage(dataset['embedding_model'])
-
         self.retriever = self.get_retriever()
-        self.structured_retriever = self._get_structured_retriever()
-        self.structured_hyp_retriever = self._get_structured_hyp_retriever()
         self.semantic_text_splitter = self._get_semantic_text_splitter(self.embedding_model)
         self.semantic_storage = self._get_semantic_storage()
         self.vector_storage = self._get_vector_storage()
+
+        # Self Querying layers initialized last after the underlying Chroma backends are ready
+        self.structured_retriever = self._get_structured_retriever()
+        self.structured_hyp_retriever = self._get_structured_hyp_retriever()
 
     @staticmethod
     def queries() -> list:
@@ -100,8 +101,7 @@ class ChromaModel:
             'metadata_info': self.metadata_info,
         }
 
-    def query_questions(self, is_hyp: bool=False, pluck=False) -> None:
-
+    def query_questions(self, is_hyp: bool = False, pluck: bool = False) -> None:
         """
         Query questions using either structured hypothetical retriever or structured retriever.
         :param is_hyp:
@@ -115,10 +115,10 @@ class ChromaModel:
             retriever = self.structured_retriever
             print('--- Retriever ---')
 
-        # Only invoke a random question plucked from the list of queries
+        # --- FIXED LOGICAL BUG ---
+        # random.choice pulls the exact text string from the list directly, not the index integer.
         if pluck:
-            ques_idx = random.choice(self.queries())
-            ques = self.queries()[ques_idx]
+            ques = random.choice(self.queries())
             semantic_chunks_retrieved = retriever.invoke(ques)
             print(f"Question: {ques}{I_QUES}")
             print(f"Retrieved Documents: {semantic_chunks_retrieved}")
@@ -130,28 +130,22 @@ class ChromaModel:
                 print(f"Retrieved Documents: {semantic_chunks_retrieved}")
                 print("---\n")
 
-
     def _get_semantic_text_splitter(self, embedding_model):
         """
         Initializes the semantic text splitter, controlling how the text is divided into meaningful chunks.
         :param embedding_model:
         :return:
         """
-
         return SemanticChunker(
-            embedding_model,  # Fill in the embedding model
-            breakpoint_threshold_type='percentile',  # Choose the threshold type (e.g., 'percentile')
-            breakpoint_threshold_amount=SEMANTIC_THRESH_LIMIT  # Set the chunking threshold (e.g., 80, 85)
+            embedding_model,
+            breakpoint_threshold_type='percentile',
+            breakpoint_threshold_amount=SEMANTIC_THRESH_LIMIT
         )
-
 
     def get_retriever(self) -> VectorStoreRetriever:
         """
         Initializes vector retriever and gets vectorized data stored in Chroma
         The `persist directory` is from the root repository path, not the Google Colab path.
-
-        :param collection_name:
-        :param embedding_model:
         :return: VectorStoreRetriever
         """
         vector_storage = Chroma(
@@ -160,7 +154,6 @@ class ChromaModel:
             persist_directory=f"{self.collection_name}_db"
         )
 
-        # Create a retriever from the vector store
         return vector_storage.as_retriever(
             search_type="similarity",
             search_kwargs={"k": VECTOR_RESULT_CNT}
@@ -168,19 +161,18 @@ class ChromaModel:
 
     def _get_structured_retriever(self) -> SelfQueryRetriever:
         """
-        Creates LangChain Structured Receiver
-        :param llm:
+        Creates LangChain Structured Retriever
         :return: SelfQueryRetriever
         """
         return SelfQueryRetriever.from_llm(
-            self.llm,
-            self.semantic_storage,
-            "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization",
-            [
+            llm=self.llm,
+            vectorstore=self.semantic_storage,
+            document_contents="Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization",
+            metadata_field_info=[
                 AttributeInfo(
-                    name="page",  # Fill in the metadata field name (e.g., "Category")
-                    description="page number of document",  # Describe what this field represents
-                    type="integer"  # Fill in the data type (e.g., "string", "integer")
+                    name="page",
+                    description="page number of document",
+                    type="integer"
                 ),
                 AttributeInfo(
                     name="source",
@@ -199,14 +191,13 @@ class ChromaModel:
     def _get_structured_hyp_retriever(self) -> SelfQueryRetriever:
         """
         Creates LangChain Structured Receiver
-        :param llm:
         :return: SelfQueryRetriever
         """
         return SelfQueryRetriever.from_llm(
-            self.llm,                           # LLM model
-            self.vector_storage,          # Vectorstore
-            "Hypothetical Questions for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization",
-            [
+            llm=self.llm,
+            vectorstore=self.vector_storage,
+            document_contents="Hypothetical Questions for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization",
+            metadata_field_info=[
                 AttributeInfo(
                     name="original_content",
                     description="Original text extracted from documents",
@@ -227,35 +218,24 @@ class ChromaModel:
                     description="Datatype of attribute `original_content`",
                     type="string"
                 )
-            ]        # Metadata field info
+            ],
+            verbose=True
         )
 
     def get_semantic_chunks(self, folder_path) -> list:
         """
         Gets semantic chunks from directory.
         Note: This method is called outside this class.
-
         :param folder_path:
         :return:
         """
         semantic_chunks = []
-
-        # Step 3: Initialize the PyPDFDirectoryLoader for the folder
-        pdf_loader = PyPDFDirectoryLoader(folder_path)  # Use the correct loader (e.g., PyPDFDirectoryLoader)
-
-        # Step 4: Load and split PDF documents into chunks using SemanticChunker
-        chunks = pdf_loader.load_and_split(self.semantic_text_splitter)  # Call the appropriate function and pass the splitter
-
-        # Step 5: Extend the semantic_chunks list with the chunks from this folder
-        semantic_chunks.extend(chunks)  # Add chunks to the list
-
-        # Step 6: Get the total number of chunks
+        pdf_loader = PyPDFDirectoryLoader(folder_path)
+        chunks = pdf_loader.load_and_split(self.semantic_text_splitter)
+        semantic_chunks.extend(chunks)
         print(f"Total Semantic Chunks Created: {len(semantic_chunks)}")
-
         return semantic_chunks
 
-    # Format persist
-    # directory
     def _format_dir(self, path: str) -> str:
         return f"./{VECTORS_DIR}/{path}_db"
 
@@ -266,14 +246,13 @@ class ChromaModel:
             persist_directory=self._format_dir("research")
         )
 
-    def add_semantic_documents(self, semantic_chunks: dict) -> None:
+    def add_semantic_documents(self, semantic_chunks: list) -> None:
         """
         Note: called outside the class
-
         :param semantic_chunks:
         :return:
         """
-        batch_size = DOCUMENT_CHUNK_BATCH_SIZE  # Adjust the batch size as needed
+        batch_size = DOCUMENT_CHUNK_BATCH_SIZE
         for i in range(0, len(semantic_chunks), batch_size):
             batch = semantic_chunks[i: i + batch_size]
             self.semantic_storage.add_documents(batch)
@@ -286,7 +265,6 @@ class ChromaModel:
         )
 
     def add_vector_documents(self, documents) -> None:
-        # Note: documents are either  hypothetical_questions or table_hypothetical questions
         batch_size = DOCUMENT_CHUNK_BATCH_SIZE
         for i in range(0, len(documents), batch_size):
             batch = documents[i : i + batch_size]

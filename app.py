@@ -65,7 +65,8 @@ from langchain.text_splitter import (
     RecursiveCharacterTextSplitter  # Recursive splitting of text by characters
 )
 from langchain_core.tools import tool
-from langchain.agents import create_tool_calling_agent, AgentExecutor
+#from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # LlamaParse & LlamaIndex imports

@@ -1,6 +1,6 @@
-# pipelines/data_processor.py
-
 from __future__ import annotations
+
+# pipelines/data_processor.py
 
 import nest_asyncio
 import warnings
@@ -11,11 +11,13 @@ from storages.question_generator import QuestionGenerator
 from storages.table_question_generator import TableQuestionGenerator
 
 from src.config import (
+    DOCUMENT_CHUNK_TEXT_BATCH_SIZE, 
+    DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_ZIP,
     DOCUMENT_FILE,
     DOCUMENT_DIR,
     SIMILARITY_SEARCH_QUERY,
-    VECTOR_RESULT_CNT, DOCUMENT_CHUNK_TEXT_BATCH_SIZE, DOCUMENT_CHUNK_BATCH_SIZE
+    VECTOR_RESULT_CNT,  
 )
 from src.doc_handler import DocHandler
 from src.eda import show_histogram
@@ -81,7 +83,7 @@ def run(dataset: dict) -> None:
     chroma_db.query_questions(is_hyp=False, pluck=False)
 
     # Get hypothetical questions and add them to the vector storage
-    document_content_desc =  DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
+    document_content_desc =  DOCUMENT_DIR + ' published by the Global Nutritional Health Organization'
 
     chroma_dataset = chroma_db.export()
     questions_dataset = {
