@@ -196,10 +196,8 @@ class ChromaModel:
         os.environ["CHROMA_SERVER_NO_TELEMETRY"] = CHROMA_SERVER_NO_TELEMETRY
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
-        # Ensure the configured VECTORS_DIR exists and initialize the PersistentClient
-        # to use the project's `db` directory rather than the repository's default
-        # './chroma' directory. This prevents accidental writes to a checked-in
-        # chroma/chroma.sqlite3 file which can be read-only.
+        # Ensure the configured VECTORS_DIR exists and initialize a PersistentClient
+        # that writes all collections and metadata to db/ as the central database path.
         os.makedirs(VECTORS_DIR, exist_ok=True)
         self.chromadb_client = chromadb.PersistentClient(path=VECTORS_DIR)
 
@@ -294,8 +292,6 @@ class ChromaModel:
         vector_storage = Chroma(
             collection_name=self.collection_name,
             embedding_function=self.embedding_model,
-            # Persist under the configured VECTORS_DIR so collections live in db/<collection>_db
-            persist_directory=self._format_dir(self.collection_name),
             # Use the shared PersistentClient created on the ChromaModel so all
             # collections use the same underlying client instance (avoids race
             # conditions and readonly DB errors when multiple clients touch the
@@ -365,7 +361,6 @@ class ChromaModel:
         return Chroma(
             embedding_function=self.embedding_model,
             collection_name="semantic_chunks",
-            persist_directory=self._format_dir("research"),
             client=self.chromadb_client,
         )
 
@@ -376,17 +371,38 @@ class ChromaModel:
         :return:
         """
 
+        import time
         batch_size = DOCUMENT_CHUNK_BATCH_SIZE
         for i in range(0, len(semantic_chunks), batch_size):
             batch = semantic_chunks[i: i + batch_size]
-            self.semantic_storage.add_documents(batch)
+            # Attempt to add with a small retry loop to handle transient
+            # 'readonly database' errors that can occur under certain
+            # filesystem or concurrency conditions. This makes the pipeline
+            # more robust in practice.
+            retries = 3
+            for attempt in range(1, retries + 1):
+                try:
+                    self.semantic_storage.add_documents(batch)
+                    break
+                except Exception as e:
+                    logging.getLogger(__name__).warning(
+                        "Attempt %d/%d: failed to add batch (size=%d): %s",
+                        attempt, retries, len(batch), e,
+                    )
+                    # On final failure re-raise to preserve original behavior
+                    if attempt == retries:
+                        logging.getLogger(__name__).error(
+                            "Failed to write semantic batch after %d attempts; re-raising",
+                            retries,
+                        )
+                        raise
+                    time.sleep(0.5)
 
     def _get_vector_storage(self) -> Chroma:
         """Instantiates the generalized target collection vector layer."""
         return Chroma(
             embedding_function=self.embedding_model,
             collection_name=self.collection_name,
-            persist_directory=self._format_dir(self.collection_name),
             client=self.chromadb_client,
         )
 

@@ -57,6 +57,12 @@ class OpenAIModel:
                     # Ensure result is a list of lists of plain Python floats
                     return [[float(v) for v in x] for x in arr]
 
+                def embed_query(self, text: str) -> list[float]:
+                    """Provide a single-query embedding compatible with LangChain's
+                    expected interface (returns a single vector as a list of floats)."""
+                    res = self.embed_documents([text])
+                    return res[0] if res else []
+
             print("[INFO] OpenAI embeddings unavailable — falling back to local SentenceTransformer embeddings.")
             return LocalSentenceEmbeddings()
 

@@ -146,7 +146,7 @@ def run(dataset: dict) -> None:
     # Note: To randomly pluck a question set pluck param to True
     chroma_db.query_questions(is_hyp=True, pluck=False)
 
-    print('DEBUG: Exiting data_processor:run() ...')
+    print(f'# --- {I_DB} Exiting data processor pipeline {I_DB} --- #')
 
 def __backup_docs():
     pass
