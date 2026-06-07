@@ -4,7 +4,7 @@
 # |     DATA HANDLER     |
 # +----------------------+
 
-# Python Librries
+# Python Libraries
 import hashlib
 import json
 import os
@@ -19,7 +19,7 @@ from langchain_core.documents import Document  # Document data structures
 from llama_parse import LlamaParse  # Document parsing library
 
 # Local Libraries
-from src.config import DOCUMENT_DIR, VENDORS_DIR
+from src.config import DOCUMENT_DIR, VECTORS_DIR, I_DB, I_CROSSMARK, I_DOCUMENT, I_FLAG
 
 
 class DocHandler():
@@ -55,8 +55,9 @@ class DocHandler():
             type=metadata["type"],
         )
 
-    # Generate a unique ID for document content
+    @staticmethod
     def gen_id(self, source: str, page_no: int, content: str) -> str:
+        # Generate a unique ID for document content
         id_str = f"{source}|page{page_no}|{content[:64]}"
 
         return str(hashlib.sha256(id_str.encode('utf-8')).hexdigest())
@@ -80,7 +81,6 @@ class DocHandler():
     def get_semantic_chunks(self, semantic_chunks):
         return [self.create(d.page_content, d.metadata) for i, d in enumerate(semantic_chunks)]
 
-    #
     def show_documents(self) -> None:
         # Display retrieved documents
         for i in self.documents:
@@ -136,21 +136,26 @@ class DocHandler():
                 for component in json_item['items']:
                     if component['type'] == 'table':  # Check if the component is a table
                         table_rows = component['rows']
-                        # The text field in the item component often holds the table title/reference
-                        # This is the string we need to remove from the overall page text.
-                        # We'll rely on the main page 'text' field for removal.
+                        """
+                        The text field in the item component often holds the table title/reference
+                        This is the string we need to remove from the overall page text.
+                        We'll rely on the main page 'text' field for removal.
 
-                        # Check the overall page text for a table reference string
-                        # We will search for a pattern like '[Table 1-1. ...]'
+                        Check the overall page text for a table reference string
+                        We will search for a pattern like '[Table 1-1. ...]'
 
-                        # This pattern finds any text inside brackets that looks like a table reference
-                        # We look at the 'text' field of the component if it exists, otherwise rely on manual inspection.
+                        This pattern finds any text inside brackets that looks like a table reference
+                        We look at the 'text' field of the component if it exists, otherwise rely on manual inspection.
 
-                        # This pattern searches the page text for the exact table title
+                        This pattern searches the page text for the exact table title
+                        """
+
                         try:
-                            # Find the table title text just before the table component starts
-                            # We can use the text from the previous item or just the general table placeholder text if available
-                            # Based on your example, the text is '[Table 1-1. Glycemic Index of Some Foods]'
+                            """
+                            Find the table title text just before the table component starts
+                            We can use the text from the previous item or just the general table placeholder text if available
+                            Based on your example, the text is '[Table 1-1. Glycemic Index of Some Foods]'
+                            """
                             table_ref_string = next(
                                 (
                                     item['value'] for item in json_item['items']
@@ -164,7 +169,7 @@ class DocHandler():
                                 table_ref_string = table_ref_match.group(1)
 
                         except Exception as e:
-                            print(f"No table ref string. Error: {e}")
+                            print(f"{I_FLAG} No table ref string. Error: {e}")
                             table_ref_string = None  # Failed to find the specific table reference text
 
                         # Store the table data
@@ -216,7 +221,8 @@ class DocHandler():
                 for row in table_rows:
                     print(f"\t{row}")
 
-    def _get_metadata_info(self) -> list:
+    @staticmethod
+    def _get_metadata_info() -> list:
         return [
             AttributeInfo(
                 name="page",  # Fill in the metadata field name (e.g., "Category")
@@ -235,11 +241,11 @@ class DocHandler():
             )
         ]
 
-    def __wipe_db_dir():
+    @staticmethod
+    def __wipe_db_dir() -> None:
         # Wipe all data in the db directory so that we will have a clean slate.
         print(f"{I_DB} # --- Wiping {VECTORS_DIR} --- # {I_DB}")
         files = glob.glob(VECTORS_DIR)
         for f in files:
             print(f"{I_CROSSMARK} Wiping {I_DOCUMENT}{f} ...")
             os.remove(f)
-
