@@ -69,7 +69,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 # Vendor Libraries
 import numpy as np
-np.float_ = np.float64gggg
+np.float_ = np.float64
 
 # Local Libraries
 from models import ChromaModel, LlamaModel, OpenAIModel

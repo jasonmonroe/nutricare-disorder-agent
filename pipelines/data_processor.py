@@ -5,6 +5,9 @@ from __future__ import annotations
 # +-------------------------+
 # |     DATA PROCESSING     |
 # +-------------------------+
+#
+# Source: https://www.merckmanuals.com/professional/nutritional-disorders/nutrition-general-considerations/overview-of-nutrition
+# Source: https://www.merckmanuals.com/home/disorders-of-nutrition/overview-of-nutrition/overview-of-nutrition
 
 import nest_asyncio
 import warnings
@@ -48,7 +51,7 @@ def run(dataset: dict) -> None:
     nest_asyncio.apply()
 
     # === Document Ingestion & Processing ===
-
+    """
     print(f'\nUnzipping {I_DISK} {DOCUMENT_ZIP}...')
     
     # Unzipping the nutrition medical reference documents into the Nutritional Medical Reference folder
@@ -60,6 +63,7 @@ def run(dataset: dict) -> None:
             path=DOCUMENT_DIR
         )
         zip_handle.close()
+    """
 
     # Load Documents handle
     doc_handle = DocHandler(llama.parser)

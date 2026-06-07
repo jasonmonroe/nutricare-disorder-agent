@@ -12,6 +12,8 @@ import random
 import re
 import glob
 import shutil
+from time import sleep
+from zipfile import ZipFile
 
 # Vendor Libraries
 # LangChain Imports
@@ -20,7 +22,18 @@ from langchain_core.documents import Document  # Document data structures
 from llama_parse import LlamaParse  # Document parsing library
 
 # Local Libraries
-from src.config import DOCUMENT_DIR, VECTORS_DIR, I_DB, I_CROSSMARK, I_DOCUMENT, I_FLAG, I_CHECKMARK
+from src.config import (
+    DOCUMENT_DIR, 
+    DOCUMENT_FILE, 
+    DOCUMENT_ZIP,
+    VECTORS_DIR, 
+    I_DB, 
+    I_DISK,
+    I_CROSSMARK, 
+    I_DOCUMENT, 
+    I_FLAG, 
+    I_CHECKMARK
+)
 
 
 class DocHandler():
@@ -31,9 +44,10 @@ class DocHandler():
         self.metadata_info = self._get_metadata_info()
         self.__wipe_db_dir()
 
-        json_objs = self._parse(llama_parser)
-        self.page_texts, self.tables = self._extract_tables(json_objs)
-
+        if self._unzip():
+            json_objs = self._parse(llama_parser)
+            self.page_texts, self.tables = self._extract_tables(json_objs)
+        
     def create(self, content: str, metadata: dict) -> Document:
         """
         Creates and returns a LangChain Document object packed with metadata.
@@ -244,3 +258,27 @@ class DocHandler():
                         shutil.rmtree(file_path)
                 except Exception as e:
                     print(f"{I_FLAG} [ERROR] Failed to wipe element path target {file_path}. Exception: {e}")
+
+
+    def unzip():
+        print(f'\nUnzipping {I_DISK} {DOCUMENT_ZIP}...')
+    
+        # Unzipping the nutrition medical reference documents into the Nutritional Medical Reference folder
+        # Loading the temp.zip and creating a zip object
+        with ZipFile(DOCUMENT_ZIP, 'r') as zip_handle:
+            # Extracting specific file in the zip into a specific location.
+            zip_handle.extract(
+                DOCUMENT_FILE,
+                path=DOCUMENT_DIR
+            )
+            zip_handle.close()
+            
+            sleep(1)
+
+        # Check if file successfully unzipped
+        if os.path.exist(str(DOCUMENT_DIR + '/' + DOCUMENT_FILE)):
+            print(f'{I_DOCUMENT}{DOCUMENT_DIR}/{DOCUMENT_FILE} successfully unzipped and ready for processing.')
+            return True
+
+        print(f'{I_FLAG}{DOCUMENT_FILE} not unzipped!')
+        return False

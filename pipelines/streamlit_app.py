@@ -24,6 +24,7 @@ from src.config import (
     I_ANGRY,
     I_BOT,
     I_CROSSMARK,
+    I_DOCUMENT,
     I_FLAG,
     I_FROWN,
     I_GEAR,
