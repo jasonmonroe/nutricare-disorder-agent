@@ -6,6 +6,10 @@
 
 import os
 import random
+from dotenv import load_dotenv
+
+# Load environment variables from a .env file so os.getenv() below picks them up
+load_dotenv()
 
 # --- DEFINE CONFIGURATIONS AND CONSTANTS
 # Note: os.getenv() are the secrets defined in the Huggingface.co settings page.
@@ -46,7 +50,9 @@ EMPTY_RESP = "[]" # Empty response
 DOCUMENT_DIR = "data/nutritional-medical-reference"
 DOCUMENT_FILE = 'nutritional-disorders.pdf'
 DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
-VECTORS_DIR= "db/"
+# Store vector persistence under the `db` directory (e.g. db/<collection>_db)
+# Use no trailing slash to make joins consistent across the codebase.
+VECTORS_DIR = "db"
 
 # Batch sizes (per batch) for processing documents and text chunks
 DOCUMENT_CHUNK_BATCH_SIZE = 100

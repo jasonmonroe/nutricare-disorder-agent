@@ -13,8 +13,8 @@ from mem0 import MemoryClient
 # LangChain imports
 #from langchain_core.output_parsers import StrOutputParser, JsonOutputParser  # String output parser
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
-#from langchain.agents import create_tool_calling_agent, AgentExecutor
-from langchain.agents import create_tool_calling_agent, AgentExecutor
+# Prefer the compatibility shim that provides the legacy agent API with minimal code changes
+from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
 
 # Local Libraries
 from src.config import MEM0_API_KEY, RETRIEVAL_LIMIT

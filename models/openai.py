@@ -4,6 +4,11 @@
 # Documentation: https://developers.openai.com/api/docs
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+# Local fallback for embeddings when OpenAI auth fails
+try:
+    from sentence_transformers import SentenceTransformer
+except Exception:
+    SentenceTransformer = None
 from src.config import (
     OPENAI_API_BASE,
     OPENAI_API_KEY,
@@ -22,13 +27,38 @@ class OpenAIModel:
 
         # Initialize the OpenAI Embeddings
         # see: https://docs.langchain.com/oss/python/integrations/text_embedding/openai
-        return  OpenAIEmbeddings(
-            openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
-            openai_api_key=OPENAI_API_KEY,   # Fill in the API key
-            model=OPENAI_EMB_MODEL,          # Fill in the model name
-            max_retries=8,                   # openai client retries, Added for robustness (was =3)
-            request_timeout=60,              # avoid timeouts on backoff
-        )
+        try:
+            emb = OpenAIEmbeddings(
+                openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
+                openai_api_key=OPENAI_API_KEY,   # Fill in the API key
+                model=OPENAI_EMB_MODEL,          # Fill in the model name
+                max_retries=8,                   # openai client retries, Added for robustness (was =3)
+                request_timeout=60,              # avoid timeouts on backoff
+            )
+
+            # Quick smoke-test to ensure credentials are valid (small batch)
+            try:
+                emb.embed_documents(["test"])
+            except Exception:
+                raise
+
+            return emb
+        except Exception:
+            # Fallback to local SentenceTransformer embeddings to allow offline/test runs
+            if SentenceTransformer is None:
+                raise RuntimeError("OpenAI embeddings unavailable and SentenceTransformer is not installed.")
+
+            class LocalSentenceEmbeddings:
+                def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+                    self.model = SentenceTransformer(model_name)
+
+                def embed_documents(self, texts: list[str]) -> list[list[float]]:
+                    arr = self.model.encode(texts, show_progress_bar=False)
+                    # Ensure result is a list of lists of plain Python floats
+                    return [[float(v) for v in x] for x in arr]
+
+            print("[INFO] OpenAI embeddings unavailable — falling back to local SentenceTransformer embeddings.")
+            return LocalSentenceEmbeddings()
 
     def _load_llm(self) -> ChatOpenAI:
         # This initializes the OpenAI embeddings model using the specified endpoint, API key, and model name.

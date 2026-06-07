@@ -67,6 +67,33 @@ def run(dataset: dict) -> None:
 
     # Text chunking using semantic chunker
     # Note: Is hyp = False
+    # DEBUG: show Chroma client and db directory contents before writing
+    try:
+        import os, stat
+        client = getattr(chroma_db, 'chromadb_client', None)
+        print(f"DEBUG: chromadb_client = {client}")
+        if client is not None:
+            try:
+                print('DEBUG: client.get_settings():', client.get_settings())
+                print('DEBUG: client.list_collections():', client.list_collections())
+            except Exception as e:
+                print('DEBUG: could not query client settings:', e)
+
+        print('DEBUG: cwd =', os.getcwd())
+        if os.path.exists('db'):
+            print('DEBUG: db/ contents:')
+            for p in os.listdir('db'):
+                full = os.path.join('db', p)
+                try:
+                    mode = oct(os.stat(full).st_mode & 0o777)
+                except Exception:
+                    mode = 'n/a'
+                print(f"  - {full} (mode={mode})")
+        else:
+            print('DEBUG: db/ does not exist')
+    except Exception as _:
+        pass
+
     chroma_db.add_semantic_documents(document_chunks)
 
     # Perform similarity search in the vectorstore

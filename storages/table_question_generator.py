@@ -8,7 +8,26 @@
 import random
 
 # Vendor Libraries
-from langchain.chains.query_constructor.base import AttributeInfo
+# AttributeInfo location moved between LangChain releases. Try known locations,
+# but fall back to a small local dataclass to keep runtime working with minimal changes.
+try:
+    from langchain.chains.query_constructor.base import AttributeInfo
+except Exception:
+    try:
+        from langchain_core.chains.query_constructor.base import AttributeInfo
+    except Exception:
+        # Define a minimal AttributeInfo dataclass compatible with older LangChain usages
+        from dataclasses import dataclass
+
+        @dataclass
+        class AttributeInfo:
+            """Compatibility fallback for AttributeInfo metadata schema.
+
+            Fields match the minimal structure expected by this project.
+            """
+            name: str
+            description: str
+            type: str
 
 # Local Libraries
 from models.chroma import ChromaModel

@@ -43,6 +43,11 @@ class DocHandler():
         self.metadata_info = self._get_metadata_info()
         self.__wipe_db_dir()
 
+        # Initialize page_texts and tables to default empty structures so callers
+        # can safely inspect them even if unzipping or parsing fails.
+        self.page_texts = {}
+        self.tables = {}
+
         if self._unzip():
             json_objs = self._parse(llama_parser)
             self.page_texts, self.tables = self._extract_tables(json_objs)
@@ -313,28 +318,62 @@ class DocHandler():
         return None
 
     @staticmethod
-    def _unzip(self) -> bool:
+    def _unzip() -> bool:
+        document_path = os.path.join(DOCUMENT_DIR, DOCUMENT_FILE)
 
-        document_path = DOCUMENT_DIR + '/' + DOCUMENT_FILE
-
-        # If document path exists use it if not, unzip the fiile and use it
+        # If document path exists use it; if not, try to unzip the archive and locate an appropriate PDF
         if not os.path.exists(document_path):
-            print(f'\nUnzipping {I_DISK} {DOCUMENT_ZIP}...')
-        
-            # Unzipping the nutrition medical reference documents into the Nutritional Medical Reference folder
-            # loading the temp.zip and creating a zip object
+            print(f'\nUnzipping {I_DISK} {DOCUMENT_ZIP}')
+
+            if not os.path.exists(DOCUMENT_ZIP):
+                print(f"{I_FLAG} Zip archive {DOCUMENT_ZIP} not found.")
+                return False
+
             with ZipFile(DOCUMENT_ZIP, 'r') as zip_handle:
-                # Extracting specific file in the zip into a specific location.
-                zip_handle.extract(
-                    DOCUMENT_FILE,
-                    path=DOCUMENT_DIR
-                )
-                zip_handle.close()
-                
-                sleep(1)
+                names = zip_handle.namelist()
+
+                # Prefer an exact match for DOCUMENT_FILE
+                if DOCUMENT_FILE in names:
+                    target = DOCUMENT_FILE
+                else:
+                    # Find any PDF files in the archive and pick the best candidate
+                    pdfs = [n for n in names if n.lower().endswith('.pdf')]
+                    if not pdfs:
+                        print(f"{I_FLAG} No PDF files found inside {DOCUMENT_ZIP}.")
+                        return False
+                    # Prefer a PDF whose basename matches DOCUMENT_FILE, otherwise take the first PDF
+                    match = next((n for n in pdfs if os.path.basename(n) == DOCUMENT_FILE), None)
+                    target = match or pdfs[0]
+
+                # Ensure destination directory exists
+                os.makedirs(DOCUMENT_DIR, exist_ok=True)
+
+                try:
+                    # Safely extract the target member into DOCUMENT_DIR without preserving
+                    # the archive's internal directories to avoid nested document_dir issues.
+                    member_basename = os.path.basename(target)
+                    safe_path = os.path.join(DOCUMENT_DIR, member_basename)
+
+                    # Write the member content directly to the destination path
+                    with zip_handle.open(target) as src, open(safe_path, 'wb') as dst:
+                        shutil.copyfileobj(src, dst)
+
+                    # If the member basename isn't the expected DOCUMENT_FILE, rename it
+                    if member_basename != DOCUMENT_FILE:
+                        final_path = document_path
+                        if os.path.exists(final_path):
+                            os.remove(final_path)
+                        shutil.move(safe_path, final_path)
+
+                except KeyError:
+                    print(f"{I_FLAG} The archive does not contain the expected file: {target}")
+                    return False
+                except Exception as e:
+                    print(f"{I_FLAG} Error extracting {target}: {e}")
+                    return False
 
         # Check if file successfully unzipped
-        if os.path.exist(document_path):
+        if os.path.exists(document_path):
             print(f'{I_DOCUMENT}{DOCUMENT_DIR}/{DOCUMENT_FILE} successfully unzipped and ready for processing.')
             return True
 

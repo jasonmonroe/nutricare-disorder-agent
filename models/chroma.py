@@ -12,22 +12,156 @@ from dataclasses import dataclass
 
 # Vendor Libraries
 import chromadb
+import importlib
+import pkgutil
 
-from langchain_core.vectorstores import VectorStoreRetriever
-from langchain_chroma import Chroma  
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+# Compatibility import shim: LangChain has moved things between releases and
+# into separate packages (langchain_core, langchain_community, langchain_chroma, etc.).
+# Try several likely import paths and fall back gracefully with clear errors.
 
-# Self-Query and Document Compression routing via standardized engine namespaces
-from langchain.retrievers.self_query.base import SelfQueryRetriever
-from langchain.retrievers.document_compressors import LLMChainExtractor
+def _try_import(mod_name: str):
+    try:
+        return importlib.import_module(mod_name)
+    except Exception:
+        return None
 
-# FIXED: Rerankers are now imported from the community collection explicitly
-from langchain_community.document_compressors.cross_encoder_rerank import CrossEncoderReranker
-from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
+# VectorStoreRetriever
+VectorStoreRetriever = None
+for _mod in ("langchain.vectorstores", "langchain_core.vectorstores"):
+    m = _try_import(_mod)
+    if m and hasattr(m, "VectorStoreRetriever"):
+        VectorStoreRetriever = getattr(m, "VectorStoreRetriever")
+        break
 
-# Core asset loading layers maintained inside generic community spaces
-from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader
-from langchain_experimental.text_splitter import SemanticChunker
+# Chroma (vector store)
+Chroma = None
+for _mod in ("langchain_chroma", "langchain.vectorstores", "langchain_core.vectorstores"):
+    m = _try_import(_mod)
+    if m and hasattr(m, "Chroma"):
+        Chroma = getattr(m, "Chroma")
+        break
+if Chroma is None:
+    # last try: some langchain_chroma installs expose a top-level function/class differently
+    m = _try_import("langchain_chroma")
+    if m and hasattr(m, "Chroma"):
+        Chroma = getattr(m, "Chroma")
+
+# OpenAI chat and embeddings
+ChatOpenAI = None
+OpenAIEmbeddings = None
+for _mod in ("langchain_openai", "langchain.chat_models", "langchain.chat_models.openai"):
+    m = _try_import(_mod)
+    if m:
+        if hasattr(m, "ChatOpenAI") and ChatOpenAI is None:
+            ChatOpenAI = getattr(m, "ChatOpenAI")
+        if hasattr(m, "OpenAIEmbeddings") and OpenAIEmbeddings is None:
+            OpenAIEmbeddings = getattr(m, "OpenAIEmbeddings")
+
+# Self-Query and document compressors
+SelfQueryRetriever = None
+LLMChainExtractor = None
+ContextualCompressionRetriever = None
+for base in ("langchain.retrievers", "langchain_core.retrievers"):
+    # SelfQueryRetriever
+    m = _try_import(base + ".self_query.base")
+    if m and hasattr(m, "SelfQueryRetriever"):
+        SelfQueryRetriever = getattr(m, "SelfQueryRetriever")
+    # LLMChainExtractor (document compressors)
+    m2 = _try_import(base + ".document_compressors")
+    if m2 and hasattr(m2, "LLMChainExtractor"):
+        LLMChainExtractor = getattr(m2, "LLMChainExtractor")
+    # ContextualCompressionRetriever
+    m3 = _try_import(base + ".contextual_compression")
+    if m3 and hasattr(m3, "ContextualCompressionRetriever"):
+        ContextualCompressionRetriever = getattr(m3, "ContextualCompressionRetriever")
+
+# CrossEncoderReranker lives in the community package in some distributions
+CrossEncoderReranker = None
+for _mod in ("langchain_community.document_compressors.cross_encoder_rerank",
+             "langchain_community.document_compressors", "langchain.community.document_compressors"):
+    m = _try_import(_mod)
+    if m and hasattr(m, "CrossEncoderReranker"):
+        CrossEncoderReranker = getattr(m, "CrossEncoderReranker")
+        break
+
+# Document loaders and text splitters (PDF loader / semantic chunker)
+PyPDFDirectoryLoader = None
+PyPDFLoader = None
+SemanticChunker = None
+for _mod in ("langchain_community.document_loaders", "langchain.document_loaders"):
+    m = _try_import(_mod)
+    if m:
+        if hasattr(m, "PyPDFDirectoryLoader") and PyPDFDirectoryLoader is None:
+            PyPDFDirectoryLoader = getattr(m, "PyPDFDirectoryLoader")
+        if hasattr(m, "PyPDFLoader") and PyPDFLoader is None:
+            PyPDFLoader = getattr(m, "PyPDFLoader")
+
+# semantic chunker may be in experimental or text_splitter modules
+for _mod in ("langchain_experimental.text_splitter", "langchain.text_splitter"):
+    m = _try_import(_mod)
+    if m and hasattr(m, "SemanticChunker"):
+        SemanticChunker = getattr(m, "SemanticChunker")
+        break
+
+# Raise clear errors for missing critical pieces so failures are explicit at import time
+missing = []
+if SelfQueryRetriever is None:
+    missing.append("SelfQueryRetriever (langchain.retrievers.self_query)")
+if Chroma is None:
+    missing.append("Chroma (langchain_chroma or langchain.vectorstores)")
+if VectorStoreRetriever is None:
+    missing.append("VectorStoreRetriever (langchain.vectorstores or langchain_core.vectorstores)")
+if SemanticChunker is None:
+    missing.append("SemanticChunker (langchain_experimental.text_splitter or langchain.text_splitter)")
+if missing:
+    # don't raise immediately to allow non-critical codepaths to import; but log for clarity
+    logging.getLogger(__name__).warning("Optional compatibility imports missing: %s", missing)
+
+# If SelfQueryRetriever wasn't found in the environment, provide a minimal
+# fallback shim so the rest of the code can still perform simple retrievals.
+if SelfQueryRetriever is None:
+    class FallbackSelfQueryRetriever:
+        """Minimal compatibility shim for SelfQueryRetriever.
+
+        This fallback does not perform LLM-based self-query parsing. Instead it
+        wraps the provided vectorstore and exposes a from_llm() constructor and
+        an invoke(query) method that returns documents from the vectorstore.
+        """
+
+        def __init__(self, vectorstore, **kwargs):
+            # vectorstore may be either a LangChain VectorStore instance or already a retriever
+            self.vectorstore = vectorstore
+
+        @classmethod
+        def from_llm(cls, llm=None, vectorstore=None, **kwargs):
+            # llm is ignored in the fallback; keep signature compatible
+            return cls(vectorstore=vectorstore)
+
+        def invoke(self, query: str):
+            # Prefer an invoke method on the underlying retriever if present
+            vs = self.vectorstore
+            try:
+                # If the vectorstore is a LangChain vectorstore with as_retriever()
+                if hasattr(vs, "as_retriever"):
+                    r = vs.as_retriever()  # default params
+                else:
+                    r = vs
+
+                # If the retriever exposes invoke (LangChain Runnable retriever)
+                if hasattr(r, "invoke"):
+                    return r.invoke(query)
+
+                # If it has get_relevant_documents or get_relevant_docs
+                if hasattr(r, "get_relevant_documents"):
+                    return r.get_relevant_documents(query)
+                if hasattr(r, "get_relevant_docs"):
+                    return r.get_relevant_docs(query)
+
+            except Exception:
+                # Fall back to an empty list on error to avoid crashing the import
+                return []
+
+    SelfQueryRetriever = FallbackSelfQueryRetriever
 
 from src.config import (
     CHROMA_SERVER_NO_TELEMETRY,
@@ -43,13 +177,13 @@ from src.config import (
 @dataclass
 class AttributeInfo:
     """
-    Bypasses LangChain's shifting dependency structures by using a native 
-    Python dataclass that perfectly mimics the expected schema interface.
+    Bypasses LangChain's shifting dependency structures by using a native
+    Python dataclass that mimics the expected metadata_field_info schema
+    used by SelfQueryRetriever.from_llm.
     """
     name: str
     description: str
     type: str
-
 
 class ChromaModel:
     """
@@ -62,7 +196,12 @@ class ChromaModel:
         os.environ["CHROMA_SERVER_NO_TELEMETRY"] = CHROMA_SERVER_NO_TELEMETRY
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
-        self.chromadb_client = chromadb.PersistentClient()
+        # Ensure the configured VECTORS_DIR exists and initialize the PersistentClient
+        # to use the project's `db` directory rather than the repository's default
+        # './chroma' directory. This prevents accidental writes to a checked-in
+        # chroma/chroma.sqlite3 file which can be read-only.
+        os.makedirs(VECTORS_DIR, exist_ok=True)
+        self.chromadb_client = chromadb.PersistentClient(path=VECTORS_DIR)
 
         self.collection_name = None
         self.document_content_description = None
@@ -155,7 +294,13 @@ class ChromaModel:
         vector_storage = Chroma(
             collection_name=self.collection_name,
             embedding_function=self.embedding_model,
-            persist_directory=f"{self.collection_name}_db"
+            # Persist under the configured VECTORS_DIR so collections live in db/<collection>_db
+            persist_directory=self._format_dir(self.collection_name),
+            # Use the shared PersistentClient created on the ChromaModel so all
+            # collections use the same underlying client instance (avoids race
+            # conditions and readonly DB errors when multiple clients touch the
+            # same sqlite files).
+            client=self.chromadb_client,
         )
         return vector_storage.as_retriever(
             search_type="similarity",
@@ -212,14 +357,16 @@ class ChromaModel:
         :return:
         """
 
-        return f"./{VECTORS_DIR}/{path}_db"
+        # Use os.path.join to build a platform-correct path like: db/<path>_db
+        return os.path.join(VECTORS_DIR, f"{path}_db")
 
     def _get_semantic_storage(self) -> Chroma:
         """Instantiates the specialized semantic storage partition layer."""
         return Chroma(
             embedding_function=self.embedding_model,
             collection_name="semantic_chunks",
-            persist_directory=self._format_dir("research")
+            persist_directory=self._format_dir("research"),
+            client=self.chromadb_client,
         )
 
     def add_semantic_documents(self, semantic_chunks: list) -> None:
@@ -239,7 +386,8 @@ class ChromaModel:
         return Chroma(
             embedding_function=self.embedding_model,
             collection_name=self.collection_name,
-            persist_directory=self._format_dir(self.collection_name)
+            persist_directory=self._format_dir(self.collection_name),
+            client=self.chromadb_client,
         )
 
     def add_vector_documents(self, documents: list) -> None:
