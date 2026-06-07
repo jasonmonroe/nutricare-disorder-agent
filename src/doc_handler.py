@@ -10,7 +10,6 @@ import json
 import os
 import random
 import re
-import glob
 import shutil
 from time import sleep
 from zipfile import ZipFile
@@ -26,13 +25,13 @@ from src.config import (
     DOCUMENT_DIR, 
     DOCUMENT_FILE, 
     DOCUMENT_ZIP,
-    VECTORS_DIR, 
-    I_DB, 
+    I_CHECKMARK,
+    I_CROSSMARK,
+    I_DB,
     I_DISK,
-    I_CROSSMARK, 
-    I_DOCUMENT, 
-    I_FLAG, 
-    I_CHECKMARK
+    I_DOCUMENT,
+    I_FLAG,
+    VECTORS_DIR,
 )
 
 
@@ -51,7 +50,11 @@ class DocHandler():
     def create(self, content: str, metadata: dict) -> Document:
         """
         Creates and returns a LangChain Document object packed with metadata.
+        :param content:
+        :param metadata:
+        :return: Document
         """
+
         metadata["doc_id"] = self.gen_id(metadata["source"], metadata["page"], content)
 
         if "type" not in metadata:
@@ -68,13 +71,25 @@ class DocHandler():
     def gen_id(source: str, page_no: int, content: str) -> str:
         """
         Generates a deterministic unique SHA-256 fingerprint ID for a semantic chunk.
-        FIXED: Removed broken 'self' positional tracking reference parameter.
+
+        :param source:
+        :param page_no:
+        :param content:
+        :return:
         """
+
         id_str = f"{source}|page{page_no}|{content[:64]}"
         return str(hashlib.sha256(id_str.encode('utf-8')).hexdigest())
 
     def show_sample(self, samp_docs: list, samp_title: str = "") -> None:
-        """Displays a random processed document entity validation footprint."""
+        """
+        Displays a random processed document entity validation footprint.
+
+        :param samp_docs:
+        :param samp_title:
+        :return: None
+        """
+
         doc_cnt = len(samp_docs)
         if doc_cnt == 0:
             print("[WARNING] Checked baseline collection is empty.")
@@ -92,7 +107,13 @@ class DocHandler():
             print(f"\nIndex {index} is out of range for the list with length {doc_cnt}.")
 
     def get_semantic_chunks(self, semantic_chunks: list) -> list[Document]:
-        """Maps continuous semantic raw chunks into formal wrapped LangChain Documents."""
+        """
+        Maps continuous semantic raw chunks into formal wrapped LangChain Documents.
+
+        :param semantic_chunks:
+        :return: Documents
+        """
+
         return [self.create(d.page_content, d.metadata) for d in semantic_chunks]
 
     def show_documents(self) -> None:
@@ -104,7 +125,13 @@ class DocHandler():
             print("---\n")
 
     def _parse(self, llama_parser: LlamaParse) -> list:
-        """Loads physical dataset storage and feeds buffers through LlamaParse pipelines."""
+        """
+        Loads physical dataset storage and feeds buffers through LlamaParse pipelines.
+
+        :param llama_parser:
+        :return: list
+        """
+
         json_objs = []
 
         if not os.path.exists(self.folder_path):
@@ -118,7 +145,7 @@ class DocHandler():
                 json_objs.extend(llama_parser.get_json_result(pdf_path))
 
         if json_objs:
-            print(f"{I_CHECKMARK} [SUCCESS] Sample file parsed metadata header structured.")
+            print(f"{I_CHECKMARK} Sample file parsed metadata header structured.")
         else:
             print(f"{I_FLAG} No document payload arrays fetched.")
 
@@ -128,7 +155,11 @@ class DocHandler():
         """
         Orchestrates extracting tables and processing corresponding adjacent clear strings.
         Successfully refactored implementation logic branches.
+
+        :param json_objs:
+        :return: tuple
         """
+
         page_texts, tables = {}, {}
 
         for obj in json_objs:
@@ -142,13 +173,13 @@ class DocHandler():
             for json_item in obj.get('pages', []):
                 page_number = json_item.get("page")
 
-                # 1. Isolate embedded matrix layers and structural title labels
+                # Isolate embedded matrix layers and structural title labels
                 table_rows, table_ref_string = self._process_page_tables(json_item)
 
                 if table_rows:
                     tables[name][page_number] = table_rows
 
-                # 2. Re-route pure extraction strings into cleanup components
+                # Re-route pure extraction strings into cleanup components
                 page_content_full = json_item.get('text', '')
                 cleaned_text = self._clean_page_text(page_content_full, table_rows, table_ref_string)
 
@@ -159,7 +190,10 @@ class DocHandler():
     def _process_page_tables(self, json_item: dict) -> tuple[list | None, str | None]:
         """
         Refactored page context extractor checking table markers and resolving title strings.
+        :param json_item:
+        :return: tuple
         """
+
         table_rows = None
         table_ref_string = None
 
@@ -195,10 +229,17 @@ class DocHandler():
 
         return table_rows, table_ref_string
 
-    def _clean_page_text(self, page_content_full: str, table_rows: list | None, table_ref_string: str | None) -> str:
+    @staticmethod
+    def _clean_page_text(page_content_full: str, table_rows: list | None, table_ref_string: str | None) -> str:
         """
         Pure algorithmic string cleaning component transforming texts based on page metadata structure.
+
+        :param page_content_full:
+        :param table_rows:
+        :param table_ref_string:
+        :return:
         """
+
         # Scenario A: Structured key elements confirmed, replace explicit target reference
         if table_rows and table_ref_string:
             return page_content_full.replace(table_ref_string, "").strip()
@@ -231,7 +272,12 @@ class DocHandler():
 
     @staticmethod
     def _get_metadata_info() -> list[AttributeInfo]:
-        """Provides metadata typing validation mappings configuration layers."""
+        """
+        Provides metadata typing validation mappings configuration layers.
+
+        :return: list
+        """
+
         return [
             AttributeInfo(name="page", description="page number of document", type="integer"),
             AttributeInfo(name="source", description="file path of document", type="string"),
@@ -246,6 +292,11 @@ class DocHandler():
         """
         print(f"{I_DB} # --- Wiping {VECTORS_DIR} --- # {I_DB}")
 
+        if not os.path.exists(VECTORS_DIR):
+            # Create fresh db directory
+            os.makedirs(VECTORS_DIR, exist_ok=True)
+            return None
+
         # Target internal database children dynamically to maintain database directories cleanly
         if os.path.exists(VECTORS_DIR):
             for filename in os.listdir(VECTORS_DIR):
@@ -259,24 +310,31 @@ class DocHandler():
                 except Exception as e:
                     print(f"{I_FLAG} [ERROR] Failed to wipe element path target {file_path}. Exception: {e}")
 
+        return None
 
-    def unzip():
-        print(f'\nUnzipping {I_DISK} {DOCUMENT_ZIP}...')
-    
-        # Unzipping the nutrition medical reference documents into the Nutritional Medical Reference folder
-        # Loading the temp.zip and creating a zip object
-        with ZipFile(DOCUMENT_ZIP, 'r') as zip_handle:
-            # Extracting specific file in the zip into a specific location.
-            zip_handle.extract(
-                DOCUMENT_FILE,
-                path=DOCUMENT_DIR
-            )
-            zip_handle.close()
-            
-            sleep(1)
+    @staticmethod
+    def _unzip(self) -> bool:
+
+        document_path = DOCUMENT_DIR + '/' + DOCUMENT_FILE
+
+        # If document path exists use it if not, unzip the fiile and use it
+        if not os.path.exists(document_path):
+            print(f'\nUnzipping {I_DISK} {DOCUMENT_ZIP}...')
+        
+            # Unzipping the nutrition medical reference documents into the Nutritional Medical Reference folder
+            # loading the temp.zip and creating a zip object
+            with ZipFile(DOCUMENT_ZIP, 'r') as zip_handle:
+                # Extracting specific file in the zip into a specific location.
+                zip_handle.extract(
+                    DOCUMENT_FILE,
+                    path=DOCUMENT_DIR
+                )
+                zip_handle.close()
+                
+                sleep(1)
 
         # Check if file successfully unzipped
-        if os.path.exist(str(DOCUMENT_DIR + '/' + DOCUMENT_FILE)):
+        if os.path.exist(document_path):
             print(f'{I_DOCUMENT}{DOCUMENT_DIR}/{DOCUMENT_FILE} successfully unzipped and ready for processing.')
             return True
 

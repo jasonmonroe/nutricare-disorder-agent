@@ -92,7 +92,7 @@ class NutritionBot:
             metadata=metadata
         )
 
-    def get_relevant_history(self, user_id: str, query: str) -> List[Dict]:
+    def get_relevant_history(self, user_id: str, query: str) -> dict[str, Any]:
         """
         Retrieve past interactions relevant to the current query.
 
@@ -126,9 +126,9 @@ class NutritionBot:
 
         # Build a context string from the relevant history
         context = "Previous relevant interactions:\n"
-        for memory in relevant_history:
-            context += f"Customer: {memory['memory']}\n"  # Customer's past messages
-            context += f"Support: {memory['memory']}\n"  # Chatbot's past responses
+        for history in relevant_history:
+            context += f"Customer: {history['memory']}\n"  # Customer's past messages
+            context += f"Support: {history['memory']}\n"  # Chatbot's past responses
             context += "---\n"
 
         # Print context for debugging purposes

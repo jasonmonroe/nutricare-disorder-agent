@@ -1,7 +1,7 @@
 # src/eda.py
 
 # +-----------------------------------+
-# |     EXPLARATORY DATA ANALYSIS     |
+# |     EXPLORATORY DATA ANALYSIS     |
 # +-----------------------------------+
 
 # Vendor Libraries

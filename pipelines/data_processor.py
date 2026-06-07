@@ -51,19 +51,6 @@ def run(dataset: dict) -> None:
     nest_asyncio.apply()
 
     # === Document Ingestion & Processing ===
-    """
-    print(f'\nUnzipping {I_DISK} {DOCUMENT_ZIP}...')
-    
-    # Unzipping the nutrition medical reference documents into the Nutritional Medical Reference folder
-    # Loading the temp.zip and creating a zip object
-    with ZipFile(DOCUMENT_ZIP, 'r') as zip_handle:
-        # Extracting specific file in the zip into a specific location.
-        zip_handle.extract(
-            DOCUMENT_FILE,
-            path=DOCUMENT_DIR
-        )
-        zip_handle.close()
-    """
 
     # Load Documents handle
     doc_handle = DocHandler(llama.parser)

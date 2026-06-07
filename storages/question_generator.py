@@ -18,7 +18,6 @@ from src.utils import handle_rate_limit_error, show_timer
 
 
 class QuestionGenerator(ChromaModel):
-    print('QuestionGenerator')
     def __init__(self, dataset: dict):
         super().__init__(dataset)
 
@@ -30,13 +29,6 @@ class QuestionGenerator(ChromaModel):
         self.title = 'Hypothetical Questions'
 
         self._set_attrs(dataset)
-
-    """
-    def _set_attrs(self, dataset: dict) -> None:
-            for key, value in dataset.items():
-                if hasattr(self, key):
-                    setattr(self, key, value)
-    """
 
     @staticmethod
     def _prompt() -> str:

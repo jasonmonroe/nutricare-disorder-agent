@@ -14,33 +14,18 @@ from models.agentic_rag_tool import AgenticRagTool
 from models.nutrition_bot import NutritionBot
 from tools.agentic_rag import make_agentic_rag_tool
 
-from src.config import AI_TITLE, EXIT_CMD, I_SAD, I_SMILING, I_SURPRISED
+from src.config import AI_TITLE, EXIT_CMD, I_CLOCK, I_CROSSMARK, I_SAD, I_SMILING, I_SURPRISED, I_THINKING, I_WATCH
 from src.utils import show_datetime, start_timer, get_time
 
 """
 Section 2: Building an Intelligent Nutrition Disorder Agent with Advanced Retrieval and Safety Mechanisms
 """
 
-def build(dataset: dict) -> CompiledStateGraph[Any, None, Any, Any]:
+def build(dataset: dict) -> CompiledStateGraph:
     """
     Builds the agentic app by compile workflow object.
     :param dataset:
-    :param show_logs:
-    :return:
-     
-    openai_model = OpenAIModel()
-    llm = openai_model.load_llm()
-    #llama = LlamaModel(llm, openai_model.embedding_model)
-
-    # --- INITIALIZE CHROMA VECTOR STORAGE FOR RETRIEVING DOCUMENTS ---
-    # Retrieve `nutritional` database created from Google Colab
-
-    # Create vector storage for nutritional information
-    chroma_db = ChromaModel({
-        'llm': llm,
-        'embedding_model': openai_model.embedding_model,
-        'collection_name': 'nutritional'
-    })
+    :return: CompiledStateGraph
     """
 
     chroma_db = dataset['chroma_db']
@@ -98,7 +83,7 @@ def start(dataset: dict) -> None:
     # This provides a way to initiate a chat as different users.
     user_id = input(f"{I_THINKING} Agent: Login by providing customer name: ")  # Get user ID for tracking conversation sessions
 
-    print(f"\n# --- Session Start: {show_datetime()} --- #\n")
+    print(f"\n# --- Session Start: {I_CLOCK} {show_datetime()} --- #\n")
 
     while True:
         # Get user input
@@ -110,7 +95,7 @@ def start(dataset: dict) -> None:
 
         # Define the logic for exiting the loop' [if the user types in exit]
         if user_query.lower() == EXIT_CMD:
-            print(f"\n{I_SUPRISED} Agent: Goodbye! Feel free to return if you have more questions.")
+            print(f"\n{I_SURPRISED} Agent: Goodbye! Feel free to return if you have more questions.")
             print(f"# --- Session End: {show_datetime()} --- #")
             break
 

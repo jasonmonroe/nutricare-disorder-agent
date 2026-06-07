@@ -23,7 +23,6 @@ from src.utils import handle_rate_limit_error, show_timer, start_timer
 
 
 class TableQuestionGenerator(ChromaModel):
-    print('TableQuestionGenerator')
     def __init__(self, dataset: dict):
         super().__init__(dataset)
 
@@ -92,7 +91,7 @@ class TableQuestionGenerator(ChromaModel):
 
                 except Exception as e:
                     handle_rate_limit_error(e, self.collection_name, sleep_time)
-                    questions = EMPTY_RESP # Formerly "NA"
+                    questions = EMPTY_RESP
 
                     sleep_time, rate_limit_hit = handle_rate_limit_error(e, self.collection_name, sleep_time)
 

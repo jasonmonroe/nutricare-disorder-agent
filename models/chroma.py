@@ -30,12 +30,13 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoad
 from langchain_experimental.text_splitter import SemanticChunker
 
 from src.config import (
+    CHROMA_SERVER_NO_TELEMETRY,
     DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_DIR,
     I_QUES,
     SEMANTIC_THRESH_LIMIT,
     VECTOR_RESULT_CNT,
-    VECTORS_DIR,
+    VECTORS_DIR
 )
 
 
@@ -52,13 +53,13 @@ class AttributeInfo:
 
 class ChromaModel:
     """
-    Manages the persistent vector store lifecycle using ChromaDB and handles
-    both similarity-based and metadata-structured Self-Query retrieval mechanisms.
+    Manages the persistent vector store lifecycle using ChromaDB and handles both similarity-based and
+    metadata-structured Self-Query retrieval mechanisms.
     """
 
     def __init__(self, dataset: dict):
         # Initialize ChromaDB client without diagnostic telemetry overheads
-        os.environ["CHROMA_SERVER_NO_TELEMETRY"] = "true"
+        os.environ["CHROMA_SERVER_NO_TELEMETRY"] = CHROMA_SERVER_NO_TELEMETRY
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
         self.chromadb_client = chromadb.PersistentClient()
@@ -93,7 +94,12 @@ class ChromaModel:
         ]
 
     def _set_attrs(self, dataset: dict) -> None:
-        """Update class attributes dynamically."""
+        """
+        Updates class attributes dynamically. If llm isn't set, but we have openai model in the dataset set that attr.
+        :param dataset:
+        :return: None
+        """
+
         for key, value in dataset.items():
             if hasattr(self, key):
                 setattr(self, key, value)
@@ -115,7 +121,11 @@ class ChromaModel:
     def query_questions(self, is_hyp: bool = False, pluck: bool = False) -> None:
         """
         Query questions using either structured hypothetical retriever or structured retriever.
+        :param is_hyp:
+        :param pluck:
+        :return: None
         """
+
         retriever = self.structured_hyp_retriever if is_hyp else self.structured_retriever
         print('--- Hypothetical Retriever ---' if is_hyp else '--- Retriever ---')
 
@@ -182,7 +192,12 @@ class ChromaModel:
         )
 
     def get_semantic_chunks(self, folder_path: str) -> list:
-        """Gets semantic chunks from documents located within the target directory path."""
+        """
+        Gets semantic chunks from documents located within the target directory path.
+        :param folder_path:
+        :return: list
+        """
+
         semantic_chunks = []
         pdf_loader = PyPDFDirectoryLoader(folder_path)
         chunks = pdf_loader.load_and_split(self.semantic_text_splitter)
@@ -191,7 +206,12 @@ class ChromaModel:
         return semantic_chunks
 
     def _format_dir(self, path: str) -> str:
-        """Formats the unified persistence destination naming template."""
+        """
+        Formats the unified persistence destination naming template.
+        :param path:
+        :return:
+        """
+
         return f"./{VECTORS_DIR}/{path}_db"
 
     def _get_semantic_storage(self) -> Chroma:
@@ -203,7 +223,12 @@ class ChromaModel:
         )
 
     def add_semantic_documents(self, semantic_chunks: list) -> None:
-        """Batches and commits document nodes out to the semantic database index."""
+        """
+        Batches and commits document nodes out to the semantic database index.
+        :param semantic_chunks:
+        :return:
+        """
+
         batch_size = DOCUMENT_CHUNK_BATCH_SIZE
         for i in range(0, len(semantic_chunks), batch_size):
             batch = semantic_chunks[i: i + batch_size]
@@ -218,7 +243,12 @@ class ChromaModel:
         )
 
     def add_vector_documents(self, documents: list) -> None:
-        """Batches and commits complex vector entities out to storage collection space."""
+        """
+        Batches and commits complex vector entities out to storage collection space.
+        :param documents:
+        :return:
+        """
+
         batch_size = DOCUMENT_CHUNK_BATCH_SIZE
         for i in range(0, len(documents), batch_size):
             batch = documents[i : i + batch_size]
