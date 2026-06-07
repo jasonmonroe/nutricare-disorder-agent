@@ -81,18 +81,39 @@ def run(dataset: dict) -> None:
 
         print('DEBUG: cwd =', os.getcwd())
         if os.path.exists('db'):
-            print('DEBUG: db/ contents:')
-            for p in os.listdir('db'):
-                full = os.path.join('db', p)
-                try:
-                    mode = oct(os.stat(full).st_mode & 0o777)
-                except Exception:
-                    mode = 'n/a'
-                print(f"  - {full} (mode={mode})")
+            print('DEBUG: db/ exists, attempting to list contents:')
+            try:
+                contents = os.listdir('db')
+                print(f'DEBUG: db/ listing succeeded, found {len(contents)} items:')
+                for p in contents:
+                    full = os.path.join('db', p)
+                    try:
+                        if os.path.isdir(full):
+                            print(f"  [DIR] {full}/")
+                        else:
+                            mode = oct(os.stat(full).st_mode & 0o777)
+                            size = os.path.getsize(full)
+                            print(f"  [FILE] {full} (mode={mode}, size={size})")
+                    except Exception as e2:
+                        print(f"      ERROR reading {full}: {e2}")
+            except Exception as e:
+                print(f'DEBUG: Error listing db/ directory: {e}')
+                import traceback
+                traceback.print_exc()
         else:
             print('DEBUG: db/ does not exist')
-    except Exception as _:
-        pass
+        
+        # Also check if there are any sqlite files anywhere
+        print('DEBUG: Searching for any .sqlite3 files...')
+        for root, dirs, files in os.walk('.'):
+            for f in files:
+                if f.endswith('.sqlite3'):
+                    full_path = os.path.join(root, f)
+                    print(f'  FOUND: {full_path}')
+    except Exception as e:
+        print(f'DEBUG: Exception in debugging code: {e}')
+        import traceback
+        traceback.print_exc()
 
     chroma_db.add_semantic_documents(document_chunks)
 
