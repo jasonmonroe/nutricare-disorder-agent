@@ -1,5 +1,10 @@
 # storage/question_generator.py
 
+# +-------------------+
+# |     QUESTIONS     |
+# +-------------------+
+
+# Python Libraries
 import random
 import time
 

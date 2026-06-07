@@ -1,3 +1,7 @@
+# +--------------------+
+# |     DOCKERFILE     |
+# +--------------------+
+
 # Dockerfile for local development
 # Build: >_ docker build -f Dockerfile.local -t smart-nutri-bot-local .
 
