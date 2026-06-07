@@ -338,7 +338,7 @@ if st.session_state[session_doc_found] is None:
 
 
 # --- Start Program --- #
-print("--- START PROGRAM ---")
+print("# --- START PROGRAM --- #")
 
 # --- FILTER INPUT WITH LLAMA GUARD
 # Initialize the Llama Guard client with the API key

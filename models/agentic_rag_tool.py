@@ -15,7 +15,7 @@ from langgraph.graph import StateGraph, END, START  # State graph for managing s
 
 # Local
 from models.agentic_state import AgentState
-from src.config import AI_ROLE, EVAL_THRESHOLD
+from src.config import AI_ROLE, EVAL_THRESHOLD, I_DOCUMENT, I_PLUS
 
 
 class AgenticRagTool:
@@ -111,7 +111,7 @@ class AgenticRagTool:
             Dict: The updated state with the expanded query.
         """
 
-        print("\n-------- expand_query ---------")
+        print("\n# --- expand_query --- #")
 
         original_query = state['query']
         query_feedback = state.get('query_feedback') # Gets feedback if present
@@ -133,7 +133,7 @@ class AgenticRagTool:
         """
 
         if query_feedback:
-            print("--- Using feedback to refine query ---")
+            print("# --- Using feedback to refine query --- #")
 
             system_message += f"""
 
@@ -178,13 +178,13 @@ class AgenticRagTool:
 
         query = state['expanded_query']
 
-        print("\n--- retrieve_context ---")
+        print("\n#--- retrieve_context ---#")
         print("Query used for retrieval:", query)  # Debugging: Print the query
 
         # Retrieve documents from the vector store
         retrieved_docs = self.retriever.invoke(query)
 
-        print("Retrieved documents:", retrieved_docs)  # Debugging: Print the raw docs object
+        print("{I_DOCUMENT} Retrieved documents:", retrieved_docs)  # Debugging: Print the raw docs object
 
         # Extract both page_content and metadata from each document
         state['context'] = [
@@ -230,7 +230,7 @@ class AgenticRagTool:
         """
 
         response_prompt = CoreChatPromptTemplate.from_messages([
-            ("system", system_message),
+            ("system", system_message.strip()),
             ("user", "Query: {query}\nContext: {context}\n\nfeedback: {feedback}")
         ])
 
@@ -261,7 +261,7 @@ class AgenticRagTool:
             Dict: The updated state with the groundedness score.
         """
 
-        print("\n--- check_groundedness ---")
+        print("\n# --- check_groundedness --- #")
 
         system_message = """You are a meticulous AI {ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
         Calculate a score from 0.0 to 1.0 that represents the fraction of claims in the response that are directly and verifiably supported by the context.
@@ -287,7 +287,7 @@ class AgenticRagTool:
         state['groundedness_loop_count'] += 1
 
         print("groundedness_score: ", groundedness_score)
-        print("######## Groundedness Incremented ##########")
+        print("{I_PLUS} Groundedness Incremented {I_PLUS}")
 
         state['groundedness_score'] = groundedness_score
 
@@ -306,7 +306,7 @@ class AgenticRagTool:
             Dict: The updated state with the precision score.
         """
 
-        print("\n--- check_precision ---")
+        print("\n# --- check_precision --- #")
 
         system_message = """
         As an AI {ROLE} evaluate whether the response precisely addresses the user's query.
@@ -352,7 +352,7 @@ class AgenticRagTool:
             Dict: The updated state with response refinement suggestions.
         """
 
-        print("\n--- refine_response ---")
+        print("\n# --- refine_response --- #")
 
         system_message = """
         You are an AI {ROLE} Quality Analyst and Critic. Your sole task is to provide constructive feedback on a given response based on the user's original query.
@@ -364,7 +364,7 @@ class AgenticRagTool:
         """
 
         refine_response_prompt = CoreChatPromptTemplate.from_messages([
-            ("system", system_message),
+            ("system", system_message.strip()),
             ("user", "Query: {query}\nResponse: {response}\n\n"
                     "What improvements can be made to enhance accuracy and completeness?")
         ])
@@ -394,7 +394,7 @@ class AgenticRagTool:
             Dict: The updated state with JSON-formatted query refinement suggestions.
         """
 
-        print("\n--- refine_query ---")
+        print("\n# --- refine_query --- #")
 
         # Define a Pydantic model that matches the desired JSON structure.
         # This is the correct way to provide a schema to JsonOutputParser.
@@ -414,13 +414,12 @@ class AgenticRagTool:
 
         - Your output MUST be a JSON object that strictly adheres to the format defined by the tool.
         """
-        system_message = system_message.strip()
 
         # Use the LangChain JsonOutputParser for reliable structured output
         json_parser = JsonOutputParser(pydantic_object=QuerySuggestions)
 
         refine_query_prompt = CoreChatPromptTemplate.from_messages([
-            ("system", system_message),
+            ("system", system_message.strip()),
             ("user", "Original Query: {query}\nExpanded Query to Critique: {expanded_query}\n\nProvide your JSON suggestions:")
         ])
 
@@ -465,7 +464,7 @@ class AgenticRagTool:
         print("groundedness loop count: ", state['groundedness_loop_count'])
 
         if state["groundedness_score"] >= EVAL_THRESHOLD:  # Threshold for groundedness
-            print("Moving to precision")
+            print("Moving to precision...")
 
             return "check_precision"
 
@@ -489,7 +488,7 @@ class AgenticRagTool:
         """
         """Decides if precision is enough or needs improvement."""
 
-        print("--- should_continue_precision ---")
+        print("# --- should_continue_precision --- #")
         print("precision loop count: ", state['precision_loop_count'])
 
         if state["precision_score"] >= EVAL_THRESHOLD:  # Threshold for precision
@@ -499,7 +498,7 @@ class AgenticRagTool:
             if self.has_max_iterations_reached(state, "precision_loop_count"):  # Maximum allowed loops
                 return "max_iterations_reached"
             else:
-                print("--- Precision Score Threshold not met. Refining Query ---")
+                print("# --- Precision Score Threshold not met. Refining Query --- #")
 
                 return "refine_query"  # Refine the query
 

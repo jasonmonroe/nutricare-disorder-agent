@@ -30,7 +30,6 @@ class OpenAIModel:
             request_timeout=60,              # avoid timeouts on backoff
         )
 
-
     def _load_llm(self) -> ChatOpenAI:
         # This initializes the OpenAI embeddings model using the specified endpoint, API key, and model name.
         # This initializes the Chat OpenAI model using the provided endpoint, API key, deployment name.
@@ -57,7 +56,6 @@ class OpenAIModel:
             base_url = OPENAI_API_BASE,
             temperature=0  # Controls randomness in responses; 0 ensures deterministic results
         )
-
 
     @staticmethod
     def filter_response(self, resp: str, index=None) -> str:

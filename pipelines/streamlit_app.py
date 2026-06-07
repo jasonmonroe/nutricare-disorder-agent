@@ -21,8 +21,15 @@ from src.config import (
     GROQ_API_KEY,
     I_ANGRY,
     I_BOT,
+    I_CROSSMARK,
+    I_FLAG,
     I_FROWN,
+    I_GEAR,
+    I_SAD,
+    I_SMILING,
     I_THINKING,
+    I_WARNING,
+    I_WATCH,
     HF_TOKEN,
     LLAMA_KEY,
     MEM0_API_KEY,
@@ -40,7 +47,7 @@ def get_chatbot_instance() -> NutritionBot:
 
     :return: NutritionBot
     """
-    print("# --- Loading NutritionBot --- #")
+    print(f"# {I_GEAR} --- Loading NutritionBot --- {I_GEAR} #")
 
     return NutritionBot()
 
@@ -95,14 +102,14 @@ class StreamLitApp:
 
         missing_keys = []
         for key_name, key_value in keys_to_check.items():
-            error_msg = f"{key_name} value is None!"
+            error_msg = f"{I_CROSSMARK} {key_name} value is None!"
             if not key_value: # Checks if the value is None (i.e., not found)
                 missing_keys.append(key_name)
             if key_value is None:
                 st.error(error_msg)
                 print(error_msg)
 
-        error_msg = f"FATAL ERROR: The following secrets are missing... {', '.join(missing_keys)}."
+        error_msg = f"{I_FLAG} FATAL ERROR: The following secrets are missing... {', '.join(missing_keys)}."
         if missing_keys:
             st.error(error_msg)
             print(error_msg)
@@ -114,32 +121,32 @@ class StreamLitApp:
     def check_document_file(self) -> bool:
 
         if not os.path.isdir(DOCUMENT_DIR):
-            st.warning(f"WARNING: Document directory: `{DOCUMENT_DIR}`  not found!")
-            print(f"WARNING: Document directory: `{DOCUMENT_DIR}`  not found!")
+            st.warning(f"{I_WARNING} WARNING: Document directory: `{DOCUMENT_DIR}`  not found!")
+            print(f"{I_WARNING} WARNING: Document directory: `{DOCUMENT_DIR}`  not found!")
 
             # Check for a zip file
             if not os.path.exists(DOCUMENT_ZIP):
-                st.error(f"ERROR: Required zip file `{DOCUMENT_ZIP}` not found either.  Please upload it.")
+                st.error(f"{I_FLAG} ERROR: Required zip file `{DOCUMENT_ZIP}` not found either.  Please upload it.")
                 print(os.listdir('.'))
                 return False
 
             else:
-                st.info(f"Zip file: `{DOCUMENT_ZIP}` found!\nExtracting zip file...")
-                print(f"Zip file: `{DOCUMENT_ZIP}` found!\nExtracting zip file...")
+                st.info(f"{I_DOCUMENT} Zip file: `{DOCUMENT_ZIP}` found!\nExtracting zip file...")
+                print(f"{I_DOCUMENT} Zip file: `{DOCUMENT_ZIP}` found!\nExtracting zip file...")
 
                 with zipfile.ZipFile(DOCUMENT_ZIP, 'r') as zip_ref:
                     zip_ref.extractall(".")
 
-                st.info(f"Zip file: `{DOCUMENT_ZIP}` extracted.")
-                print(f"Zip file: `{DOCUMENT_ZIP}` extracted.")
+                st.info(f"{I_DOCUMENT} Zip file: `{DOCUMENT_ZIP}` extracted.")
+                print(f"{I_DOCUMENT} Zip file: `{DOCUMENT_ZIP}` extracted.")
                 return True
 
         else:
-            print(f"Document directory found: `{DOCUMENT_DIR}`.")
+            print(f"{I_DOCUMENT} Document directory found: `{DOCUMENT_DIR}`.")
             return True
 
     def show_title(self) -> None:
-        st.title(f"{AI_TITLE}")
+        st.title(f"{I_BOT} {AI_TITLE}")
         st.markdown("<hr style='margin: 0'>", unsafe_allow_html=True)
         st.info(body=f"""
         Welcome! I'm your **{I_BOT}{APP_TITLE}**.
@@ -174,7 +181,7 @@ class StreamLitApp:
                     st.write(message["content"])
 
             # Chat input with custom placeholder text.  The user-facing prompt
-            user_query = st.chat_input(f"Agent: Ask your question here, {st.session_state.user_id} (or '{EXIT_CMD}')...")
+            user_query = st.chat_input(f"{I_THINKING} Agent: Ask your question here, {st.session_state.user_id} (or '{EXIT_CMD}')...")
 
             if user_query:
                 if user_query.lower() == EXIT_CMD:
@@ -189,7 +196,7 @@ class StreamLitApp:
 
                 # Filter input using Llama Guard
                 filtered_result = self.llama.filter_input_with_llama_guard(user_query)
-                filtered_result = filtered_result.replace("\n", " ")  # Normalize the result
+                filtered_result = filtered_result.replace("\n", " ").strip()  # Normalize the result
 
                 # Check if input is safe based on allowed statuses
                 self._handle_input(filtered_result, user_query)
@@ -198,7 +205,7 @@ class StreamLitApp:
 
     def _unknown_user(self) -> None:
         with st.form("login_form", clear_on_submit=True):
-            st.write(f"Session Start: {show_datetime()}")
+            st.write(f"{I_WATCH} Session Start: {show_datetime()}")
             user_id = st.text_input("Agent: Please enter your name to begin:").strip()
 
             # Don't let the username themselves a keyword
@@ -212,7 +219,7 @@ class StreamLitApp:
                 st.session_state.user_id = user_id
                 st.session_state.chat_history.append({
                     "role": "assistant",
-                    "content": f"Agent: Welcome, {user_id}! How can I help you with nutrition disorders today?"
+                    "content": f"{I_SMILING} Agent: Welcome, {user_id}! How can I help you with nutrition disorders today?"
                 })
                 st.session_state.login_submitted = True  # Set flag to trigger rerun
 
@@ -256,7 +263,7 @@ class StreamLitApp:
         with st.chat_message("User"):
             st.write(EXIT_CMD)
 
-        goodbye_msg = "Agent: Goodbye! Feel free to return if you have more questions about nutrition disorders."
+        goodbye_msg = f"{I_SAD} Agent: Goodbye! Feel free to return if you have more questions about nutrition disorders."
         st.session_state.chat_history.append({"role": "assistant", "content": goodbye_msg})
 
         with st.chat_message("assistant"):

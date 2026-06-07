@@ -9,7 +9,7 @@ from models.agentic_rag_tool import AgenticRagTool
 from models.nutrition_bot import NutritionBot
 from tools.agentic_rag import make_agentic_rag_tool
 
-from src.config import AI_TITLE, EXIT_CMD
+from src.config import AI_TITLE, EXIT_CMD, I_SAD, I_SMILING, I_SURPRISED
 from src.utils import show_datetime, start_timer, get_time
 
 """
@@ -93,13 +93,13 @@ def start(dataset: dict) -> None:
     chatbot.agent_executor.verbose = show_logs  # Set logging preferences
 
     # This provides a way to initiate a chat as different users.
-    user_id = input("Agent: Login by providing customer name ")  # Get user ID for tracking conversation sessions
+    user_id = input(f"{I_THINKING} Agent: Login by providing customer name: ")  # Get user ID for tracking conversation sessions
 
-    print(f"\n--- Session Start: {show_datetime()} ---\n")
+    print(f"\n# --- Session Start: {show_datetime()} --- #\n")
 
     while True:
         # Get user input
-        print("Agent: How can I help you?\n")
+        print(f"{I_SMILING} Agent: How can I help you?\n")
         user_query = input(f"{user_id}: ")
 
         # Set timer for each question
@@ -107,26 +107,26 @@ def start(dataset: dict) -> None:
 
         # Define the logic for exiting the loop' [if the user types in exit]
         if user_query.lower() == EXIT_CMD:
-            print("\nAgent: Goodbye! Feel free to return if you have more questions.")
-            print(f"--- Session End: {show_datetime()} ---")
+            print(f"\n{I_SUPRISED} Agent: Goodbye! Feel free to return if you have more questions.")
+            print(f"# --- Session End: {show_datetime()} --- #")
             break
 
         # Filter input through Llama Guard - returns "SAFE" or "UNSAFE"
         filtered_result = llama.filter_input_with_llama_guard(user_query) # Call function to filter input
-        filtered_result = filtered_result.replace("\n", " ")   # Normalize the result
+        filtered_result = filtered_result.replace("\n", " ").strip()   # Normalize the result
 
         # Check if filtered_result is SAFE or UNSAFE
         if filtered_result in ["SAFE", "BYPASS_SAFE"]:
             # Process the user query using the RAG workflow
             try:
                 response = chatbot.handle_customer_query(user_id, user_query)  # Call chatbot handler function
-                print(f"Agent: {response}\n")
+                print(f"{I_SMILING} Agent: {response}\n")
 
             except Exception as e:
-                print("Agent: Sorry, I encountered an error while processing your query. Please try again.")
-                print(f"Customer Query Error: {e}\n")
+                print(f"{I_SAD} Agent: Sorry, I encountered an error while processing your query. Please try again.")
+                print(f"{I_CROSSMARK} Customer Query Error: {e}\n")
         else:
-            print(f"Agent: I apologize, but I cannot process that input `{filtered_result}` as it may be inappropriate. Please try again.")
+            print(f"{I_SAD} Agent: I apologize, but I cannot process that input `{filtered_result}` as it may be inappropriate. Please try again.")
 
         # Show answer duration per query
-        print(f"[Answered in {get_time(q_time)}]\n")
+        print(f"[{I_WATCH} Answered in {get_time(q_time)}]\n")

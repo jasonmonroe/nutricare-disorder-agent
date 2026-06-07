@@ -1,31 +1,34 @@
 # src/doc_handler.py
 
-import os
-import re
-import json
 import hashlib
+import json
+import os
 import random
+import re
+import glob
 
-from langchain_classic.chains.query_constructor.schema import AttributeInfo
-# LangChain Imports
 # Vendor Libraries
+# LangChain Imports
+from langchain_classic.chains.query_constructor.schema import AttributeInfo
 from langchain_core.documents import Document  # Document data structures
 from llama_parse import LlamaParse  # Document parsing library
 
 # Local Libraries
-from src.config import DOCUMENT_DIR
+from src.config import DOCUMENT_DIR, VENDORS_DIR
 
 
 class DocHandler():
     def __init__(self, llama_parser: LlamaParse):
-        self.folder_path = DOCUMENT_DIR
         self.documents = [] # Set outside the class
+        self.document_content_description = "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
+        self.folder_path = DOCUMENT_DIR
         self.metadata_info = self._get_metadata_info()
+
+        self.__wipe_db_dir()
 
         json_objs = self._parse(llama_parser)
         self.page_texts, self.tables = self._extract_tables(json_objs)
-        self.document_content_description = "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
-
+        
     def create(self, content: str, metadata: dict) -> Document:
         """
         Creates and returns a Document object with metadata
@@ -77,8 +80,8 @@ class DocHandler():
     def show_documents(self) -> None:
         # Display retrieved documents
         for i in self.documents:
-            print("Source:", i.metadata['source'])  # Fill in the correct key for source (e.g., 'source')
-            print("Page:", i.metadata['page'], "\n")  # Fill in the correct key for page number (e.g., 'page')
+            print("Source:", i.metadata['source'])   # Fill in the correct key for source (e.g., 'source')
+            print("Page:", i.metadata['page'], "\n") # Fill in the correct key for page number (e.g., 'page')
             print("Page Content:", i.page_content)
             print("---\n")
 
@@ -209,7 +212,6 @@ class DocHandler():
                 for row in table_rows:
                     print(f"\t{row}")
 
-
     def _get_metadata_info(self) -> list:
         return [
             AttributeInfo(
@@ -228,3 +230,10 @@ class DocHandler():
                 type="string"
             )
         ]
+
+    def __wipe_db_dir():
+        # Wipe all data in the db directory so that we will have a clean slate.
+        files = glob.glob(VENDORS_DIR)
+        for f in files:
+            os.remove(f)
+
