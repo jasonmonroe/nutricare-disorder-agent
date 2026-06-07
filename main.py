@@ -3,6 +3,10 @@ from __future__ import annotations
 from src.config import I_TIMER, I_WARNING
 
 """
++--------------+
+|     MAIN     |
++--------------+
+
 Nutrition Disorder Specialist Streamlit Application.
 
 This module implements a Streamlit-based AI chatbot application that acts as a
@@ -73,7 +77,6 @@ from pipelines.agent import build as run_build_agent_pipeline, start as run_star
 from pipelines.data_processor import run as run_data_retrieval_pipeline
 from pipelines.huggingface import Huggingface 
 from pipelines.streamlit_app import StreamLitApp
-
 from src.utils import get_run_id, show_title_banner, start_timer, show_timer
 
 

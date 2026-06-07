@@ -1,10 +1,11 @@
 # src/config.py
 
+# +----------------+
+# |     CONFIG     |
+# +----------------+
+
 import os
 import random
-
-# --- CONSTANTS ---- #
-
 
 # --- DEFINE CONFIGURATIONS AND CONSTANTS
 # Note: os.getenv() are the secrets defined in the Huggingface.co settings page.
@@ -41,8 +42,6 @@ EVAL_THRESHOLD = 0.8
 EXIT_CMD = "exit"
 EMPTY_RESP = "[]" # Empty response
 
-VECTOR_RESULT_CNT = 3
-
 # Define the Google Drive and other directory paths
 DOCUMENT_DIR = "data/nutritional-medical-reference"
 DOCUMENT_FILE = 'nutritional-disorders.pdf'
@@ -55,6 +54,7 @@ DOCUMENT_CHUNK_TEXT_BATCH_SIZE = 50
 RETRIEVAL_LIMIT = 5
 SECS_IN_MIN = 60 # secs in min
 SEMANTIC_THRESH_LIMIT = random.randint(80, 85)
+VECTOR_RESULT_CNT = 3
 
 # Used for searching the document for pairing subject for building an effective RAG system.
 # This query asks a specific question about vitamin deficiencies and memory impairment.
@@ -70,7 +70,7 @@ PROMPT_INSTR = """
     """.strip()
 
 
-# Prompt variables
+# --- Prompt variables ---
 AI_ROLE = "Nutrition Disorder Specialist"
 AI_TITLE = "SMART NUTRITION DISORDER SPECIALIST BOT"
 APP_TITLE = 'Nutricare Disorder Agent'

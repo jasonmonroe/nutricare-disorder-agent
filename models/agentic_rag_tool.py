@@ -1,5 +1,9 @@
 # models/agentic_rag_tool.py
 
+# +--------------------------+
+# |     AGENTIC RAG TOOL     |
+# +--------------------------+
+
 # Python Libraries
 import json
 from typing import Dict, List

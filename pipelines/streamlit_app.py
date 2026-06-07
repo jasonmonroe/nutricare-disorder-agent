@@ -1,7 +1,9 @@
 # src/streamlit.py
 
-# https://streamlit.io
-# Documentation: https://docs.streamlit.io
+# +-------------------+
+# |     STREAMLIT     |
+# +-------------------+
+
 
 # Python Libraries
 import os
@@ -53,6 +55,10 @@ def get_chatbot_instance() -> NutritionBot:
 
 
 class StreamLitApp:
+
+    # https://streamlit.io
+    # Documentation: https://docs.streamlit.io
+
     def __init__(self, llama) -> None:
 
         self.llama = llama

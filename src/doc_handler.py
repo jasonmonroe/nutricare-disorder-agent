@@ -1,5 +1,10 @@
 # src/doc_handler.py
 
+# +----------------------+
+# |     DATA HANDLER     |
+# +----------------------+
+
+# Python Librries
 import hashlib
 import json
 import os
@@ -23,7 +28,6 @@ class DocHandler():
         self.document_content_description = "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
         self.folder_path = DOCUMENT_DIR
         self.metadata_info = self._get_metadata_info()
-
         self.__wipe_db_dir()
 
         json_objs = self._parse(llama_parser)
@@ -233,7 +237,9 @@ class DocHandler():
 
     def __wipe_db_dir():
         # Wipe all data in the db directory so that we will have a clean slate.
-        files = glob.glob(VENDORS_DIR)
+        print(f"{I_DB} # --- Wiping {VECTORS_DIR} --- # {I_DB}")
+        files = glob.glob(VECTORS_DIR)
         for f in files:
+            print(f"{I_CROSSMARK} Wiping {I_DOCUMENT}{f} ...")
             os.remove(f)
 

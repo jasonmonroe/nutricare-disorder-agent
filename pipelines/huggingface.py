@@ -1,7 +1,8 @@
 # src/huggingface.py
 
-# https://huggingface.co/
-# Documents: https://huggingface.co/docs
+# +---------------------+
+# |     HUGGINGFACE     |
+# +---------------------+
 
 from huggingface_hub import HfApi
 from src.config import HF_TOKEN, DOCUMENT_ZIP, HF_REPO_ID
@@ -10,6 +11,9 @@ from src.config import HF_TOKEN, DOCUMENT_ZIP, HF_REPO_ID
 Section 3: Getting Your App Live on Hugging Face Docker Spaces
 """
 class Huggingface:
+    # https://huggingface.co/
+    # Documents: https://huggingface.co/docs
+   
     def __init__(self) -> None:
         self.api = HfApi(token=HF_TOKEN)
         self._repo_id = HF_REPO_ID

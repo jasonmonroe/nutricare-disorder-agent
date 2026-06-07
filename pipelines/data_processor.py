@@ -2,6 +2,10 @@ from __future__ import annotations
 
 # pipelines/data_processor.py
 
+# +-------------------------+
+# |     DATA PROCESSING     |
+# +-------------------------+
+
 import nest_asyncio
 import warnings
 from zipfile import ZipFile
@@ -94,9 +98,6 @@ def run(dataset: dict) -> None:
         'collection_name': 'hypothetical_questions',
         'doc_handle': doc_handle,
         'document_content_description': 'Hypothetical Questions for ' + document_content_desc,
-        #'embedding_model': chroma_db.embedding_model,
-        #'llm': llm,
-        #'metadata_info': doc_handle.metadata_info
     }
 
     dataset = {**chroma_dataset, **questions_dataset}
@@ -105,31 +106,29 @@ def run(dataset: dict) -> None:
     doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name.title())
     chroma_db.add_vector_documents(hypothetical_questions_doc)
 
-
     # Get table hypothetical questions and add them to the vector storage
     table_questions_dataset = {
         'batch_size': DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
         'collection_name': 'table_hypothetical_questions',
         'doc_handle': doc_handle,
         'document_content_description': 'Hypothetical Table Questions for ' + document_content_desc,
-        #'embedding_model': chroma_db.embedding_model,
-        #'llm': llm,
-        #'metadata_info': doc_handle.metadata_info
     }
+
     dataset = {**chroma_dataset, **table_questions_dataset}
     table_questions = TableQuestionGenerator(dataset)
     table_hypothetical_questions_doc = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
     doc_handle.show_sample(table_hypothetical_questions_doc, table_questions.collection_name.title())
     chroma_db.add_vector_documents(table_hypothetical_questions_doc)
 
-
     # --- Backup documents to Google Drive --- #
-    # Code will come later...
+    __backup_docs()
     # --- Backup documents to Google Drive --- #
-
 
     # Sample a random user query using hypothetical retriever
     # Note: To randomly pluck a question set pluck param to True
     chroma_db.query_questions(is_hyp=True, pluck=False)
 
-    print('DBUG: Exiting data_processor:run() ...')
+    print('DEBUG: Exiting data_processor:run() ...')
+
+def __backup_docs():
+    pass

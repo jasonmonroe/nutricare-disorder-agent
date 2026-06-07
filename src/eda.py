@@ -1,5 +1,10 @@
 # src/eda.py
 
+# +-----------------------------------+
+# |     EXPLARATORY DATA ANALYSIS     |
+# +-----------------------------------+
+
+# Vendor Libraries
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np

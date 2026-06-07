@@ -1,10 +1,16 @@
 # src/utils.py
 
+# +-------------------+
+# |     UTILITIES     |
+# +-------------------+
+
+# Python Libraries
 from datetime import UTC, datetime
 import os
 import random
 import time
 
+# Local Libraries
 from src.config import (
     AI_ROLE, 
     APP_TITLE, 
@@ -19,7 +25,6 @@ from src.config import (
     OPENAI_API_KEY, 
     SECS_IN_MIN
 )
-
 
 def get_run_id() -> str:
     """ Generates a unique ID for the current run. """

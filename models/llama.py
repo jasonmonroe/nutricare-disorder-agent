@@ -1,5 +1,9 @@
 # models/llama.py
 
+# +---------------+
+# |     LLAMA     |
+# +---------------+
+
 # Vendor Libraries
 from groq import Groq
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings

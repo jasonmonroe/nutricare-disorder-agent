@@ -1,8 +1,16 @@
 # storage/table_question_generator.py
+
+# +------------------------+
+# |     TABLE QUESTIONS    |
+# +------------------------+
+
+# Python Libraries
 import random
 
+# Vendor Libraries
 from langchain.chains.query_constructor.base import AttributeInfo
 
+# Local Libraries
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
 

@@ -1,3 +1,10 @@
+# models/chroma.py
+
+# +----------------+
+# |     CHROMA     |
+# +----------------+
+
+# Python Libraries
 import logging
 import os
 import random

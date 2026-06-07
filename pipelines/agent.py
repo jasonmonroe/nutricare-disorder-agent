@@ -1,5 +1,10 @@
 # pipelines/agent.py
 
+# +---------------+
+# |     AGENT     |
+# +---------------+
+
+# Python Libraries
 from typing import Any
 from langgraph.graph.state import CompiledStateGraph
 import nest_asyncio
@@ -42,8 +47,6 @@ def build(dataset: dict) -> CompiledStateGraph[Any, None, Any, Any]:
     openai_model = dataset['openai_model']
     llm = openai_model.llm
 
-
-    # Stage 2 - Start Program
     # Apply the nested async loop to allow async code execution in the notebook
     nest_asyncio.apply()
 

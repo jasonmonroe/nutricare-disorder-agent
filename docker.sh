@@ -1,5 +1,9 @@
 # docker.sh
 
+# -----------------+
+# |     DOCKER     |
+# +----------------+
+
 # First, stop the old container if it's running
 docker stop <container_id>
 

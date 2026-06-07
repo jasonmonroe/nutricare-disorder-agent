@@ -1,6 +1,9 @@
 # models/agentic_state.py
 
-# --- DEFINE AGENT STATE
+# +-----------------------+
+# |     AGENTIC STATE     |
+# +-----------------------+
+
 from typing import Any, Dict, List, TypedDict
 
 

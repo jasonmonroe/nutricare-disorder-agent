@@ -1,5 +1,9 @@
 # models/nutrition_bot.py
 
+# +-----------------------+
+# |     NUTRITION BOT     |
+# +-----------------------+
+
 # Python Libraries
 from typing import Dict, List, Any
 from datetime import datetime
@@ -11,7 +15,6 @@ from mem0 import MemoryClient
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 #from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain.agents import create_tool_calling_agent, AgentExecutor
-
 
 # Local Libraries
 from src.config import MEM0_API_KEY, RETRIEVAL_LIMIT
