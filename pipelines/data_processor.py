@@ -73,8 +73,6 @@ def run(dataset: dict) -> None:
     #    k=VECTOR_RESULT_CNT
     #)
     doc_handle.documents = chroma_db.get_documents()
-    print(f'type={type(doc_handle.documents)}')
-
     doc_handle.show_documents()
 
     # Use structured receiver when quering all/random questions
@@ -96,6 +94,11 @@ def run(dataset: dict) -> None:
     questions = QuestionGenerator(dataset)
     hypothetical_questions_doc = questions.get_hypothetical_questions(document_chunks)
     doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name.title())
+
+    # --- Temp --- #
+    import uuid
+    ids = [str(uuid.uuid4()) for _ in range(len(hypothetical_questions_doc))]
+    # --- Temp --- #
     chroma_db.add_vector_documents(hypothetical_questions_doc)
 
     # Get table hypothetical questions and add them to the vector storage

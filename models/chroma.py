@@ -21,7 +21,7 @@ from langchain_classic.retrievers.self_query.base import SelfQueryRetriever
 # Core asset loading layers maintained inside generic community spaces
 from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 
 from src.config import (
     CHROMA_SERVER_NO_TELEMETRY,
@@ -44,19 +44,23 @@ class ChromaModel:
     """
 
     def __init__(self, dataset: dict):
+        self._mock = dataset.get('mock', False)
+
         # Initialize ChromaDB client without diagnostic telemetry overheads
         os.environ["CHROMA_SERVER_NO_TELEMETRY"] = CHROMA_SERVER_NO_TELEMETRY
         os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE
         os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
+
         # --- Temp --- #
         # This prevents the 1032 Readonly Database lock when running consecutive pipelines.
-        try:
-            from chromadb.api.shared_system_client import SharedSystemClient
-            SharedSystemClient.clear()
-        except Exception:
-            pass
+        if self._mock:
+            try:
+                from chromadb.api.shared_system_client import SharedSystemClient
+                SharedSystemClient.clear()
+            except Exception:
+                pass
         # --- Temp --- #
 
         self.chromadb_client = chromadb.PersistentClient(path=f"./{VECTORS_DIR}")
@@ -99,13 +103,13 @@ class ChromaModel:
 
         for key, value in dataset.items():
             if hasattr(self, key):
-                print(f'\nSetting {key} = {value}')
+                #print(f'\nSetting {key} = {value}')
                 setattr(self, key, value)
 
         if self.llm is None and 'openai_model' in dataset:
             openai_model = dataset['openai_model']
             self.llm = openai_model.llm
-            print(f'\n\nsetting self.llm = openai_model.llm')
+            #print(f'\n\nsetting self.llm = openai_model.llm')
 
     def export(self) -> dict:
         """Exports attributes to be injected into child or dependent pipeline classes."""
@@ -148,11 +152,15 @@ class ChromaModel:
         Initializes a local text splitter to avoid heavy proxy batch overheads.
         Note: ⚠️ Use RecursiveCharacterTextSplitter() until credentials are validated.
         """
-        return RecursiveCharacterTextSplitter(
-            chunk_size=1000,       # Adjust based on your preferred configuration size
-            chunk_overlap=200,
-            length_function=len
-        )
+        # --- Temp --- #
+        if self._mock:
+            from langchain_text_splitters import RecursiveCharacterTextSplitter
+            return RecursiveCharacterTextSplitter(
+                chunk_size=1000,       # Adjust based on your preferred configuration size
+                chunk_overlap=200,
+                length_function=len
+            )
+            # --- Temp --- #
 
         return SemanticChunker(
             self.embedding_model,
@@ -269,7 +277,7 @@ class ChromaModel:
             batch = documents[i : i + batch_size]
             self.vector_storage.add_documents(batch)
 
-    def get_documents(self):
+    def get_documents(self) -> list:
         # Returns documents used by the doc_handler.
         return self.semantic_storage.similarity_search(
             query=SIMILARITY_SEARCH_QUERY,

@@ -43,8 +43,7 @@ class DocHandler():
         self.document_content_description = "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
         self.folder_path = DOCUMENT_DIR
         self.metadata_info = self._get_metadata_info()
-        self.__wipe_db_dir()
-
+        
         if self._unzip():
             json_objs = self._parse(llama_parser)
             self.page_texts, self.tables = self._extract_tables(json_objs)
@@ -293,7 +292,7 @@ class DocHandler():
         ]
 
     @staticmethod
-    def __wipe_db_dir() -> None:
+    def wipe_db_dir() -> None:
         """
         Wipes data inside target persistent storage directories to allow clean ingestion.
         FIXED: Uses recursive shutil tree removal to clear nested ChromaDB states safely.
@@ -302,7 +301,7 @@ class DocHandler():
 
         if not os.path.exists(VECTORS_DIR):
             # Create fresh db directory
-            print(f'{I_WARNING}{VECTORS_DIR} does not exist.  Creating {I_DB} it now...')
+            print(f'{I_WARNING} {VECTORS_DIR} does not exist.  Creating {I_DB} it now...')
             os.makedirs(VECTORS_DIR, exist_ok=True)
             return None
 
@@ -318,7 +317,9 @@ class DocHandler():
                         shutil.rmtree(file_path)
                 except Exception as e:
                     print(f"{I_FLAG} Failed to wipe element path target {file_path}. Exception: {e}")
-            print('\n')
+           
+        if next(os.scandir(VECTORS_DIR), None) is None:
+            print("Directory exists and is empty.")
 
         return None
 

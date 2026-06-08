@@ -2,6 +2,8 @@ from __future__ import annotations
 import os
 from dotenv import load_dotenv
 
+from src import doc_handler
+
 # Force load_dotenv to overwrite any existing terminal environmental variables
 load_dotenv(override=True)
 
@@ -87,11 +89,14 @@ np.float_ = np.float64
 
 # Local Libraries
 from models import ChromaModel, LlamaModel, OpenAIModel
+
 from pipelines.agent import build as run_build_agent_pipeline, start as run_start_agent_pipeline
 from pipelines.data_processor import run as run_data_retrieval_pipeline
 from pipelines.huggingface import Huggingface 
 from pipelines.streamlit_app import StreamLitApp
-from src.config import I_TIMER, I_WARNING
+
+from src.config import I_INFO, I_TIMER, I_WARNING
+from src.doc_handler import DocHandler
 from src.utils import get_run_id, show_title_banner, start_timer, show_timer
 
 
@@ -117,7 +122,8 @@ def _parse_args(command_line_args: list[str]) -> dict:
         print(f'{I_WARNING} No args present... exiting. {I_WARNING}')
         sys.exit(0)
 
-    args_list = ['--data', '--build', '--start', '--deploy', '--run', '--log']
+    args_list = ['--build', '--data', '--deploy', '--log', '--mock', '--run', '--start']
+
     return {arg.strip('--'): (arg in command_line_args) for arg in args_list}
 
 
@@ -129,24 +135,35 @@ if __name__ == '__main__':
 
     show_title_banner()
     args = _parse_args(sys.argv[1:])
+    mock = args.get('mock', False)
+
+    if mock:
+        print(f'{I_INFO} Mock mode is turned on!')
+
+    # Wipe documents directory before Chroma is created.
+    if args.get('data'):
+        DocHandler.wipe_db_dir()
         
     # --- Load all models --- #
-    openai_model = OpenAIModel()
+    openai_model = OpenAIModel(mock=mock)
 
     # Create vector storage for nutritional information
     chroma_db = ChromaModel({
         'llm': openai_model.llm,
         'embedding_model': openai_model.embedding_model,
-        'collection_name': 'nutritional'
+        'collection_name': 'nutritional',
+        'mock': mock
     })
 
     llama = LlamaModel(openai_model.llm, openai_model.embedding_model)
 
-
+    # Create pipeline dataset.
     dataset = {
         'chroma_db': chroma_db,
         'llama': llama,
         'openai_model': openai_model,
+        'mock': mock,
+        'log': args.get('log', False)
     }
     
     # Execute based on parsed flags
@@ -158,7 +175,6 @@ if __name__ == '__main__':
         dataset['workflow_app'] = workflow_app
 
     if args.get('start'):
-        dataset['show_log'] = args['log']
         run_start_agent_pipeline(dataset)
 
     if args.get('deploy'):
@@ -168,4 +184,5 @@ if __name__ == '__main__':
         run_streamlit_pipeline(llama)
 
     show_timer(start_time)
+
     print(f'\n-----> {I_TIMER} END RUN ID: {run_id} {I_TIMER} <-----')

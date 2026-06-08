@@ -14,7 +14,7 @@ from models.agentic_rag_tool import AgenticRagTool
 from models.nutrition_bot import NutritionBot
 from tools.agentic_rag import make_agentic_rag_tool
 
-from src.config import AI_TITLE, EXIT_CMD, I_BOT, I_CLOCK, I_CROSSMARK, I_SAD, I_SMILING, I_SURPRISED, I_THINKING, I_WATCH
+from src.config import AI_TITLE, EXIT_CMD, I_CLOCK, I_CROSSMARK, I_RUNNING, I_SAD, I_SMILING, I_SURPRISED, I_THINKING, I_WATCH
 from src.utils import show_datetime, start_timer, get_time
 
 """
@@ -27,7 +27,7 @@ def build(dataset: dict) -> CompiledStateGraph:
     :param dataset:
     :return: CompiledStateGraph
     """
-    print(f'\n# --- {I_BOT} Start Building agent pipeline {I_BOT} --- #')
+    print(f'\n# --- {I_RUNNING} Start Building agent pipeline {I_RUNNING} --- #')
 
     chroma_db = dataset['chroma_db']
     openai_model = dataset['openai_model']
@@ -41,13 +41,13 @@ def build(dataset: dict) -> CompiledStateGraph:
     workflow_app = agentic_rag_tool.compile()
     agentic_rag_tool.display_workflow(workflow_app)
 
-    print(f'\n# --- {I_BOT} Completed agent pipeline {I_BOT} --- #')
+    print(f'\n# --- {I_RUNNING} Completed agent pipeline {I_RUNNING} --- #')
 
     return workflow_app
 
 
 def start(dataset: dict) -> None:
-    print(f'\n# --- {I_BOT} Starting agent pipeline {I_BOT} --- #')
+    print(f'\n# --- {I_RUNNING} Starting agent pipeline {I_RUNNING} --- #')
 
     """
     Starts the agentic app!
@@ -72,7 +72,7 @@ def start(dataset: dict) -> None:
     """)
 
     # Initialize streamlit persistent state
-    show_logs = dataset.get('show_log', False)
+    show_logs = dataset.get('log', False)
     print(f'DEBUG: show_logs:{show_logs}')
 
     openai_model = dataset['openai_model']

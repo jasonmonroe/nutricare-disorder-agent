@@ -3,7 +3,12 @@
 # https://openai.com
 # Documentation: https://developers.openai.com/api/docs
 
+# Vendor Libraries
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_core.language_models.fake_chat_models import FakeListChatModel # Temp
+
+# Local Libraries
+
 from src.config import (
     OPENAI_API_BASE,
     OPENAI_API_KEY,
@@ -11,31 +16,20 @@ from src.config import (
     OPENAI_MODEL
 )
 
-# --- Temp --- #
-import random
-class MockEmbeddings:
-    """A local mock embedding class to bypass proxy servers during offline testing."""
-    def __init__(self, dimensions: int = 1536):
-        self.dimensions = dimensions
-
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        # Instantly returns dummy vectors for all 252 chunks locally
-        return [[random.uniform(-1, 1) for _ in range(self.dimensions)] for _ in texts]
-
-    def embed_query(self, text: str) -> list[float]:
-        # Instantly returns a dummy vector for single search queries
-        return [random.uniform(-1, 1) for _ in range(self.dimensions)]
-# --- Temp --- #
-
 
 class OpenAIModel:
-    def __init__(self):
-        #self.embedding_model = self._get_embedding_model()
-        self.embedding_model = MockEmbeddings(dimensions=1536)
+    def __init__(self, mock: bool=False):
+        self._mock = mock
+
+        self.embedding_model = self._get_embedding_model()
         self.llm = self._load_llm()
         self.llm_chatbot = self._load_llm_chatbot()
 
     def _get_embedding_model(self) -> OpenAIEmbeddings:
+
+        if self._mock:
+            from models.mock_embeddings import MockEmbeddings
+            return MockEmbeddings(dimensions=1536)
 
         # Initialize the OpenAI Embeddings
         # see: https://docs.langchain.com/oss/python/integrations/text_embedding/openai
@@ -48,10 +42,22 @@ class OpenAIModel:
         )
 
     def _load_llm(self) -> ChatOpenAI:
-        # This initializes the OpenAI embeddings model using the specified endpoint, API key, and model name.
         # This initializes the Chat OpenAI model using the provided endpoint, API key, deployment name.
-
         # Initialize the Chat OpenAI model
+
+        # --- Temp --- #
+        if self._mock:
+            mocked_responses = [
+                f'{{"query": "dosage for scurvy variation {i}", "filter": null}}' 
+                for i in range(300)
+            ]
+            
+            return FakeListChatModel(responses=mocked_responses)
+
+            #mocked_llm_json_output = '{"query": "dosage for scurvy", "filter": null}'
+            #return FakeListChatModel(responses=[mocked_llm_json_output] * 20)
+        # --- Temp --- #
+
         return ChatOpenAI(
             # base_url=OPENAI_API_BASE,      # Fill in the endpoint
             openai_api_base=OPENAI_API_BASE,    
@@ -106,3 +112,4 @@ class OpenAIModel:
         # Important: In the LLM-as-string case, you might get "[]" here.
         # The calling code handles the difference between an empty string and the literal string "[]"
         return content
+

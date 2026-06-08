@@ -17,9 +17,9 @@ from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 from langgraph.graph import StateGraph, END, START  # State graph for managing states in LangChain
 
-# Local
+# Local Libraries
 from models.agentic_state import AgentState
-from src.config import AI_ROLE, EVAL_THRESHOLD, I_DOCUMENT, I_PLUS
+from src.config import AI_ROLE, EVAL_THRESHOLD, I_HANDSHAKE, I_DOCUMENT, I_INFO, I_PLUS, I_WARNING
 
 
 class AgenticRagTool:
@@ -159,7 +159,7 @@ class AgenticRagTool:
         state['expanded_query'] = chain.invoke({
             "query": original_query,
             # Note: Feedback is injected via the system_message,
-            "ROLE": state['AI_ROLE'],
+            "AI_ROLE": state['AI_ROLE'],
         })
 
         # Clear the feedback for the next node
@@ -168,7 +168,7 @@ class AgenticRagTool:
         return state
 
 
-    # --- RETRIEVE CONTEXT
+    # --- RETRIEVE CONTEXT -- #
     def retrieve_context(self, state: AgentState) -> AgentState:
         """
         Retrieves context from the vector store using the expanded or original query.
@@ -188,7 +188,7 @@ class AgenticRagTool:
         # Retrieve documents from the vector store
         retrieved_docs = self.retriever.invoke(query)
 
-        print("{I_DOCUMENT} Retrieved documents:", retrieved_docs)  # Debugging: Print the raw docs object
+        print(f"{I_DOCUMENT} Retrieved documents:", retrieved_docs)  # Debugging: Print the raw docs object
 
         # Extract both page_content and metadata from each document
         state['context'] = [
@@ -204,7 +204,7 @@ class AgenticRagTool:
         return state
 
 
-    # --- CRAFT RESPONSE
+    # --- CRAFT RESPONSE --- #
     def craft_response(self, state: Dict) -> Dict:
         """
         Generates a response using the retrieved context, focusing on nutrition disorders.
@@ -218,7 +218,7 @@ class AgenticRagTool:
         print("\n--- craft_response ---")
 
         system_message = """
-        You are an expert AI {ROLE}, specializing in **Nutritional Disorders**. Your sole task is to analyze the provided CONTEXT and synthesize a direct, comprehensive answer to the user's QUERY.
+        You are an expert AI {AI_ROLE}, specializing in **Nutritional Disorders**. Your sole task is to analyze the provided CONTEXT and synthesize a direct, comprehensive answer to the user's QUERY.
 
         **STRICT GENERATION RULES:**
         1.  **Groundedness:** Generate the response using **ONLY** the information found in the retrieved CONTEXT. Do not use outside knowledge.
@@ -242,8 +242,8 @@ class AgenticRagTool:
         response = chain.invoke({
             "query": state['query'],
             "context": "\n".join([doc["content"] for doc in state['context']]),
-            "feedback": state["feedback"], # add feedback to the prompt
-            "ROLE": state["ROLE"],
+            "feedback": state["feedback"], # Add feedback to the prompt.
+            "AI_ROLE": state["AI_ROLE"],
         })
 
         state['response'] = response
@@ -253,7 +253,7 @@ class AgenticRagTool:
         return state
 
 
-    # --- SCORE GROUNDEDNESS
+    # --- SCORE GROUNDEDNESS --- #
     def score_groundedness(self, state: Dict) -> Dict:
         """
         Checks whether the response is grounded in the retrieved context.
@@ -267,7 +267,7 @@ class AgenticRagTool:
 
         print("\n# --- check_groundedness --- #")
 
-        system_message = """You are a meticulous AI {ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
+        system_message = """You are a meticulous AI {AI_ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
         Calculate a score from 0.0 to 1.0 that represents the fraction of claims in the response that are directly and verifiably supported by the context.
         - A score of 1.0 means every claim in the response is fully supported by the context.
         - A score of 0.0 means no claims in the response are supported by the context.
@@ -276,7 +276,7 @@ class AgenticRagTool:
         """
 
         groundedness_prompt = CoreChatPromptTemplate.from_messages([
-            ("system", system_message),
+            ("system", system_message.strip()),
             ("user", "Context: {context}\nResponse: {response}\n\nGroundedness score:")
         ])
 
@@ -284,21 +284,21 @@ class AgenticRagTool:
         groundedness_score = float(chain.invoke({
             "context": "\n".join([doc["content"] for doc in state['context']]),
             "response": state['response'],
-            "ROLE": state["ROLE"],
+            "AI_ROLE": state["AI_ROLE"],
         }))
 
 
         state['groundedness_loop_count'] += 1
 
         print("groundedness_score: ", groundedness_score)
-        print("{I_PLUS} Groundedness Incremented {I_PLUS}")
+        print(f"{I_PLUS} Groundedness Incremented {I_PLUS}")
 
         state['groundedness_score'] = groundedness_score
 
         return state
 
 
-    # --- CHECK PRECISION
+    # --- CHECK PRECISION --- #
     def check_precision(self, state: Dict) -> Dict:
         """
         Checks whether the response precisely addresses the user’s query.
@@ -313,7 +313,7 @@ class AgenticRagTool:
         print("\n# --- check_precision --- #")
 
         system_message = """
-        As an AI {ROLE} evaluate whether the response precisely addresses the user's query.
+        As an AI {AI_ROLE} evaluate whether the response precisely addresses the user's query.
         Evaluate, assign and return the precision score for the response.  Your evaluation is based solely on the relationship between the response and the query. Do not consider anything else.
 
         The score is from 0.0 (least) to 1.0 (best).
@@ -324,7 +324,7 @@ class AgenticRagTool:
         """
 
         precision_prompt = CoreChatPromptTemplate.from_messages([
-            ("system", system_message),
+            ("system", system_message.strip()),
             ("user", "Query: {query}\nResponse: {response}\n\nPrecision score:")
         ])
 
@@ -332,19 +332,19 @@ class AgenticRagTool:
         precision_score = float(chain.invoke({
             "query": state['query'],
             "response": state['response'],
-            "ROLE": state["ROLE"],
+            "AI_ROLE": state["AI_ROLE"],
         }))
 
         state['precision_score'] = precision_score
         state['precision_loop_count'] += 1
 
         print("precision_score:", precision_score)
-        print("# --- Precision Incremented --- #")
+        print(f"{I_PLUS} Precision Incremented. {I_PLUS}")
 
         return state
 
 
-    # --- REFINE RESPONSE
+    # --- REFINE RESPONSE --- #
     def refine_response(self, state: Dict) -> Dict:
         """
         Suggests improvements for the generated response.
@@ -359,7 +359,7 @@ class AgenticRagTool:
         print("\n# --- refine_response --- #")
 
         system_message = """
-        You are an AI {ROLE} Quality Analyst and Critic. Your sole task is to provide constructive feedback on a given response based on the user's original query.
+        You are an AI {AI_ROLE} Quality Analyst and Critic. Your sole task is to provide constructive feedback on a given response based on the user's original query.
         Your feedback should identify potential gaps, ambiguities, or missing details and suggest specific improvements to enhance the response's accuracy and completeness.
 
         - Use bullet points to structure your suggestions.
@@ -376,9 +376,14 @@ class AgenticRagTool:
         chain = refine_response_prompt | self.llm | StrOutputParser()
 
         # Store response suggestions in a structured format
-        feedback = f"Previous Response: {state['response']}\nSuggestions: {chain.invoke({'query': state['query'], 'response': state['response'], 'ROLE': state['ROLE']})}"
+        suggestions = chain.invoke({
+            'query': state['query'], 
+            'response': state['response'], 
+            'AI_ROLE': state['AI_ROLE']
+            })
+        feedback = f"Previous Response: {state['response']}\nSuggestions: {suggestions}"
 
-        print("feedback: ", feedback)
+        print(f"Feedback: {feedback}")
         print(f"State: {state}")
 
         state['feedback'] = feedback
@@ -386,7 +391,7 @@ class AgenticRagTool:
         return state
 
 
-    # --- REFINE QUERY
+    # --- REFINE QUERY --- #
     def refine_query(self, state: Dict) -> Dict:
         """
         Suggests improvements for the expanded query, returning them in a structured JSON format.
@@ -433,7 +438,7 @@ class AgenticRagTool:
         suggestions = chain.invoke({
             "query": state['query'],
             "expanded_query": state['expanded_query'],
-            "ROLE": state["ROLE"],
+            "AI_ROLE": state["AI_ROLE"],
         })
 
         # Store the JSON object as a string in the state for the next node to consume
@@ -446,14 +451,17 @@ class AgenticRagTool:
         return state
 
 
-    # --- HAS MAX ITERATIONS REACHED?
-    # Checks if the maximum number of iterations has been reached
-    # Note: This method must be before should_* methods.
+    # --- HAS MAX ITERATIONS REACHED? --- #
     def has_max_iterations_reached(self, state: Dict, var: str) -> bool:
+        """
+        # Checks if the maximum number of iterations has been reached
+        # Note: This method must be before should_* methods.
+        """
+
         return state[var] >= state["loop_max_iter"]
 
 
-    # --- CHECK GROUNDEDNESS
+    # --- CHECK GROUNDEDNESS --- #
     def should_continue_groundedness(self, state) -> str:
         """
         Decides if groundedness is enough or needs improvement.
@@ -468,7 +476,7 @@ class AgenticRagTool:
         print("groundedness loop count: ", state['groundedness_loop_count'])
 
         if state["groundedness_score"] >= EVAL_THRESHOLD:  # Threshold for groundedness
-            print("Moving to precision...")
+            print(f"{I_HANDSHAKE} Moving to precision...")
 
             return "check_precision"
 
@@ -476,12 +484,12 @@ class AgenticRagTool:
             if self.has_max_iterations_reached(state, "groundedness_loop_count"):
                 return "max_iterations_reached"
             else:
-                print("--- Groundedness Score Threshold Not met. Refining Response -----")
+                print(f"# --- {I_WARNING} Groundedness Score Threshold Not met. Refining Response --- #")
 
                 return "refine_response"
 
 
-    # --- CHECK PRECISION
+    # --- CHECK PRECISION --- #
     def should_continue_precision(self, state: Dict) -> str:
         """
         Decides if precision is enough or needs improvement.
@@ -502,12 +510,12 @@ class AgenticRagTool:
             if self.has_max_iterations_reached(state, "precision_loop_count"):  # Maximum allowed loops
                 return "max_iterations_reached"
             else:
-                print("# --- Precision Score Threshold not met. Refining Query --- #")
+                print(f"# --- {I_WARNING} Precision Score Threshold not met. Refining Query --- #")
 
                 return "refine_query"  # Refine the query
 
 
-    # --- MAX ITERATIONS REACHED
+    # --- MAX ITERATIONS REACHED --- #
     def max_iterations_reached(self, state: AgentState) -> AgentState:
         """
         Handles the case where max iterations are reached.
@@ -522,4 +530,5 @@ class AgenticRagTool:
 
 
     def display_workflow(self, app) -> None:
+        print(f'{I_INFO} Displaying Workflow Image...')
         display(Image(app.get_graph().draw_mermaid_png()))
