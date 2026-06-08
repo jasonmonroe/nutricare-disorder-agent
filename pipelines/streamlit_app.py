@@ -63,10 +63,7 @@ class StreamLitApp:
     def __init__(self, llama) -> None:
 
         self.llama = llama
-
         self.start_session()
-        self.check_program_keys()
-        self.check_document_file()
 
     def start_session(self) -> None:
         # --- INITIALIZE PERSISTENT STATE ---

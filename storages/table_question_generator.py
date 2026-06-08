@@ -8,7 +8,7 @@
 import random
 
 # Vendor Libraries
-from langchain.chains.query_constructor.base import AttributeInfo
+from langchain_classic.chains.query_constructor.schema import AttributeInfo
 
 # Local Libraries
 from models.chroma import ChromaModel

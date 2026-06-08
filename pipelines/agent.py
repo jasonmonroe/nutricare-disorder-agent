@@ -14,7 +14,7 @@ from models.agentic_rag_tool import AgenticRagTool
 from models.nutrition_bot import NutritionBot
 from tools.agentic_rag import make_agentic_rag_tool
 
-from src.config import AI_TITLE, EXIT_CMD, I_CLOCK, I_CROSSMARK, I_SAD, I_SMILING, I_SURPRISED, I_THINKING, I_WATCH
+from src.config import AI_TITLE, EXIT_CMD, I_BOT, I_CLOCK, I_CROSSMARK, I_SAD, I_SMILING, I_SURPRISED, I_THINKING, I_WATCH
 from src.utils import show_datetime, start_timer, get_time
 
 """
@@ -27,6 +27,7 @@ def build(dataset: dict) -> CompiledStateGraph:
     :param dataset:
     :return: CompiledStateGraph
     """
+    print(f'\n# --- {I_BOT} Start Building agent pipeline {I_BOT} --- #')
 
     chroma_db = dataset['chroma_db']
     openai_model = dataset['openai_model']
@@ -40,10 +41,14 @@ def build(dataset: dict) -> CompiledStateGraph:
     workflow_app = agentic_rag_tool.compile()
     agentic_rag_tool.display_workflow(workflow_app)
 
+    print(f'\n# --- {I_BOT} Completed agent pipeline {I_BOT} --- #')
+
     return workflow_app
 
 
 def start(dataset: dict) -> None:
+    print(f'\n# --- {I_BOT} Starting agent pipeline {I_BOT} --- #')
+
     """
     Starts the agentic app!
 

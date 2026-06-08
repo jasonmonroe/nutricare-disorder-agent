@@ -49,21 +49,18 @@ load_dotenv()
 from langchain_core.documents import Document  # Document data structures
 from langchain_core.runnables import RunnablePassthrough  # LangChain core library for running pipelines
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser  # String output parser
-from langchain.prompts import ChatPromptTemplate  # Template for chat prompts
-from langchain.chains.query_constructor.base import AttributeInfo  # Base classes for query construction
-from langchain.retrievers.self_query.base import SelfQueryRetriever  # Base classes for self-querying retrievers
-from langchain.retrievers.document_compressors import LLMChainExtractor, CrossEncoderReranker  # Document compressors
-from langchain.retrievers import ContextualCompressionRetriever  # Contextual compression retrievers
+from langchain_classic.prompts import ChatPromptTemplate  # Template for chat prompts
+from langchain_classic.chains.query_constructor.schema import AttributeInfo
+from langchain_classic.retrievers.self_query.base import SelfQueryRetriever
+from langchain_classic.retrievers.document_compressors import LLMChainExtractor, CrossEncoderReranker
+from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 
 # LangChain community & experimental imports
 from langchain_community.vectorstores import Chroma  # Implementations of vector stores like Chroma
 from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader  # Document loaders for PDFs
-from langchain_community.cross_encoders import HuggingFaceCrossEncoder  # Cross-encoders from HuggingFace
 from langchain_experimental.text_splitter import SemanticChunker  # Experimental text splitting methods
-from langchain.text_splitter import (
-    RecursiveCharacterTextSplitter  # Recursive splitting of text by characters
-)
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.tools import tool
 #from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
@@ -100,7 +97,8 @@ from datetime import datetime, UTC
 # see: https://hugginface.co
 # see: Model -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-model
 # see: Space -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-bot
-HF_REPO_ID = "jasonmonroe/smart-nutri-disorder-specialist-bot"
+# Note: Use your own Huggingface Repo ID
+HF_REPO_ID = os.getenv("HF_REPO_ID")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 # Groq

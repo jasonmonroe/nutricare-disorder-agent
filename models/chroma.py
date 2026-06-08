@@ -8,7 +8,6 @@
 import logging
 import os
 import random
-from dataclasses import dataclass
 
 # Vendor Libraries
 import chromadb
@@ -17,38 +16,24 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_chroma import Chroma  
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-# Self-Query and Document Compression routing via standardized engine namespaces
-from langchain.retrievers.self_query.base import SelfQueryRetriever
-from langchain.retrievers.document_compressors import LLMChainExtractor
-
-# FIXED: Rerankers are now imported from the community collection explicitly
-from langchain_community.document_compressors.cross_encoder_rerank import CrossEncoderReranker
-from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
-
+from langchain_classic.chains.query_constructor.schema import AttributeInfo
+from langchain_classic.retrievers.self_query.base import SelfQueryRetriever
 # Core asset loading layers maintained inside generic community spaces
 from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader
 from langchain_experimental.text_splitter import SemanticChunker
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.config import (
     CHROMA_SERVER_NO_TELEMETRY,
     DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_DIR,
     I_QUES,
+    OPENAI_API_BASE, 
+    OPENAI_API_KEY,
     SEMANTIC_THRESH_LIMIT,
     VECTOR_RESULT_CNT,
     VECTORS_DIR
 )
-
-
-@dataclass
-class AttributeInfo:
-    """
-    Bypasses LangChain's shifting dependency structures by using a native 
-    Python dataclass that perfectly mimics the expected schema interface.
-    """
-    name: str
-    description: str
-    type: str
 
 
 class ChromaModel:
@@ -60,6 +45,8 @@ class ChromaModel:
     def __init__(self, dataset: dict):
         # Initialize ChromaDB client without diagnostic telemetry overheads
         os.environ["CHROMA_SERVER_NO_TELEMETRY"] = CHROMA_SERVER_NO_TELEMETRY
+        os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE
+        os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
         self.chromadb_client = chromadb.PersistentClient()
@@ -102,11 +89,13 @@ class ChromaModel:
 
         for key, value in dataset.items():
             if hasattr(self, key):
+                print(f'\nSetting {key} = {value}')
                 setattr(self, key, value)
 
         if self.llm is None and 'openai_model' in dataset:
             openai_model = dataset['openai_model']
             self.llm = openai_model.llm
+            print(f'\n\nsetting self.llm = openai_model.llm')
 
     def export(self) -> dict:
         """Exports attributes to be injected into child or dependent pipeline classes."""
@@ -127,7 +116,7 @@ class ChromaModel:
         """
 
         retriever = self.structured_hyp_retriever if is_hyp else self.structured_retriever
-        print('--- Hypothetical Retriever ---' if is_hyp else '--- Retriever ---')
+        print('\n--- Hypothetical Retriever ---' if is_hyp else '\n--- Retriever ---')
 
         if pluck:
             ques = random.choice(self.queries())
@@ -144,6 +133,17 @@ class ChromaModel:
 
     def _get_semantic_text_splitter(self) -> SemanticChunker:
         """Initializes the semantic text splitter using the target embedding framework."""
+
+        """
+        Initializes a local text splitter to avoid heavy proxy batch overheads.
+        Note: ⚠️ Use RecursiveCharacterTextSplitter() until credentials are validated.
+        """
+        return RecursiveCharacterTextSplitter(
+            chunk_size=1000,       # Adjust based on your preferred configuration size
+            chunk_overlap=200,
+            length_function=len
+        )
+
         return SemanticChunker(
             self.embedding_model,
             breakpoint_threshold_type='percentile',
@@ -155,7 +155,8 @@ class ChromaModel:
         vector_storage = Chroma(
             collection_name=self.collection_name,
             embedding_function=self.embedding_model,
-            persist_directory=f"{self.collection_name}_db"
+            #persist_directory=f"{self.collection_name}_db"
+            persist_directory=self._format_dir(self.collection_name)
         )
         return vector_storage.as_retriever(
             search_type="similarity",

@@ -24,9 +24,10 @@ from llama_parse import LlamaParse  # Document parsing library
 from src.config import (
     DOCUMENT_DIR, 
     DOCUMENT_FILE, 
+    DOCUMENT_FILEPATH,
     DOCUMENT_ZIP,
+    I_BROOM,
     I_CHECKMARK,
-    I_CROSSMARK,
     I_DB,
     I_DISK,
     I_DOCUMENT,
@@ -79,7 +80,7 @@ class DocHandler():
         :return:
         """
 
-        id_str = f"{source}|page{page_no}|{content[:64]}"
+        id_str = f"source:{source}|page{page_no}|content:{content[:64]}"
         return str(hashlib.sha256(id_str.encode('utf-8')).hexdigest())
 
     def show_sample(self, samp_docs: list, samp_title: str = "") -> None:
@@ -91,9 +92,11 @@ class DocHandler():
         :return: None
         """
 
+        print(f'\n# --- {I_DOCUMENT} Show sample documents {I_DOCUMENT} --- #')
+        
         doc_cnt = len(samp_docs)
         if doc_cnt == 0:
-            print(f"{I_WARNING} [WARNING] Checked baseline collection is empty.")
+            print(f"{I_WARNING} Checked baseline collection is empty.")
             return
 
         index = random.randint(0, doc_cnt - 1)
@@ -119,7 +122,8 @@ class DocHandler():
 
     def show_documents(self) -> None:
         """Utility visualization logger looping structural collection layers."""
-        print(f'\n# {I_DOCUMENT} --- Showing Documents --- {I_DOCUMENT} #')
+        
+        print(f'\n# --- {I_DOCUMENT} Showing Documents {I_DOCUMENT} --- #')
         for i in self.documents:
             print("Source:", i.metadata.get('source', 'Unknown'))
             print("Page:", i.metadata.get('page', 'Unknown'), "\n")
@@ -265,7 +269,8 @@ class DocHandler():
 
     def show_tables(self) -> None:
         """Displays formatted representation profiles of isolated layout data tables."""
-        print(f'# --- Showing Table Information --- #')
+        
+        print(f'\n# --- {I_DB} Showing Table Information {I_DB} --- #')
         for file_name, file_tables in self.tables.items():
             print(f"Tables from {file_name}:")
             for page_num, table_rows in file_tables.items():
@@ -293,7 +298,7 @@ class DocHandler():
         Wipes data inside target persistent storage directories to allow clean ingestion.
         FIXED: Uses recursive shutil tree removal to clear nested ChromaDB states safely.
         """
-        print(f"{I_DB} # --- Wiping {VECTORS_DIR} --- # {I_DB}")
+        print(f"\n# --- {I_BROOM} Wiping {VECTORS_DIR} {I_BROOM} --- #")
 
         if not os.path.exists(VECTORS_DIR):
             # Create fresh db directory
@@ -305,41 +310,60 @@ class DocHandler():
             for filename in os.listdir(VECTORS_DIR):
                 file_path = os.path.join(VECTORS_DIR, filename)
                 try:
-                    print(f"{I_CROSSMARK} Wiping {I_DOCUMENT} internal component: {file_path} ...")
+                    print(f"{I_CHECKMARK} Wiping {I_DOCUMENT} internal component: {file_path} ...")
                     if os.path.isfile(file_path) or os.path.islink(file_path):
                         os.unlink(file_path)
                     elif os.path.isdir(file_path):
                         shutil.rmtree(file_path)
                 except Exception as e:
-                    print(f"{I_FLAG} [ERROR] Failed to wipe element path target {file_path}. Exception: {e}")
+                    print(f"{I_FLAG} Failed to wipe element path target {file_path}. Exception: {e}")
+            print('\n')
 
         return None
 
     @staticmethod
-    def _unzip(self) -> bool:
-
-        document_path = DOCUMENT_DIR + '/' + DOCUMENT_FILE
-
-        # If document path exists use it if not, unzip the fiile and use it
-        if not os.path.exists(document_path):
-            print(f'\nUnzipping {I_DISK} {DOCUMENT_ZIP}...')
+    def _unzip() -> bool:
+        """Extracts reference files dynamically from the project zip archive.
         
-            # Unzipping the nutrition medical reference documents into the Nutritional Medical Reference folder
-            # loading the temp.zip and creating a zip object
+        Uses DOCUMENT_FILEPATH for local path verification, while inspecting the 
+        internal zip manifest to safely handle folder-nested contents inside the archive.
+        """
+        # If the file already exists at our new explicit path, skip extraction entirely
+        if not os.path.exists(DOCUMENT_FILEPATH):
+            print(f'\nUnzipping {I_DISK} {DOCUMENT_ZIP}...')
+            
+            # Double check that the zip file actually exists before trying to read it
+            if not os.path.exists(DOCUMENT_ZIP):
+                print(f'{I_FLAG} Source archive file {DOCUMENT_ZIP} does not exist!')
+                return False
+
+            # FIXED: Using ZipFile directly to match your top-level import
             with ZipFile(DOCUMENT_ZIP, 'r') as zip_handle:
-                # Extracting specific file in the zip into a specific location.
-                zip_handle.extract(
-                    DOCUMENT_FILE,
-                    path=DOCUMENT_DIR
-                )
-                zip_handle.close()
+                # 1. Search the zip manifest array for any entry ending with our filename
+                archive_target_key = None
+                for member in zip_handle.namelist():
+                    if member.endswith(DOCUMENT_FILE):
+                        archive_target_key = member
+                        break
+
+                # If the file wasn't found anywhere inside the archive, exit gracefully
+                if not archive_target_key:
+                    print(f'{I_FLAG} Could not find {DOCUMENT_FILE} anywhere inside the archive!')
+                    return False
+
+                # 2. Ensure destination folder exists, read the zip stream, and write 
+                # it out directly to your new clean local path constant
+                os.makedirs(DOCUMENT_DIR, exist_ok=True)
+                with zip_handle.open(archive_target_key) as source_stream:
+                    with open(DOCUMENT_FILEPATH, 'wb') as dest_file:
+                        dest_file.write(source_stream.read())
                 
                 sleep(1)
 
-        
-        if os.path.exists(document_path):
-            print(f'{I_DOCUMENT}{DOCUMENT_DIR}/{DOCUMENT_FILE} successfully unzipped and ready for processing.')
+        # Final logic boundary check utilizing your new path constant
+        if os.path.exists(DOCUMENT_FILEPATH):
+            print(f'{I_DOCUMENT} {DOCUMENT_FILEPATH} successfully unzipped and ready for processing.')
             return True
 
-        print(f'{I_FLAG}{DOCUMENT_FILE} not unzipped!')
+        print(f'{I_FLAG} {DOCUMENT_FILE} not unzipped!')
         return False

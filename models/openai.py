@@ -36,29 +36,28 @@ class OpenAIModel:
 
         # Initialize the Chat OpenAI model
         return ChatOpenAI(
-            base_url=OPENAI_API_BASE,         # Fill in the endpoint
-            openai_api_key=OPENAI_API_KEY,  # Fill in the API key
-            model=OPENAI_MODEL,               # Fill in the deployment name (e.g., gpt-4o-mini)
-            streaming=False,
+            # base_url=OPENAI_API_BASE,      # Fill in the endpoint
+            openai_api_base=OPENAI_API_BASE,    
+            openai_api_key=OPENAI_API_KEY,   # Fill in the API key+
             max_tokens=None,
-
-            # New additions for robustness and quality:
-            temperature=0.0,                 # Set for factual, deterministic output
             max_retries=5,                   # Retry failed calls
-            # Timeout after 60 seconds
+            model=OPENAI_MODEL,              # Fill in the deployment name (e.g., gpt-4o-mini)
+            streaming=False,
+            temperature=0.0,                 # Set for factual, deterministic output for robustness and quality
         )
 
     def _load_llm_chatbot(self) -> ChatOpenAI:
         # Note: This is for Nutrition Bot
         return ChatOpenAI(
             model_name=OPENAI_MODEL,  # Specify the model to use (e.g., a GPT-4 optimized version)
+            #base_url = OPENAI_API_BASE,
+            openai_api_base=OPENAI_API_BASE,
             openai_api_key=OPENAI_API_KEY,  # API key for authentication
-            base_url = OPENAI_API_BASE,
             temperature=0  # Controls randomness in responses; 0 ensures deterministic results
         )
 
     @staticmethod
-    def filter_response(self, resp: str, index=None) -> str:
+    def filter_response(resp: str, index=None) -> str:
         # 1. Check if the response is already a string (raw output)
         if isinstance(resp, str):
             content = resp.strip()

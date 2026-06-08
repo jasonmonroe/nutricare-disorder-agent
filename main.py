@@ -1,6 +1,23 @@
-from __future__ import annotations 
+from __future__ import annotations
+import os
+from dotenv import load_dotenv
 
-from src.config import I_TIMER, I_WARNING
+# Force load_dotenv to overwrite any existing terminal environmental variables
+load_dotenv(override=True)
+
+# --- OpenAI Base URL Settings --- #
+OPENAI_API_BASE_ENV = os.environ.get("OPENAI_API_BASE")
+
+# Defensive Safety Guard: Ensure the environment variable actually loaded
+if not OPENAI_API_BASE_ENV:
+    print("\n[CRITICAL ERROR] 'OPENAI_API_BASE' is missing from your .env file.")
+    print("Please check your configuration files before running the pipeline.\n")
+    import sys
+    sys.exit(1)
+
+# Explicitly re-bind it to guarantee LangChain background workers capture it
+os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE_ENV
+# --- OpenAI Base URL Settings --- #
 
 """
 +--------------+
@@ -61,10 +78,7 @@ if sys.version_info >= (3, 13):
 
 import sys
 import warnings
-from dotenv import load_dotenv
 
-# Initialize configurations immediately before caching/vendor initialization
-load_dotenv()
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 # Vendor Libraries
@@ -77,6 +91,7 @@ from pipelines.agent import build as run_build_agent_pipeline, start as run_star
 from pipelines.data_processor import run as run_data_retrieval_pipeline
 from pipelines.huggingface import Huggingface 
 from pipelines.streamlit_app import StreamLitApp
+from src.config import I_TIMER, I_WARNING
 from src.utils import get_run_id, show_title_banner, start_timer, show_timer
 
 
@@ -109,7 +124,7 @@ def _parse_args(command_line_args: list[str]) -> dict:
 # Ensure your entry block checks against '__main__', not 'main'
 if __name__ == '__main__':
     run_id = get_run_id()
-    print(f'\n----- {I_TIMER} START RUN ID: {run_id} {I_TIMER} -----\n')
+    print(f'\n]-----> {I_TIMER} START RUN ID: {run_id} {I_TIMER} <-----[\n')
     start_time = start_timer()
 
     show_title_banner()
@@ -153,4 +168,4 @@ if __name__ == '__main__':
         run_streamlit_pipeline(llama)
 
     show_timer(start_time)
-    print(f'\n----- {I_TIMER} END RUN ID: {run_id} {I_TIMER} -----')
+    print(f'\n]-----> {I_TIMER} END RUN ID: {run_id} {I_TIMER} <-----[')

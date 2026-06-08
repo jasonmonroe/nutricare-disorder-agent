@@ -4,6 +4,10 @@
 # |     CONFIG     |
 # +----------------+
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import os
 import random
 
@@ -15,7 +19,8 @@ import random
 # see: https://hugginface.co
 # see: Model -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-model
 # see: Space -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-bot
-HF_REPO_ID = "jasonmonroe/smart-nutri-disorder-specialist-bot"
+# Note: Make sure you have your own Huggingface Repo ID!
+HF_REPO_ID = os.getenv("HF_REPO_ID")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 # Groq
@@ -45,8 +50,8 @@ EMPTY_RESP = "[]" # Empty response
 # Define the Google Drive and other directory paths
 DOCUMENT_DIR = "data/nutritional-medical-reference"
 DOCUMENT_FILE = 'nutritional-disorders.pdf'
+DOCUMENT_FILEPATH = DOCUMENT_DIR + '/' + DOCUMENT_FILE
 DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
-VECTORS_DIR= "db/"
 
 # Batch sizes (per batch) for processing documents and text chunks
 DOCUMENT_CHUNK_BATCH_SIZE = 100
@@ -55,6 +60,7 @@ RETRIEVAL_LIMIT = 5
 SECS_IN_MIN = 60 # secs in min
 SEMANTIC_THRESH_LIMIT = random.randint(80, 85)
 VECTOR_RESULT_CNT = 3
+VECTORS_DIR= "db/"
 
 # Used for searching the document for pairing subject for building an effective RAG system.
 # This query asks a specific question about vitamin deficiencies and memory impairment.
@@ -109,6 +115,7 @@ MAX_RUN_ID=99999
 I_ANGRY = '😠'
 I_BOT = '🤖'
 I_BOOK = '📚'
+I_BROOM = '🧹'
 I_CHECKMARK = '✅'
 I_CLOCK = '⏰'
 I_CONFUSED = '😕'

@@ -21,12 +21,9 @@ from src.config import (
     DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
     DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_DIR,
-    DOCUMENT_FILE,
-    DOCUMENT_ZIP,
-    I_DB,
+    I_RUNNING,
     SIMILARITY_SEARCH_QUERY,
     VECTOR_RESULT_CNT, 
-    I_DISK
 )
 from src.doc_handler import DocHandler
 from src.eda import show_histogram
@@ -42,7 +39,7 @@ def run(dataset: dict) -> None:
     """
     warnings.filterwarnings('ignore', category=DeprecationWarning)
 
-    print(f'# --- {I_DB} Running data processor pipeline {I_DB} --- #')
+    print(f'\n# --- {I_RUNNING} Running data processor pipeline {I_RUNNING} --- #')
 
     # Pluck all the datasets needed to run this
     llama = dataset['llama']
@@ -121,4 +118,4 @@ def run(dataset: dict) -> None:
     # Note: To randomly pluck a question set pluck param to True
     chroma_db.query_questions(is_hyp=True, pluck=False)
 
-    print('DEBUG: Exiting data_processor:run() ...')
+    print(f'\n# --- {I_RUNNING} Completed data processor pipeline {I_RUNNING} --- #')
