@@ -19,7 +19,16 @@ from langgraph.graph import StateGraph, END, START  # State graph for managing s
 
 # Local Libraries
 from models.agentic_state import AgentState
-from src.config import AI_ROLE, EVAL_THRESHOLD, I_HANDSHAKE, I_DOCUMENT, I_INFO, I_PLUS, I_WARNING
+from src.config import (
+    AI_ROLE, 
+    EVAL_THRESHOLD, 
+    I_HANDSHAKE, 
+    I_DOCUMENT, 
+    I_INFO, 
+    I_PLUS, 
+    I_WARNING, 
+    WORKFLOW_IMAGE
+    )
 
 
 class AgenticRagTool:
@@ -529,6 +538,29 @@ class AgenticRagTool:
         return state
 
 
-    def display_workflow(self, app) -> None:
-        print(f'{I_INFO} Displaying Workflow Image...')
-        display(Image(app.get_graph().draw_mermaid_png()))
+    def display_workflow(self, wf_app) -> None:
+        """
+        Generates the graph diagram and saves it as a local file 
+        so it can be viewed outside of a Jupyter environment.
+        """
+        print(f'{I_INFO} Generating and saving Workflow Flowchart Image...')
+        
+        try:
+            # Fetch the raw binary PNG data from the compiled graph
+            png_bytes = wf_app.get_graph().draw_mermaid_png()
+            
+            # Write the bytes to your project directory
+            with open(WORKFLOW_IMAGE, "wb") as f:
+                f.write(png_bytes)
+                
+            print(f"✅ Success! Workflow diagram saved to: ./{WORKFLOW_IMAGE}")
+            print("💡 Tip: You can double-click this image in your project tree to view your flowchart!")
+
+            # For Jupyter Notebooks, JupyterLab, or IPython Interactive Shells.
+            display(Image(png_bytes))
+            
+        except Exception as e:
+            print(f"❌ Failed to generate graph image: {str(e)}")
+            print("Ensure you have graphviz or pygraphviz/pyppeteer installed if required by your LangGraph version.")
+
+        

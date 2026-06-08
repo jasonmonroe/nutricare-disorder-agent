@@ -39,6 +39,7 @@ def build(dataset: dict) -> CompiledStateGraph:
     # --- Visualize Workflow --- #
     agentic_rag_tool = AgenticRagTool(llm, chroma_db.retriever)
     workflow_app = agentic_rag_tool.compile()
+    print(f'workflow_app type = {type(workflow_app)}')
     agentic_rag_tool.display_workflow(workflow_app)
 
     print(f'\n# --- {I_RUNNING} Completed agent pipeline {I_RUNNING} --- #')
@@ -75,12 +76,12 @@ def start(dataset: dict) -> None:
     show_logs = dataset.get('log', False)
     print(f'DEBUG: show_logs:{show_logs}')
 
-    openai_model = dataset['openai_model']
-    llm_chatbot = openai_model.llm_chatbot
-    llm = openai_model.llm
-    llama = dataset['llama']
     chroma_db = dataset['chroma_db']
-
+    openai_model = dataset['openai_model']
+    llama = dataset['llama']
+    llm = openai_model.llm
+    llm_chatbot = openai_model.llm_chatbot
+    
     rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever)
     chatbot = NutritionBot(llm_chatbot, tools=[rag_tool])
     chatbot.agent_executor.verbose = show_logs  # Set logging preferences

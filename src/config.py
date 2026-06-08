@@ -81,6 +81,7 @@ AI_ROLE = "Nutrition Disorder Specialist"
 AI_TITLE = "SMART NUTRITION DISORDER SPECIALIST BOT"
 APP_TITLE = 'Nutricare Disorder Agent'
 CHROMA_SERVER_NO_TELEMETRY = "true"
+WORKFLOW_IMAGE = "outputs/graph_workflow.png"
 
 # Define prompt messages and queries
 #
