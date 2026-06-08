@@ -124,7 +124,7 @@ def _parse_args(command_line_args: list[str]) -> dict:
 # Ensure your entry block checks against '__main__', not 'main'
 if __name__ == '__main__':
     run_id = get_run_id()
-    print(f'\n]-----> {I_TIMER} START RUN ID: {run_id} {I_TIMER} <-----[\n')
+    print(f'\n-----> {I_TIMER} START RUN ID: {run_id} {I_TIMER} <-----\n')
     start_time = start_timer()
 
     show_title_banner()
@@ -168,4 +168,4 @@ if __name__ == '__main__':
         run_streamlit_pipeline(llama)
 
     show_timer(start_time)
-    print(f'\n]-----> {I_TIMER} END RUN ID: {run_id} {I_TIMER} <-----[')
+    print(f'\n-----> {I_TIMER} END RUN ID: {run_id} {I_TIMER} <-----')

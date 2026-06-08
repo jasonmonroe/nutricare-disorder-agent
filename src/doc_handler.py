@@ -302,6 +302,7 @@ class DocHandler():
 
         if not os.path.exists(VECTORS_DIR):
             # Create fresh db directory
+            print(f'{I_WARNING}{VECTORS_DIR} does not exist.  Creating {I_DB} it now...')
             os.makedirs(VECTORS_DIR, exist_ok=True)
             return None
 

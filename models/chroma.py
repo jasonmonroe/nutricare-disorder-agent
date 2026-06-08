@@ -31,6 +31,7 @@ from src.config import (
     OPENAI_API_BASE, 
     OPENAI_API_KEY,
     SEMANTIC_THRESH_LIMIT,
+    SIMILARITY_SEARCH_QUERY,
     VECTOR_RESULT_CNT,
     VECTORS_DIR
 )
@@ -49,7 +50,16 @@ class ChromaModel:
         os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
-        self.chromadb_client = chromadb.PersistentClient()
+        # --- Temp --- #
+        # This prevents the 1032 Readonly Database lock when running consecutive pipelines.
+        try:
+            from chromadb.api.shared_system_client import SharedSystemClient
+            SharedSystemClient.clear()
+        except Exception:
+            pass
+        # --- Temp --- #
+
+        self.chromadb_client = chromadb.PersistentClient(path=f"./{VECTORS_DIR}")
 
         self.collection_name = None
         self.document_content_description = None
@@ -153,11 +163,13 @@ class ChromaModel:
     def get_retriever(self) -> VectorStoreRetriever:
         """Initializes vector retriever and gets vectorized data stored in Chroma."""
         vector_storage = Chroma(
+            client=self.chromadb_client,
             collection_name=self.collection_name,
             embedding_function=self.embedding_model,
             #persist_directory=f"{self.collection_name}_db"
             persist_directory=self._format_dir(self.collection_name)
         )
+
         return vector_storage.as_retriever(
             search_type="similarity",
             search_kwargs={"k": VECTOR_RESULT_CNT}
@@ -218,9 +230,10 @@ class ChromaModel:
     def _get_semantic_storage(self) -> Chroma:
         """Instantiates the specialized semantic storage partition layer."""
         return Chroma(
+            client=self.chromadb_client,
             embedding_function=self.embedding_model,
             collection_name="semantic_chunks",
-            persist_directory=self._format_dir("research")
+            #persist_directory=self._format_dir("research")
         )
 
     def add_semantic_documents(self, semantic_chunks: list) -> None:
@@ -238,9 +251,10 @@ class ChromaModel:
     def _get_vector_storage(self) -> Chroma:
         """Instantiates the generalized target collection vector layer."""
         return Chroma(
+            client=self.chromadb_client,
             embedding_function=self.embedding_model,
             collection_name=self.collection_name,
-            persist_directory=self._format_dir(self.collection_name)
+            #persist_directory=self._format_dir(self.collection_name)
         )
 
     def add_vector_documents(self, documents: list) -> None:
@@ -254,3 +268,10 @@ class ChromaModel:
         for i in range(0, len(documents), batch_size):
             batch = documents[i : i + batch_size]
             self.vector_storage.add_documents(batch)
+
+    def get_documents(self):
+        # Returns documents used by the doc_handler.
+        return self.semantic_storage.similarity_search(
+            query=SIMILARITY_SEARCH_QUERY,
+            k=VECTOR_RESULT_CNT
+        )
