@@ -17,6 +17,7 @@ from models.openai import OpenAIModel
 from src.config import (
     AI_ROLE, 
     EMPTY_RESP,
+    I_QUES,
     PROMPT_INSTR, 
 )
 from src.utils import handle_rate_limit_error, show_timer, start_timer
@@ -30,13 +31,13 @@ class TableQuestionGenerator(ChromaModel):
         self.doc_handle = None
         self.document_content_description = None
         self.llm = None
-        self.prompt = self._prompt()
+        self.prompt = self._prompt().strip()
         self.title = 'Hypothetical Table Questions'
 
     @staticmethod
     def _prompt():
         # Define a prompt for generating hypothetical questions for tables
-        return """
+        return f"""
         [SYSTEM INSTRUCTION]
         You are an AI {AI_ROLE} specialized in generating precise, clinically relevant questions for information retrieval.
         Your task is to analyze the provided CONTEXT and TABLE DATA, and generate a list of three hypothetical questions that are directly answerable by the data.
@@ -50,19 +51,21 @@ class TableQuestionGenerator(ChromaModel):
 
         [FULL CONTEXT]
         ---TEXT ADJACENT TO TABLE---
-        {docs}
+        {{docs}}
 
         --- TABLE DATA (Structured for Analysis) ---
-        {tables}
+        {{tables}}
 
         [OUTPUT FORMAT]
         Generate a JSON object containing a list of questions under the key "questions".
         The list must contain **a minimum of 1 and a maximum of 3** questions.
 
-        {PROMPT_INSTR}
+        {{PROMPT_INSTR}}
         """
 
     def get_hypothetical_questions(self, page_texts, tables):
+        print(f'# --- Getting Hypothetical Table Questions {I_QUES} --- #')
+        
         start_time = start_timer()
         rate_limit_hit = False
         table_hypothetical_questions = []
@@ -71,7 +74,7 @@ class TableQuestionGenerator(ChromaModel):
         hypothetical_questions_prompt = self._prompt().strip()
 
         # Generate hypothetical questions for each table in the documents
-        for document in tables:  # Iterate over all processed documents
+        for i, document in enumerate(tables, start = 1):  # Iterate over all processed documents
             for page_number in tables[document]:  # Iterate over pages in the document
                 table_in_page = tables[document][page_number]  # Extract the table from the document
 
@@ -90,10 +93,10 @@ class TableQuestionGenerator(ChromaModel):
                     questions = OpenAIModel.filter_response(response, page_number)
 
                 except Exception as e:
-                    handle_rate_limit_error(e, self.collection_name, sleep_time)
+                    handle_rate_limit_error(e, self.collection_name, sleep_time, i)
                     questions = EMPTY_RESP
 
-                    sleep_time, rate_limit_hit = handle_rate_limit_error(e, self.collection_name, sleep_time)
+                    sleep_time, rate_limit_hit = handle_rate_limit_error(e, self.collection_name, sleep_time, i)
 
                 if rate_limit_hit:
                     break

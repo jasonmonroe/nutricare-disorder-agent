@@ -34,10 +34,14 @@ from src.config import (
     I_WARNING,
     I_WATCH,
     HF_TOKEN,
+    HF_REPO_ID,
     LLAMA_KEY,
+    LLAMA_MODEL,
     MEM0_API_KEY,
     OPENAI_API_KEY,
     OPENAI_API_BASE,
+    OPENAI_EMBEDDING_MODEL,
+    OPENAI_MODEL,
 )
 from src.utils import show_datetime
 
@@ -96,12 +100,16 @@ class StreamLitApp:
     def check_program_keys(self) -> bool:
         # Load keys and check if any or missing to kill the script.
         keys_to_check = {
-            "HF_TOKEN": HF_TOKEN,
             "GROQ_API_KEY": GROQ_API_KEY,
+            "HF_TOKEN": HF_TOKEN,
+            "HF_REPO_ID": HF_REPO_ID,
             "LLAMA_KEY": LLAMA_KEY, # This is the alias for os.getenv("LLAMA_KEY")
+            "LLAMA_MODEL": LLAMA_MODEL,
             "MEM0_API_KEY": MEM0_API_KEY,
             "OPENAI_API_KEY": OPENAI_API_KEY, # formerly config.json("API_KEY")
             "OPENAI_API_BASE": OPENAI_API_BASE,
+            "OPENAI_EMBEDDING_MODEL": OPENAI_EMBEDDING_MODEL,
+            "OPENAI_MODEL": OPENAI_MODEL
         }
 
         missing_keys = []
@@ -196,7 +204,7 @@ class StreamLitApp:
                     st.write(f"{st.session_state.user_id}: {user_query}")
 
                 thinking = st.empty()
-                thinking.info(body="Thinking. . .", icon="{I_THINKING}")
+                thinking.info(body="Thinking. . .", icon=f"{I_THINKING}")
 
                 # Filter input using Llama Guard
                 filtered_result = self.llama.filter_input_with_llama_guard(user_query)
@@ -250,14 +258,14 @@ class StreamLitApp:
                 error_msg = "Sorry, I encountered an error while processing your query. Please try again."
                 error_str = f"Error: {str(e)}"
                 with st.chat_message("assistant"):
-                    st.error(body=error_str, icon="{I_FROWN}")
+                    st.error(body=error_str, icon=f"{I_FROWN}")
                 st.session_state.chat_history.append({"role": "assistant", "content": error_msg + " " + error_str})
 
         else:
             # Unsafe queries are handled here!
             inappropriate_msg = "I apologize, but I cannot process that input as it may be inappropriate. Please try again."
             with st.chat_message("assistant"):
-                st.warning(body=inappropriate_msg, icon="{I_ANGRY}")
+                st.warning(body=inappropriate_msg, icon=f"{I_ANGRY}")
 
             st.session_state.chat_history.append({"role": "assistant", "content": inappropriate_msg})
 

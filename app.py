@@ -1,38 +1,53 @@
-
-#
 # app.py
-# Published by Jason Monroe
-# jason@jasonmonroe.com
-# Date Created: 2024-11-16
-# Script for AI Agent for Huggingface Space
-# https://huggingface.co/spaces/jasonmonroe/smart-nutri-disorder-specialist-bot
-#
-# [MODULE NAME]: app.py
-#
-# Description:
-#    A Streamlit-based AI chatbot application that acts as a "Nutrition Disorder Specialist."
-#    This script performs the following key functions:
-#    1.  **Document Ingestion & Processing:** Loads and parses PDF documents from a specified directory (`Nutritional Medical Reference`). It uses LlamaParse to extract text and structured data (tables).
-#     2.  **Vectorization & Storage:** Chunks the processed text using semantic chunking and stores the text, along with hypothetical questions generated from the content, into a Chroma vector database. This creates a searchable knowledge base.
-#     3.  **Agentic RAG Workflow:** Implements a sophisticated Retrieval-Augmented Generation (RAG) workflow using LangGraph. This workflow includes steps for query expansion, context retrieval, response generation, and self-correction loops for groundedness and precision.
-#     4.  **Conversational AI:** Provides a conversational interface where users can ask questions about nutritional disorders. It uses a `NutritionBot` class that manages user sessions, conversation history (with Mem0), and interacts with the RAG agent.
-#     5.  **Safety & Moderation:** Filters user input using Llama Guard to prevent inappropriate or harmful queries.
-#
-# Dependencies:
-#     - streamlit: For the web application interface.
-#     - langchain, langgraph, llama_parse, llama_index: Core libraries for the RAG pipeline and agentic workflow.
-#     - chromadb: For vector storage and retrieval.
-#     - openai, groq: For accessing LLMs and safety models.
-#     - mem0: For managing conversational memory.
-#     - dotenv: For managing environment variables.
-#     - numpy, pandas: For data manipulation.
-#
-# Usage:
-#     Run the script as a Streamlit application. The application will start a chat interface
-#     where users can log in with a name and ask questions about nutritional disorders.
-#
 
-# --- IMPORT LIBRARIES
+"""
++--------------+
+|     MAIN     |
++--------------+
+
+Nutrition Disorder Specialist Streamlit Application.
+
+This module implements a Streamlit-based AI chatbot application that acts as a
+"Nutrition Disorder Specialist." It leverages an advanced Agentic RAG workflow
+to process medical reference documents and provide grounded, safe answers.
+
+Key Functions:
+    1. Document Ingestion & Processing: Loads and parses PDF documents from a
+       specified directory (`Nutritional Medical Reference`) using LlamaParse
+       to extract text and structured tables.
+    2. Vectorization & Storage: Chunks processed text using semantic chunking
+       and stores the text, along with generated hypothetical questions, into
+       a Chroma vector database.
+    3. Agentic RAG Workflow: Implements a sophisticated Retrieval-Augmented
+       Generation (RAG) workflow using LangGraph, including query expansion,
+       context retrieval, response generation, and self-correction loops.
+    4. Conversational AI: Provides a chat interface via a `NutritionBot` class
+       that manages user sessions and conversation history using Mem0.
+    5. Safety & Moderation: Filters user input using Llama Guard to prevent
+       inappropriate or harmful queries.
+
+Dependencies:
+    - streamlit: Web application interface.
+    - langchain, langgraph, llama_parse, llama_index: RAG pipeline and agentic
+      workflow orchestration.
+    - chromadb: Vector storage and retrieval.
+    - openai, groq: LLM infrastructure and safety models.
+    - mem0: Conversational memory management.
+    - dotenv: Environment variable configuration.
+    - numpy, pandas: Data manipulation.
+
+Usage:
+    Run the script as a Streamlit application:
+        $ streamlit run app.py
+    The application will launch a chat interface where users can log in with
+    a name and ask questions about nutritional disorders.
+"""
+
+__author__ = "Jason Monroe (jason@jasonmonroe.com)"
+__copyright__ = "Copyright November 11-26 2024, Scripts for AI Agent for Huggingface Space"
+__date__ = "2024-11-16"
+__version__ = "1.0.0"
+
 
 # Import necessary libraries
 import os  # Interacting with the operating system (reading/writing files)
@@ -93,6 +108,10 @@ from datetime import datetime, UTC
 # Note: os.getenv() are the secrets defined in the Huggingface.co settings page.
 # os.getenv() is for READING a variable from the operating system's environment.
 
+# Groq
+# see: https://www.groq.com/
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
 # Hugging Face
 # see: https://hugginface.co
 # see: Model -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-model
@@ -100,10 +119,6 @@ from datetime import datetime, UTC
 # Note: Use your own Huggingface Repo ID
 HF_REPO_ID = os.getenv("HF_REPO_ID")
 HF_TOKEN = os.getenv("HF_TOKEN")
-
-# Groq
-# see: https://www.groq.com/
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Llama
 # see: https://llama.developer.meta.com/docs/api-keys/
@@ -116,21 +131,24 @@ MEM0_API_KEY = os.getenv("MEM0_API_KEY")  # Fill in your Mem0 API key
 
 # OpenAI
 # see: https://openai.com/api/
-# see: https://olympus.mygreatlearning.com/courses/129359/modules/items/7809007?pb_id=18908
 OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")  # Fill in the OpenAI API base URL (e.g., "https://api.openai.com/v1")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Fill in your OpenAI API Token (from My Great Learning)
-OPENAI_EMB_MODEL = "text-embedding-3-small"  # embedding models "text-embedding-ada-002", "text-embedding-3-large"
-OPENAI_MODEL = "gpt-4o-mini"  # Fill in the OpenAI model name (e.g., "gpt-4o-mini")
+OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL") #"text-embedding-3-small"  # embedding models "text-embedding-ada-002", "text-embedding-3-large"
+OPENAI_MODEL = os.getenv("OPENAI_MODEL") #"gpt-4o-mini"  # Fill in the OpenAI model name (e.g., "gpt-4o-mini")
 
 # --- Environment Keys ---
 # Note: This line is for WRITING (or modifying) a variable within the Python process's environment.
 # Set the cleaned value back into the environment for libraries like LangChain to find
 os.environ["HF_TOKEN"] = HF_TOKEN.strip()
+os.environ["HF_REPO_ID"] = HF_REPO_ID.strip()
 os.environ["GROQ_API_KEY"] = GROQ_API_KEY.strip()
 os.environ["LLAMA_KEY"] = LLAMA_KEY.strip()
+os.environ["LLAMA_MODEL"] = LLAMA_MODEL.strip()
 os.environ["MEM0_API_KEY"] = MEM0_API_KEY.strip()
 os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE.strip()
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY.strip()
+os.environ["OPENAI_EMBEDDING_MODEL"] = OPENAI_EMBEDDING_MODEL.strip()
+os.environ["OPENAI_MODEL"] = OPENAI_MODEL.strip()
 os.environ["CHROMA_TELEMETRY_DISABLED"] = "1"
 # --- Environment Keys ---
 
@@ -144,11 +162,13 @@ VECTOR_RESULT_CNT = 3
 
 # Define the Google Drive and other directory paths
 COLLECTION_NAME = "nutritional"
-DOCUMENT_DIR = "Nutritional Medical Reference"
-DOCUMENT_ZIP = "Nutritional_Medical_Reference.zip" # Zip file name
+DOCUMENT_DIR = "data/nutritional-medical-reference"
+DOCUMENT_FILE = 'nutritional-disorders.pdf'
+DOCUMENT_FILEPATH = DOCUMENT_DIR + '/' + DOCUMENT_FILE
+DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
 
 # Prompt variables
-ROLE = "Nutrition Disorder Specialist"
+AI_ROLE = "Nutrition Disorder Specialist"
 TITLE = "SMART NUTRITION DISORDER SPECIALIST BOT"
 
 # Define prompt messages and queries
@@ -254,11 +274,15 @@ def check_program_keys() -> bool:
     # Load keys and check if any or missing to kill the script.
     keys_to_check = {
         "HF_TOKEN": HF_TOKEN,
+        "HF_REPO_ID": HF_REPO_ID,
         "GROQ_API_KEY": GROQ_API_KEY,
         "LLAMA_KEY": LLAMA_KEY, # This is the alias for os.getenv("LLAMA_KEY")
+        "LLAMA_MODEL": LLAMA_MODEL,
         "MEM0_API_KEY": MEM0_API_KEY,
         "OPENAI_API_KEY": OPENAI_API_KEY, # formerly config.json("API_KEY")
         "OPENAI_API_BASE": OPENAI_API_BASE,
+        "OPENAI_EMBEDDING_MODEL": OPENAI_EMBEDDING_MODEL,
+        "OPENAI_MODEL": OPENAI_MODEL
     }
 
     missing_keys = []
@@ -347,7 +371,7 @@ llama_guard_client = Groq(api_key=GROQ_API_KEY)
 embedding_model = OpenAIEmbeddings(
     openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
     openai_api_key=OPENAI_API_KEY,   # Fill in the API key
-    model=OPENAI_EMB_MODEL,          # Fill in the model name
+    model=OPENAI_EMBEDDING_MODEL,          # Fill in the model name
     max_retries=8,                   # openai client retries, Added for robustness (was =3)
     request_timeout=60,              # avoid timeouts on backoff
 )
@@ -355,7 +379,7 @@ embedding_model = OpenAIEmbeddings(
 
 # Initialize the Chat OpenAI model
 llm = ChatOpenAI(
-    base_url=OPENAI_API_BASE,         # Fill in the endpoint
+    openai_api_base=OPENAI_API_BASE,         # Fill in the endpoint
     openai_api_key=OPENAI_API_KEY,  # Fill in the API key
     model=OPENAI_MODEL,               # Fill in the deployment name (e.g., gpt-4o-mini)
     streaming=False,
@@ -404,7 +428,7 @@ class AgentState(TypedDict):
     query_feedback: str
     groundedness_check: bool
     loop_max_iter: int
-    ROLE: str
+    AI_ROLE: str
 
 # AI AGENT HELPER QUERIES
 
@@ -467,7 +491,7 @@ def expand_query(state: AgentState) -> AgentState:
 
     # --- Start with the ROBUST V1 Prompt ---
     system_message = f"""
-    You are an expert AI {ROLE} specializing in nutritional disorders and academic literature search.
+    You are an expert AI {AI_ROLE} specializing in nutritional disorders and academic literature search.
 
     Your task is to rewrite the user's query into a single detailed, precise, and technical search query optimized for retrieving relevant academic research papers on nutrition disorders.
 
@@ -504,7 +528,7 @@ def expand_query(state: AgentState) -> AgentState:
     state['expanded_query'] = chain.invoke({
         "query": original_query,
         # Note: Feedback is injected via the system_message,
-        "ROLE": state['ROLE'],
+        "AI_ROLE": state['AI_ROLE'],
     })
 
     # Clear the feedback for the next node
@@ -562,8 +586,8 @@ def craft_response(state: Dict) -> Dict:
     """
     print("\n--- craft_response ---")
 
-    system_message = """
-    You are an expert AI {ROLE}, specializing in **Nutritional Disorders**. Your sole task is to analyze the provided CONTEXT and synthesize a direct, comprehensive answer to the user's QUERY.
+    system_message = f"""
+    You are an expert AI {AI_ROLE}, specializing in **Nutritional Disorders**. Your sole task is to analyze the provided CONTEXT and synthesize a direct, comprehensive answer to the user's QUERY.
 
     **STRICT GENERATION RULES:**
     1.  **Groundedness:** Generate the response using **ONLY** the information found in the retrieved CONTEXT. Do not use outside knowledge.
@@ -588,7 +612,7 @@ def craft_response(state: Dict) -> Dict:
         "query": state['query'],
         "context": "\n".join([doc["content"] for doc in state['context']]),
         "feedback": state["feedback"], # add feedback to the prompt
-        "ROLE": state["ROLE"],
+        "AI_ROLE": state["AI_ROLE"],
     })
 
     state['response'] = response
@@ -612,7 +636,7 @@ def score_groundedness(state: Dict) -> Dict:
 
     print("\n--- check_groundedness ---")
 
-    system_message = """You are a meticulous AI {ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
+    system_message = f"""You are a meticulous AI {AI_ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
     Calculate a score from 0.0 to 1.0 that represents the fraction of claims in the response that are directly and verifiably supported by the context.
     - A score of 1.0 means every claim in the response is fully supported by the context.
     - A score of 0.0 means no claims in the response are supported by the context.
@@ -629,7 +653,7 @@ def score_groundedness(state: Dict) -> Dict:
     groundedness_score = float(chain.invoke({
         "context": "\n".join([doc["content"] for doc in state['context']]),
         "response": state['response'],
-        "ROLE": state["ROLE"],
+        "AI_ROLE": state["AI_ROLE"],
     }))
 
 
@@ -657,8 +681,8 @@ def check_precision(state: Dict) -> Dict:
 
     print("\n--- check_precision ---")
 
-    system_message = """
-    As an AI {ROLE} evaluate whether the response precisely addresses the user's query.
+    system_message = f"""
+    As an AI {AI_ROLE} evaluate whether the response precisely addresses the user's query.
     Evaluate, assign and return the precision score for the response.  Your evaluation is based solely on the relationship between the response and the query. Do not consider anything else.
 
     The score is from 0.0 (least) to 1.0 (best).
@@ -677,7 +701,7 @@ def check_precision(state: Dict) -> Dict:
     precision_score = float(chain.invoke({
         "query": state['query'],
         "response": state['response'],
-        "ROLE": state["ROLE"],
+        "AI_ROLE": state["AI_ROLE"],
     }))
 
     state['precision_score'] = precision_score
@@ -703,8 +727,8 @@ def refine_response(state: Dict) -> Dict:
 
     print("\n--- refine_response ---")
 
-    system_message = """
-    You are an AI {ROLE} Quality Analyst and Critic. Your sole task is to provide constructive feedback on a given response based on the user's original query.
+    system_message = f"""
+    You are an AI {AI_ROLE} Quality Analyst and Critic. Your sole task is to provide constructive feedback on a given response based on the user's original query.
     Your feedback should identify potential gaps, ambiguities, or missing details and suggest specific improvements to enhance the response's accuracy and completeness.
 
     - Use bullet points to structure your suggestions.
@@ -721,7 +745,7 @@ def refine_response(state: Dict) -> Dict:
     chain = refine_response_prompt | llm | StrOutputParser()
 
     # Store response suggestions in a structured format
-    feedback = f"Previous Response: {state['response']}\nSuggestions: {chain.invoke({'query': state['query'], 'response': state['response'], 'ROLE': state['ROLE']})}"
+    feedback = f"Previous Response: {state['response']}\nSuggestions: {chain.invoke({'query': state['query'], 'response': state['response'], 'AI_ROLE': state['AI_ROLE']})}"
 
     print("feedback: ", feedback)
     print(f"State: {state}")
@@ -778,7 +802,7 @@ def refine_query(state: Dict) -> Dict:
     suggestions = chain.invoke({
         "query": state['query'],
         "expanded_query": state['expanded_query'],
-        "ROLE": state["ROLE"],
+        "AI_ROLE": state["AI_ROLE"],
     })
 
     # Store the JSON object as a string in the state for the next node to consume
@@ -931,7 +955,7 @@ def agentic_rag(query: str):
         "feedback": "",
         "query_feedback": "",
         "loop_max_iter": 4,
-        "ROLE": ROLE
+        "AI_ROLE": AI_ROLE
     }
 
     return WORKFLOW_APP.invoke(inputs)
@@ -941,8 +965,6 @@ def agentic_rag(query: str):
 class NutritionBot:
     def __init__(self):
         """
-        # see: https://olympus.mygreatlearning.com/courses/129359/modules/items/7899896?pb_id=18908
-
         Initialize the NutritionBot class, setting up memory, the LLM client, tools, and the agent executor.
         """
 
@@ -1054,9 +1076,9 @@ class NutritionBot:
 
         # Build a context string from the relevant history
         context = "Previous relevant interactions:\n"
-        for memory in relevant_history:
-            context += f"Customer: {memory['memory']}\n"  # Customer's past messages
-            context += f"Support: {memory['memory']}\n"  # Chatbot's past responses
+        for history in relevant_history:
+            context += f"Customer: {history['memory']}\n"  # Customer's past messages
+            context += f"Support: {history['memory']}\n"  # Chatbot's past responses
             context += "---\n"
 
         # Print context for debugging purposes
@@ -1073,7 +1095,7 @@ class NutritionBot:
         """
 
         # Generate a response using the agent
-        response = self.agent_executor.invoke({"input": prompt})
+        response = self.agent_executor.invoke({"input": prompt.strip()})
 
         # Store the current interaction for future reference
         self.store_customer_interaction(

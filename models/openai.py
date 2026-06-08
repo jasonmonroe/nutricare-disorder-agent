@@ -12,7 +12,7 @@ from langchain_core.language_models.fake_chat_models import FakeListChatModel # 
 from src.config import (
     OPENAI_API_BASE,
     OPENAI_API_KEY,
-    OPENAI_EMB_MODEL,
+    OPENAI_EMBEDDING_MODEL,
     OPENAI_MODEL
 )
 
@@ -36,7 +36,7 @@ class OpenAIModel:
         return  OpenAIEmbeddings(
             openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
             openai_api_key=OPENAI_API_KEY,   # Fill in the API key
-            model=OPENAI_EMB_MODEL,          # Fill in the model name
+            model=OPENAI_EMBEDDING_MODEL,          # Fill in the model name
             max_retries=8,                   # openai client retries, Added for robustness (was =3)
             request_timeout=60,              # avoid timeouts on backoff
         )
@@ -47,12 +47,10 @@ class OpenAIModel:
 
         # --- Temp --- #
         if self._mock:
-            mocked_responses = [
+            return FakeListChatModel(responses=[
                 f'{{"query": "dosage for scurvy variation {i}", "filter": null}}' 
                 for i in range(300)
-            ]
-            
-            return FakeListChatModel(responses=mocked_responses)
+            ])
 
             #mocked_llm_json_output = '{"query": "dosage for scurvy", "filter": null}'
             #return FakeListChatModel(responses=[mocked_llm_json_output] * 20)

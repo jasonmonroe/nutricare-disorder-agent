@@ -25,14 +25,14 @@ class QuestionGenerator(ChromaModel):
         self.doc_handle = None
         self.document_content_description = None
         self.llm = None
-        self.prompt = self._prompt()
+        self.prompt = self._prompt().strip()
         self.title = 'Hypothetical Questions'
 
         self._set_attrs(dataset)
 
     @staticmethod
     def _prompt() -> str:
-        return """
+        return f"""
             You are an AI {AI_ROLE} specialized in generating precise, clinically relevant questions for information retrieval.
             Your task is to analyze the provided TEXT CHUNK and generate a list of exactly three hypothetical questions for which the chunk contains the complete answer.
             
@@ -41,19 +41,20 @@ class QuestionGenerator(ChromaModel):
             2. Phrasing must be natural and sound like a question a {AI_ROLE} would actually ask.
             
             TEXT CHUNK:
-            {docs}
+            {{docs}}
             
-            {PROMPT_INSTR}
+            {{PROMPT_INSTR}}
             """
 
     def get_hypothetical_questions(self, semantic_chunks) -> list:
+        print(f'# --- Getting Hypothetical Questions {I_QUES} --- #')
+
         start_time = time.time()
         rate_limit_hit = False
-        sleep_time = random.randint(25, 45)
+        sleep_time = random.randint(25, 45) # Used to prevent http status code 429
         hypothetical_questions_prompt = self._prompt().strip()
 
         hypothetical_questions = []
-        print(f'--- Getting Hypothetical Questions {I_QUES}')
         for batch_start in range(0, len(semantic_chunks), self.batch_size):
             batch = semantic_chunks[batch_start: batch_start + self.batch_size]
 
@@ -75,7 +76,7 @@ class QuestionGenerator(ChromaModel):
                     handle_rate_limit_error(e, self.collection_name, sleep_time)
                     questions = EMPTY_RESP # Formerly "NA"
 
-                    sleep_time, rate_limit_hit = handle_rate_limit_error(e, self.collection_name, sleep_time)
+                    sleep_time, rate_limit_hit = handle_rate_limit_error(e, self.collection_name, sleep_time, i)
 
                 if rate_limit_hit:
                     break
@@ -104,7 +105,7 @@ class QuestionGenerator(ChromaModel):
 
             # ** Wait for 1 minute before processing the next batch **
             chunk_cnt = (batch_start + self.batch_size) / len(semantic_chunks)
-            print(f"Processed {chunk_cnt} chunks.  Waiting {sleep_time} seconds...")
+            print(f"\nProcessed {chunk_cnt} chunks.  Waiting {sleep_time} seconds...")
             time.sleep(sleep_time)
 
         show_timer(start_time)

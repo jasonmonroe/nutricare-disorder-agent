@@ -5,6 +5,7 @@
 # +-----------------------+
 
 # Python Libraries
+import time
 from typing import Dict, List, Any
 from datetime import datetime
 from mem0 import MemoryClient
@@ -16,7 +17,8 @@ from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
 
 # Local Libraries
-from src.config import MEM0_API_KEY, RETRIEVAL_LIMIT
+from src.config import INACTIVE_SESSION_DUR, MEM0_API_KEY, RETRIEVAL_LIMIT
+from src.utils import get_time, start_timer
 
 
 class NutritionBot:
@@ -26,6 +28,9 @@ class NutritionBot:
 
         :param llm_chatbot:
         """
+
+        self._session_starts_at = None
+        self._latest_input_at = None
 
         # Initialize a memory client to store and retrieve customer interactions
         self.memory = MemoryClient(api_key=MEM0_API_KEY)  # Complete the code to define the memory client API key
@@ -61,7 +66,11 @@ class NutritionBot:
         # Wrap the agent in an executor to manage tool interactions and execution flow
         self.agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-    def store_customer_interaction(self, user_id: str, message: str, response: str, metadata: dict) -> None:
+    def start_session(self):
+        self.session_starts_at = start_timer()
+
+
+    def store_customer_interaction_old_version(self, user_id: str, message: str, response: str, metadata: dict) -> None:
         """
         Store customer interaction in memory for future reference.
 
@@ -71,8 +80,7 @@ class NutritionBot:
             response (str): Chatbot's response.
             metadata (Dict, optional): Additional metadata for the interaction.
         """
-        if metadata is None:
-            metadata = {}
+         
 
         # Add a timestamp to the metadata for tracking purposes
         metadata["timestamp"] = datetime.now().isoformat()
@@ -91,7 +99,28 @@ class NutritionBot:
             metadata=metadata
         )
 
-    def get_relevant_history(self, user_id: str, query: str) -> dict[str, Any]:
+    def store_customer_interaction(self, user_id: str, message: str, response: str, metadata: dict) -> None:
+        """
+        Store customer interaction in memory for future reference.
+        """
+         
+        metadata["timestamp"] = datetime.now().isoformat()
+
+        conversation = [
+            {"role": "user", "content": message},
+            {"role": "assistant", "content": response}
+        ]
+
+        # BEFORE: user_id=user_id
+        # AFTER (FIXED):
+        self.memory.add(
+            conversation,
+            filters={"user_id": user_id},  # <-- Uniformly wrap tracking constraints here
+            output_format="v1.1",
+            metadata=metadata
+        )
+
+    def get_relevant_history_old_version(self, user_id: str, query: str) -> dict[str, Any]:
         """
         Retrieve past interactions relevant to the current query.
 
@@ -106,6 +135,18 @@ class NutritionBot:
             query=query,  # Search for interactions related to the query
             user_id=user_id,  # Restrict search to the specific user
             limit=RETRIEVAL_LIMIT  # Complete the code to define the limit for retrieved interactions
+        )
+
+    def get_relevant_history(self, user_id: str, query: str) -> dict[str, Any]:
+        """
+        Retrieve past interactions relevant to the current query.
+        """
+        # BEFORE: user_id=user_id
+        # AFTER (FIXED):
+        return self.memory.search(
+            query=query,  
+            filters={"user_id": user_id},  # <-- Nest under filters to fix the error
+            limit=RETRIEVAL_LIMIT  
         )
 
     def handle_customer_query(self, user_id: str, query: str) -> str:
@@ -156,3 +197,24 @@ class NutritionBot:
 
         # Return the chatbot's response
         return response['output']
+
+    def update_latest_input_at(self, input_at: float) -> None:
+        self._latest_input_at = input_at
+
+
+    def has_session_exp(self) -> bool:
+
+        # Max session is 20 minutes.  Anything after that needs to be run again.
+        diff = abs(start_timer() - self._latest_input_at)
+
+        if diff > INACTIVE_SESSION_DUR:
+            print(f'diff={diff}')
+            print('Session has expired.  Exiting chat.')
+            return True
+
+        return False
+
+    def get_session_duration(self, session_ends_at) -> str:
+        return get_time(self._session_starts_at, session_ends_at)
+        
+

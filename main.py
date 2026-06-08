@@ -1,6 +1,10 @@
 from __future__ import annotations
+
+# main.py
+
 import os
 from dotenv import load_dotenv
+from sqlalchemy.sql import false
 
 from src import doc_handler
 
@@ -81,7 +85,7 @@ if sys.version_info >= (3, 13):
 import sys
 import warnings
 
-warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='pydantic')
 
 # Vendor Libraries
 import numpy as np
@@ -120,7 +124,7 @@ def _parse_args(command_line_args: list[str]) -> dict:
     """
     if len(command_line_args) == 0:
         print(f'{I_WARNING} No args present... exiting. {I_WARNING}')
-        sys.exit(0)
+        sys.exit(1)
 
     args_list = ['--build', '--data', '--deploy', '--log', '--mock', '--run', '--start']
 
@@ -133,9 +137,11 @@ if __name__ == '__main__':
     print(f'\n-----> {I_TIMER} START RUN ID: {run_id} {I_TIMER} <-----\n')
     start_time = start_timer()
 
-    show_title_banner()
     args = _parse_args(sys.argv[1:])
     mock = args.get('mock', False)
+    log = args.get('log', false)
+
+    show_title_banner()
 
     if mock:
         print(f'{I_INFO} Mock mode is turned on!')
@@ -155,7 +161,7 @@ if __name__ == '__main__':
         'mock': mock
     })
 
-    llama = LlamaModel(openai_model.llm, openai_model.embedding_model)
+    llama = LlamaModel(openai_model.llm, openai_model.embedding_model, log)
 
     # Create pipeline dataset.
     dataset = {
@@ -163,7 +169,7 @@ if __name__ == '__main__':
         'llama': llama,
         'openai_model': openai_model,
         'mock': mock,
-        'log': args.get('log', False)
+        'log': log
     }
     
     # Execute based on parsed flags
@@ -185,4 +191,4 @@ if __name__ == '__main__':
 
     show_timer(start_time)
 
-    print(f'\n-----> {I_TIMER} END RUN ID: {run_id} {I_TIMER} <-----')
+    print(f'\n-----> {I_TIMER} END RUN ID: {run_id} {I_TIMER} <-----\n')

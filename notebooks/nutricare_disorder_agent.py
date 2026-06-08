@@ -116,7 +116,7 @@ MEM0_API_KEY = userdata.get("MEM0_API_KEY")  # Fill in your Mem0 API key
 # see: https://olympus.mygreatlearning.com/courses/129359/modules/items/7809007?pb_id=18908
 OPENAI_API_BASE = config.get("OPENAI_API_BASE")  # Fill in the OpenAI API base URL (e.g., "https://api.openai.com/v1")
 OPENAI_API_KEY = config.get("API_KEY")  # Fill in your OpenAI API Token (from My Great Learning)
-OPENAI_EMB_MODEL = "text-embedding-3-small"  # embedding models "text-embedding-3-small", "text-embedding-3-large"
+OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"  # embedding models "text-embedding-3-small", "text-embedding-3-large"
 OPENAI_MODEL = "gpt-4o-mini"  # Fill in the OpenAI model name (e.g., "gpt-4o-mini")
 
 # --- CONSTANTS --- #
@@ -313,7 +313,7 @@ def add_docs_to_vectorstore(
 embedding_function = chromadb.utils.embedding_functions.OpenAIEmbeddingFunction(
     api_base=OPENAI_API_BASE,   # Fill in the API base URL
     api_key=OPENAI_API_KEY,   # Fill in the API key
-    model_name=OPENAI_EMB_MODEL, # Fill in the model name
+    model_name=OPENAI_EMBEDDING_MODEL, # Fill in the model name
 )
 # This initializes the OpenAI embedding function for the Chroma vectorstore, using the provided endpoint and API key.
 
@@ -322,7 +322,7 @@ embedding_function = chromadb.utils.embedding_functions.OpenAIEmbeddingFunction(
 embedding_model = OpenAIEmbeddings(
     openai_api_base=OPENAI_API_BASE,  # Fill in the endpoint
     openai_api_key=OPENAI_API_KEY,    # Fill in the API key
-    model=OPENAI_EMB_MODEL,           # Fill in the model name
+    model=OPENAI_EMBEDDING_MODEL,           # Fill in the model name
     max_retries=3,                    # Added for robustness
 )
 # This initializes the OpenAI embeddings model using the specified endpoint, API key, and model name.
@@ -1999,7 +1999,7 @@ MEM0_API_KEY = os.getenv("MEM0_API_KEY")  # Fill in your Mem0 API key
 # see: https://olympus.mygreatlearning.com/courses/129359/modules/items/7809007?pb_id=18908
 OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")  # Fill in the OpenAI API base URL (e.g., "https://api.openai.com/v1")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Fill in your OpenAI API Token (from My Great Learning)
-OPENAI_EMB_MODEL = "text-embedding-3-small"  # embedding models "text-embedding-ada-002", "text-embedding-3-large"
+OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"  # embedding models "text-embedding-ada-002", "text-embedding-3-large"
 OPENAI_MODEL = "gpt-4o-mini"  # Fill in the OpenAI model name (e.g., "gpt-4o-mini")
 
 # --- Environment Keys ---
@@ -2228,7 +2228,7 @@ llama_guard_client = Groq(api_key=GROQ_API_KEY)
 embedding_model = OpenAIEmbeddings(
     openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
     openai_api_key=OPENAI_API_KEY,   # Fill in the API key
-    model=OPENAI_EMB_MODEL,          # Fill in the model name
+    model=OPENAI_EMBEDDING_MODEL,          # Fill in the model name
     max_retries=8,                   # openai client retries, Added for robustness (was =3)
     request_timeout=60,              # avoid timeouts on backoff
 )

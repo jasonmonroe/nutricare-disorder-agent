@@ -7,6 +7,7 @@
 # Python Libraries
 import json
 from typing import Dict, List
+from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel
 from IPython.display import Image, display
 
@@ -29,11 +30,11 @@ from src.config import (
     I_WARNING, 
     WORKFLOW_IMAGE
     )
+from src.utils import is_jupyter
 
 
 class AgenticRagTool:
     def __init__(self, llm, retriever):
-
         self.llm = llm
         self.retriever = retriever
 
@@ -226,7 +227,7 @@ class AgenticRagTool:
         """
         print("\n--- craft_response ---")
 
-        system_message = """
+        system_message = f"""
         You are an expert AI {AI_ROLE}, specializing in **Nutritional Disorders**. Your sole task is to analyze the provided CONTEXT and synthesize a direct, comprehensive answer to the user's QUERY.
 
         **STRICT GENERATION RULES:**
@@ -276,7 +277,7 @@ class AgenticRagTool:
 
         print("\n# --- check_groundedness --- #")
 
-        system_message = """You are a meticulous AI {AI_ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
+        system_message = f"""You are a meticulous AI {AI_ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
         Calculate a score from 0.0 to 1.0 that represents the fraction of claims in the response that are directly and verifiably supported by the context.
         - A score of 1.0 means every claim in the response is fully supported by the context.
         - A score of 0.0 means no claims in the response are supported by the context.
@@ -321,7 +322,7 @@ class AgenticRagTool:
 
         print("\n# --- check_precision --- #")
 
-        system_message = """
+        system_message = f"""
         As an AI {AI_ROLE} evaluate whether the response precisely addresses the user's query.
         Evaluate, assign and return the precision score for the response.  Your evaluation is based solely on the relationship between the response and the query. Do not consider anything else.
 
@@ -367,7 +368,7 @@ class AgenticRagTool:
 
         print("\n# --- refine_response --- #")
 
-        system_message = """
+        system_message = f"""
         You are an AI {AI_ROLE} Quality Analyst and Critic. Your sole task is to provide constructive feedback on a given response based on the user's original query.
         Your feedback should identify potential gaps, ambiguities, or missing details and suggest specific improvements to enhance the response's accuracy and completeness.
 
@@ -538,12 +539,12 @@ class AgenticRagTool:
         return state
 
 
-    def display_workflow(self, wf_app) -> None:
+    def display_workflow(self, wf_app: CompiledStateGraph) -> None:
         """
         Generates the graph diagram and saves it as a local file 
         so it can be viewed outside of a Jupyter environment.
         """
-        print(f'{I_INFO} Generating and saving Workflow Flowchart Image...')
+        print(f'{I_INFO}  Generating and saving Workflow Flowchart Image...')
         
         try:
             # Fetch the raw binary PNG data from the compiled graph
@@ -557,10 +558,9 @@ class AgenticRagTool:
             print("💡 Tip: You can double-click this image in your project tree to view your flowchart!")
 
             # For Jupyter Notebooks, JupyterLab, or IPython Interactive Shells.
-            display(Image(png_bytes))
+            if is_jupyter():
+                display(Image(png_bytes))
             
         except Exception as e:
             print(f"❌ Failed to generate graph image: {str(e)}")
             print("Ensure you have graphviz or pygraphviz/pyppeteer installed if required by your LangGraph version.")
-
-        

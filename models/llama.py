@@ -15,6 +15,8 @@ from llama_index.core import Settings, SimpleDirectoryReader  # Core functionali
 # Local
 from src.config import (
     GROQ_API_KEY,
+    I_CROSSMARK,
+    I_PEN,
     LLAMA_KEY,
     LLAMA_MODEL,
     LLAMA_UNSAFE_CODES
@@ -31,13 +33,16 @@ class LlamaModel:
     https://www.llama.com/docs/overview/
     """
 
-    def __init__(self, llm: ChatOpenAI, embedding_model: OpenAIEmbeddings):
+    def __init__(self, llm: ChatOpenAI, embedding_model: OpenAIEmbeddings, log: bool=False):
         """
         Initialize the Llama Guard client with the API key.  Set the LLM and embedding model in the LlamaIndex settings.
 
+        :param log: determines if logs will be outputted in terminal
         :param llm:
         :param embedding_model:
         """
+
+        self._log = log
 
         self.llama_guard_client = Groq(api_key=GROQ_API_KEY)
         self.parser = self._get_parser()
@@ -60,7 +65,7 @@ class LlamaModel:
             api_key=LLAMA_KEY        # API key for LlamaParse
         )
 
-    def filter_input_with_llama_guard(self, user_input_str: str, model=LLAMA_MODEL) -> str:
+    def filter_input_with_llama_guard(self, user_input_str: str) -> str:
         """
         Function to filter user input with Llama Guard
 
@@ -82,12 +87,13 @@ class LlamaModel:
                     "role": "user",
                     "content": user_input_str
                 }],
-                model=model,
+                model=LLAMA_MODEL,
             )
 
             # Return the filtered input
             result = llama_response.choices[0].message.content.strip()
-            print(f"Guard result: {result}")
+            if self._log:
+                print(f"{I_PEN} Guard result: {result}")
 
             if "unsafe" in result:
                 if any(code.strip() in LLAMA_UNSAFE_CODES for code in result.replace("unsafe ", "").strip().split(",")):
@@ -98,6 +104,6 @@ class LlamaModel:
                 return "SAFE"
 
         except Exception as e:
-            print(f"Error with Llama Guard: {e}")
+            print(f"{I_CROSSMARK} Error with Llama Guard: {e}")
             return ""
             

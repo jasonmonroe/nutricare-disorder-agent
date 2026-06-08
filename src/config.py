@@ -15,6 +15,10 @@ import random
 # Note: os.getenv() are the secrets defined in the Huggingface.co settings page.
 # os.getenv() is for READING a variable from the operating system's environment.
 
+# Groq
+# see: https://www.groq.com/
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
 # Hugging Face
 # see: https://hugginface.co
 # see: Model -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-model
@@ -23,14 +27,13 @@ import random
 HF_REPO_ID = os.getenv("HF_REPO_ID")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-# Groq
-# see: https://www.groq.com/
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
 # Llama
 # see: https://llama.developer.meta.com/docs/api-keys/
 LLAMA_KEY = os.getenv("LLAMA_KEY")  # Fill in your Llama API key, Used for LlamaParse()
-LLAMA_MODEL = "meta-llama/llama-guard-4-12b"
+# see: https://huggingface.co/openai/gpt-oss-safeguard-20b
+# see: https://openai.com/index/introducing-gpt-oss-safeguard
+# Note: If Llama Model is defunct see: https://console.groq.com/docs/deprecations
+LLAMA_MODEL = os.getenv("LLAMA_MODEL")
 
 # Mem0
 # see: https://mem0.ai
@@ -38,10 +41,11 @@ MEM0_API_KEY = os.getenv("MEM0_API_KEY")  # Fill in your Mem0 API key
 
 # OpenAI
 # see: https://openai.com/api/
+# see: https://developers.openai.com/api/docs/models/text-embedding-3-small
 OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")  # Fill in the OpenAI API base URL (e.g., "https://api.openai.com/v1")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Fill in your OpenAI API Token (from your account)
-OPENAI_EMB_MODEL = "text-embedding-3-small"  # embedding models "text-embedding-ada-002", "text-embedding-3-large"
-OPENAI_MODEL = "gpt-4o-mini"  # Fill in the OpenAI model name (e.g., "gpt-4o-mini")
+OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL")  # embedding models "text-embedding-ada-002", "text-embedding-3-large"
+OPENAI_MODEL = os.getenv("OPENAI_MODEL")  # Fill in the OpenAI model name (e.g., "gpt-4o-mini")
 
 EVAL_THRESHOLD = 0.8
 EXIT_CMD = "exit"
@@ -71,7 +75,7 @@ SIMILARITY_SEARCH_QUERY = "What nutritional deficiency, such as folate deficienc
 PROMPT_INSTR = """
     Important:
     Generate only a Python list of relevant questions (e.g., ['Question 1', 'Question 2']).
-    *Do NOT mention or output anything before or after the list, including commentary, markdown blocks, or extra punctuation.
+    *Do NOT mention or output anything before or after the list, including commentary, markdown blocks, or extra punctuation.*
     If the content cannot answer any question(s), your output MUST be the empty Python list: [].
     """.strip()
 
@@ -108,9 +112,10 @@ WORKFLOW_IMAGE = "outputs/graph_workflow.png"
 LLAMA_UNSAFE_CODES = ["S1", "S2", "S3", "S4", "S5", "S9", "S10", "S11", "S12"]
 
 # Miscellaneous constants
-MILLI_IN_SECS = MSEC = 1000
-MIN_RUN_ID=10000
-MAX_RUN_ID=99999
+MIN_RUN_ID = 10000
+MAX_RUN_ID = 99999
+INACTIVE_SESSION_DUR = SECS_IN_MIN * 5 # 5  minutes 
+MSEC = 1000
 
 # Icons
 I_ANGRY = '😠'

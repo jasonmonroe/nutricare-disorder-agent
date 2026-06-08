@@ -8,14 +8,20 @@
 from datetime import UTC, datetime
 import os
 import random
+import sys
 import time
 
 # Local Libraries
+from app import LLAMA_MODEL
 from src.config import (
-    AI_ROLE, 
-    APP_TITLE, 
+    AI_ROLE,
+    AI_TITLE, 
+    APP_TITLE,
+    EXIT_CMD, 
     GROQ_API_KEY, 
-    HF_TOKEN, 
+    HF_TOKEN,
+    I_BOT, 
+    I_FLAG,
     LLAMA_KEY, 
     MAX_RUN_ID, 
     MEM0_API_KEY, 
@@ -37,8 +43,12 @@ def start_timer() -> float:
     """
     return time.time()
 
-def get_time(start_time_float: float) -> str:
-    diff = abs(time.time() - start_time_float)
+def get_time(start_time_float: float, end_time_float: float=None) -> str:
+    
+    if end_time_float is None:
+        end_time_float = time.time()
+
+    diff = abs(end_time_float - start_time_float)
     _, remainder = divmod(diff, SECS_IN_MIN*SECS_IN_MIN)
     minutes, seconds = divmod(remainder, SECS_IN_MIN)
     fractional_seconds = seconds - int(seconds)
@@ -65,13 +75,45 @@ def show_banner(title: str, section: str = '') -> None:
 
     print('')
 
-def show_title_banner() -> str:
-    return f"""
+def show_title_banner2() -> str:
+    print(f"""
         +-------------------------------------+
         |{APP_TITLE:^35}|
         |{AI_ROLE:^35}|
-        +-------------------------------------+"""
+        +-------------------------------------+""".strip())
 
+def show_title_banner() -> str:
+    print(f"""
+    +-------------------------------------+
+    |     Nutricare Disorder Agent        |
+    |   Nutrition Disorder Specialist     |
+    +-------------------------------------+\n
+    """.strip())
+
+def show_ai_agent_banner2() -> str:
+    print(f"""\n
+        +--------------------------------------------------------------+
+        | {AI_TITLE:^60}|
+        +--------------------------------------------------------------+
+        | Welcome! I'm your dedicated AI Nutrition Agent. Ask me anything about nutrition disorders, including their symptoms, causes, treatments, or preventative measures. I am here to assist with your health-related questions. |  
+        |                                                              |
+        | Type '{EXIT_CMD}' to end the conversation.                   |
+        +--------------------------------------------------------------+
+    """.strip())
+
+def show_ai_agent_banner() -> str:
+    print(f"""
+    +--------------------------------------------------------------+
+    |           {I_BOT}SMART NUTRITION DISORDER SPECIALIST BOT{I_BOT}            |
+    +--------------------------------------------------------------+
+    | Welcome! I'm your dedicated AI Nutrition Agent. Ask me       |
+    | anything about nutrition disorders, including their symptoms,| 
+    | causes, treatments, or preventative measures. I am here to   |
+    | assist with your health-related questions.                   |  
+    |                                                              |
+    | Type 'exit' to end the conversation.                         |
+    +--------------------------------------------------------------+
+    """.strip())
 
 def set_os_environ():
     # --- Environment Keys ---
@@ -80,9 +122,12 @@ def set_os_environ():
     os.environ["HF_TOKEN"] = HF_TOKEN.strip()
     os.environ["GROQ_API_KEY"] = GROQ_API_KEY.strip()
     os.environ["LLAMA_KEY"] = LLAMA_KEY.strip()
+    os.environ["LLAMA_MODEL"] = LLAMA_MODEL.strip()
     os.environ["MEM0_API_KEY"] = MEM0_API_KEY.strip()
     os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE.strip()
     os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY.strip()
+    os.environ["OPENAI_EMB_MODEL"] = OPENAI_EMB_MODEL.strip()
+    os.environ["OPENAI_MODEL"] = OPENAI_MODEL.strip()
     os.environ["CHROMA_TELEMETRY_DISABLED"] = "1"
     # --- Environment Keys ---
 
@@ -93,13 +138,12 @@ def show_datetime() -> str:
 
     return now_utc.strftime("%b %d %Y %I:%M:%S %p %Z")
 
-def handle_rate_limit_error(e, subject: str, current_sleep_time: int) -> tuple[int, bool]:
+def handle_rate_limit_error(e, subject: str, current_sleep_time: int, i:int) -> tuple[int, bool]:
     """
     Checks for a Rate Limit Error (429), calculates a new sleep time,
     and returns the new sleep time and a flag indicating the hit.
     """
-    i= 0
-    print(f"{i}) Exception invoking a response for {subject}! Error: {e}")
+    print(f"{I_FLAG} {i}) Exception invoking a response for {subject}! Error: {e}")
 
     rate_limit_hit = False
     new_sleep_time = current_sleep_time
@@ -108,8 +152,34 @@ def handle_rate_limit_error(e, subject: str, current_sleep_time: int) -> tuple[i
         # Increase sleep time by 15%
         rate_limit_hit = True
         new_sleep_time = current_sleep_time + round(current_sleep_time * 0.15)
-        print(f"FATAL: Rate limit hit. Updating sleep time from {current_sleep_time} to {new_sleep_time} seconds...")
+        print(f"{I_FLAG} FATAL: Rate limit hit. Updating sleep time from {current_sleep_time} to {new_sleep_time} seconds...")
         if new_sleep_time > SECS_IN_MIN:
             new_sleep_time = SECS_IN_MIN
 
     return new_sleep_time, rate_limit_hit
+
+def is_jupyter() -> bool:
+    """
+    Detects if the code is currently running inside a Jupyter Notebook
+    or a standard terminal Python script.
+    """
+    # 1. Check if 'IPython' is even loaded in memory
+    if 'IPython' not in sys.modules:
+        return False
+        
+    try:
+        from IPython import get_ipython
+        # 2. Extract the name of the active shell class
+        shell = get_ipython().__class__.__name__
+        
+        # 'ZMQInteractiveShell' corresponds to Jupyter Notebooks / JupyterLab
+        if shell == 'ZMQInteractiveShell':
+            return True
+        # 'TerminalInteractiveShell' corresponds to the basic ipython terminal terminal command
+        elif shell == 'TerminalInteractiveShell':
+            return False
+        else:
+            return False
+            
+    except NameError:
+        return False

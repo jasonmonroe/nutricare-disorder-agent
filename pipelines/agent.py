@@ -15,7 +15,7 @@ from models.nutrition_bot import NutritionBot
 from tools.agentic_rag import make_agentic_rag_tool
 
 from src.config import AI_TITLE, EXIT_CMD, I_CLOCK, I_CROSSMARK, I_RUNNING, I_SAD, I_SMILING, I_SURPRISED, I_THINKING, I_WATCH
-from src.utils import show_datetime, start_timer, get_time
+from src.utils import show_ai_agent_banner, show_datetime, start_timer, get_time
 
 """
 Section 2: Building an Intelligent Nutrition Disorder Agent with Advanced Retrieval and Safety Mechanisms
@@ -39,7 +39,6 @@ def build(dataset: dict) -> CompiledStateGraph:
     # --- Visualize Workflow --- #
     agentic_rag_tool = AgenticRagTool(llm, chroma_db.retriever)
     workflow_app = agentic_rag_tool.compile()
-    print(f'workflow_app type = {type(workflow_app)}')
     agentic_rag_tool.display_workflow(workflow_app)
 
     print(f'\n# --- {I_RUNNING} Completed agent pipeline {I_RUNNING} --- #')
@@ -59,50 +58,49 @@ def start(dataset: dict) -> None:
     :return: None
     """
 
-    print(f"""
-        +-------------------------------------+
-        | {AI_TITLE:^45}|
-        +-------------------------------------+
-        | Welcome! I'm your dedicated AI Nutrition Agent. |
-        | Ask me anything about nutrition disorders. You can inquire about |
-        | symptoms, causes, treatment options, or preventative measures. |
-        | I'm ready to help with your health-related questions. |
-        |
-        | Type '{EXIT_CMD}' to end the conversation. |
-        +-------------------------------------+
-    """)
+    show_ai_agent_banner()
 
     # Initialize streamlit persistent state
     show_logs = dataset.get('log', False)
     print(f'DEBUG: show_logs:{show_logs}')
 
-    chroma_db = dataset['chroma_db']
-    openai_model = dataset['openai_model']
-    llama = dataset['llama']
+    chroma_db = dataset.get('chroma_db', None)
+    openai_model = dataset.get('openai_model', None)
+    llama = dataset.get('llama', None)
+    workflow_app = dataset.get('workflow_app', None) 
+
     llm = openai_model.llm
     llm_chatbot = openai_model.llm_chatbot
+
+    # Apply the nested async loop to allow async code execution in the notebook
+    nest_asyncio.apply()
     
-    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever)
+    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever, workflow_app)
+    
     chatbot = NutritionBot(llm_chatbot, tools=[rag_tool])
     chatbot.agent_executor.verbose = show_logs  # Set logging preferences
 
     # This provides a way to initiate a chat as different users.
     user_id = input(f"{I_THINKING} Agent: Login by providing customer name: ")  # Get user ID for tracking conversation sessions
-
+    q_time = 0
     print(f"\n# --- Session Start: {I_CLOCK} {show_datetime()} --- #\n")
 
-    while True:
+    while True and not chatbot.has_session_exp():
+        
+        chatbot.start_session()
         # Get user input
         print(f"{I_SMILING} Agent: How can I help you?\n")
         user_query = input(f"{user_id}: ")
 
         # Set timer for each question
         q_time = start_timer()
+        chatbot.update_latest_input_at(q_time)
 
         # Define the logic for exiting the loop' [if the user types in exit]
         if user_query.lower() == EXIT_CMD:
             print(f"\n{I_SURPRISED} Agent: Goodbye! Feel free to return if you have more questions.")
             print(f"# --- Session End: {show_datetime()} --- #")
+            q_time = start_timer()
             break
 
         # Filter input through Llama Guard - returns "SAFE" or "UNSAFE"
@@ -110,7 +108,7 @@ def start(dataset: dict) -> None:
         filtered_result = filtered_result.replace("\n", " ").strip()   # Normalize the result
 
         # Check if filtered_result is SAFE or UNSAFE
-        if filtered_result in ["SAFE", "BYPASS_SAFE"]:
+        if filtered_result in ["SAFE", "BYPASS_SAFE", ""]:
             # Process the user query using the RAG workflow
             try:
                 response = chatbot.handle_customer_query(user_id, user_query)  # Call chatbot handler function
@@ -124,3 +122,7 @@ def start(dataset: dict) -> None:
 
         # Show answer duration per query
         print(f"[{I_WATCH} Answered in {get_time(q_time)}]\n")
+
+
+    # Display session duration
+    print(f'{I_WATCH} Session Duration: {chatbot.get_session_duration(q_time)}')

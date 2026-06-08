@@ -8648,7 +8648,7 @@ rfc3987-syntax 1.1.0 requires lark&gt;=1.2.2, but you have lark 1.1.9 which is i
 <span class="c1"># see: https://openai.com/api/</span>
 <span class="n">OPENAI_API_BASE</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"OPENAI_API_BASE"</span><span class="p">)</span>  <span class="c1"># Fill in the OpenAI API base URL (e.g., "https://api.openai.com/v1")</span>
 <span class="n">OPENAI_API_KEY</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"API_KEY"</span><span class="p">)</span>  <span class="c1"># Fill in your OpenAI API Token (from "vendor")</span>
-<span class="n">OPENAI_EMB_MODEL</span> <span class="o">=</span> <span class="s2">"text-embedding-3-small"</span>  <span class="c1"># embedding models "text-embedding-3-small", "text-embedding-3-large"</span>
+<span class="n">OPENAI_EMBEDDING_MODEL</span> <span class="o">=</span> <span class="s2">"text-embedding-3-small"</span>  <span class="c1"># embedding models "text-embedding-3-small", "text-embedding-3-large"</span>
 <span class="n">OPENAI_MODEL</span> <span class="o">=</span> <span class="s2">"gpt-4o-mini"</span>  <span class="c1"># Fill in the OpenAI model name (e.g., "gpt-4o-mini")</span>
 </pre></div>
 </div>
@@ -8881,7 +8881,7 @@ rfc3987-syntax 1.1.0 requires lark&gt;=1.2.2, but you have lark 1.1.9 which is i
 <span class="n">embedding_function</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">embedding_functions</span><span class="o">.</span><span class="n">OpenAIEmbeddingFunction</span><span class="p">(</span>
     <span class="n">api_base</span><span class="o">=</span><span class="n">OPENAI_API_BASE</span><span class="p">,</span>   <span class="c1"># Fill in the API base URL</span>
     <span class="n">api_key</span><span class="o">=</span><span class="n">OPENAI_API_KEY</span><span class="p">,</span>   <span class="c1"># Fill in the API key</span>
-    <span class="n">model_name</span><span class="o">=</span><span class="n">OPENAI_EMB_MODEL</span><span class="p">,</span> <span class="c1"># Fill in the model name</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="n">OPENAI_EMBEDDING_MODEL</span><span class="p">,</span> <span class="c1"># Fill in the model name</span>
 <span class="p">)</span>
 <span class="c1"># This initializes the OpenAI embedding function for the Chroma vectorstore, using the provided endpoint and API key.</span>
 </pre></div>
@@ -8902,7 +8902,7 @@ rfc3987-syntax 1.1.0 requires lark&gt;=1.2.2, but you have lark 1.1.9 which is i
 <span class="n">embedding_model</span> <span class="o">=</span> <span class="n">OpenAIEmbeddings</span><span class="p">(</span>
     <span class="n">openai_api_base</span><span class="o">=</span><span class="n">OPENAI_API_BASE</span><span class="p">,</span>  <span class="c1"># Fill in the endpoint</span>
     <span class="n">openai_api_key</span><span class="o">=</span><span class="n">OPENAI_API_KEY</span><span class="p">,</span>    <span class="c1"># Fill in the API key</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">OPENAI_EMB_MODEL</span><span class="p">,</span>           <span class="c1"># Fill in the model name</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">OPENAI_EMBEDDING_MODEL</span><span class="p">,</span>           <span class="c1"># Fill in the model name</span>
     <span class="n">max_retries</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>                    <span class="c1"># Added for robustness</span>
 <span class="p">)</span>
 <span class="c1"># This initializes the OpenAI embeddings model using the specified endpoint, API key, and model name.</span>
@@ -24979,7 +24979,7 @@ Run Time: 2m 12s 456ms
 <span class="c1"># see: https://openai.com/api/</span>
 <span class="n">OPENAI_API_BASE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"OPENAI_API_BASE"</span><span class="p">)</span>  <span class="c1"># Fill in the OpenAI API base URL (e.g., "https://api.openai.com/v1")</span>
 <span class="n">OPENAI_API_KEY</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"OPENAI_API_KEY"</span><span class="p">)</span>  <span class="c1"># Fill in your OpenAI API Token (from "vendor")</span>
-<span class="n">OPENAI_EMB_MODEL</span> <span class="o">=</span> <span class="s2">"text-embedding-3-small"</span>  <span class="c1"># embedding models "text-embedding-ada-002", "text-embedding-3-large"</span>
+<span class="n">OPENAI_EMBEDDING_MODEL</span> <span class="o">=</span> <span class="s2">"text-embedding-3-small"</span>  <span class="c1"># embedding models "text-embedding-ada-002", "text-embedding-3-large"</span>
 <span class="n">OPENAI_MODEL</span> <span class="o">=</span> <span class="s2">"gpt-4o-mini"</span>  <span class="c1"># Fill in the OpenAI model name (e.g., "gpt-4o-mini")</span>
 
 <span class="c1"># --- Environment Keys ---</span>
@@ -25208,7 +25208,7 @@ Run Time: 2m 12s 456ms
 <span class="n">embedding_model</span> <span class="o">=</span> <span class="n">OpenAIEmbeddings</span><span class="p">(</span>
     <span class="n">openai_api_base</span><span class="o">=</span><span class="n">OPENAI_API_BASE</span><span class="p">,</span> <span class="c1"># Fill in the endpoint</span>
     <span class="n">openai_api_key</span><span class="o">=</span><span class="n">OPENAI_API_KEY</span><span class="p">,</span>   <span class="c1"># Fill in the API key</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">OPENAI_EMB_MODEL</span><span class="p">,</span>          <span class="c1"># Fill in the model name</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">OPENAI_EMBEDDING_MODEL</span><span class="p">,</span>          <span class="c1"># Fill in the model name</span>
     <span class="n">max_retries</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>                   <span class="c1"># openai client retries, Added for robustness (was =3)</span>
     <span class="n">request_timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>              <span class="c1"># avoid timeouts on backoff</span>
 <span class="p">)</span>
