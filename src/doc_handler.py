@@ -31,6 +31,7 @@ from src.config import (
     I_DISK,
     I_DOCUMENT,
     I_FLAG,
+    I_WARNING,
     VECTORS_DIR,
 )
 
@@ -92,7 +93,7 @@ class DocHandler():
 
         doc_cnt = len(samp_docs)
         if doc_cnt == 0:
-            print("[WARNING] Checked baseline collection is empty.")
+            print(f"{I_WARNING} [WARNING] Checked baseline collection is empty.")
             return
 
         index = random.randint(0, doc_cnt - 1)
@@ -118,6 +119,7 @@ class DocHandler():
 
     def show_documents(self) -> None:
         """Utility visualization logger looping structural collection layers."""
+        print(f'\n# {I_DOCUMENT} --- Showing Documents --- {I_DOCUMENT} #')
         for i in self.documents:
             print("Source:", i.metadata.get('source', 'Unknown'))
             print("Page:", i.metadata.get('page', 'Unknown'), "\n")
@@ -263,6 +265,7 @@ class DocHandler():
 
     def show_tables(self) -> None:
         """Displays formatted representation profiles of isolated layout data tables."""
+        print(f'# --- Showing Table Information --- #')
         for file_name, file_tables in self.tables.items():
             print(f"Tables from {file_name}:")
             for page_num, table_rows in file_tables.items():
@@ -333,8 +336,8 @@ class DocHandler():
                 
                 sleep(1)
 
-        # Check if file successfully unzipped
-        if os.path.exist(document_path):
+        
+        if os.path.exists(document_path):
             print(f'{I_DOCUMENT}{DOCUMENT_DIR}/{DOCUMENT_FILE} successfully unzipped and ready for processing.')
             return True
 

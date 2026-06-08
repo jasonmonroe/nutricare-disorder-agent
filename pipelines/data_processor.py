@@ -25,7 +25,8 @@ from src.config import (
     DOCUMENT_ZIP,
     I_DB,
     SIMILARITY_SEARCH_QUERY,
-    VECTOR_RESULT_CNT, I_DISK,
+    VECTOR_RESULT_CNT, 
+    I_DISK
 )
 from src.doc_handler import DocHandler
 from src.eda import show_histogram
@@ -83,6 +84,7 @@ def run(dataset: dict) -> None:
     # Get hypothetical questions and add them to the vector storage
     document_content_desc =  DOCUMENT_DIR + ' published by the Global Nutritional Health Organization'
 
+    # Create a merged dataset for questions.
     chroma_dataset = chroma_db.export()
     questions_dataset = {
         'batch_size': DOCUMENT_CHUNK_BATCH_SIZE,
@@ -90,7 +92,7 @@ def run(dataset: dict) -> None:
         'doc_handle': doc_handle,
         'document_content_description': 'Hypothetical Questions for ' + document_content_desc,
     }
-
+    
     dataset = {**chroma_dataset, **questions_dataset}
     questions = QuestionGenerator(dataset)
     hypothetical_questions_doc = questions.get_hypothetical_questions(document_chunks)
@@ -112,7 +114,7 @@ def run(dataset: dict) -> None:
     chroma_db.add_vector_documents(table_hypothetical_questions_doc)
 
     # --- Backup documents to Google Drive --- #
-    __backup_docs()
+  
     # --- Backup documents to Google Drive --- #
 
     # Sample a random user query using hypothetical retriever
@@ -120,6 +122,3 @@ def run(dataset: dict) -> None:
     chroma_db.query_questions(is_hyp=True, pluck=False)
 
     print('DEBUG: Exiting data_processor:run() ...')
-
-def __backup_docs():
-    pass
