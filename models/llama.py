@@ -85,15 +85,18 @@ class LlamaModel:
             llama_response = self.llama_guard_client.chat.completions.create(
                 messages=[{
                     "role": "user",
-                    "content": user_input_str
+                    "content": user_input_str.strip()
                 }],
                 model=LLAMA_MODEL,
             )
 
             # Return the filtered input
             result = llama_response.choices[0].message.content.strip()
+
             if self._log:
-                print(f"{I_PEN} Guard result: {result}")
+                print(f"\n# --- {I_PEN}  Open Guard result {I_PEN} --- #")
+                print(result)
+                print(f"# --- {I_PEN}  Close Guard result {I_PEN} --- #\n")
 
             if "unsafe" in result:
                 if any(code.strip() in LLAMA_UNSAFE_CODES for code in result.replace("unsafe ", "").strip().split(",")):

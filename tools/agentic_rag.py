@@ -44,17 +44,18 @@ def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, work
             "loop_max_iter": 4,
             "AI_ROLE": AI_ROLE,
         }
-
+        
         if isinstance(workflow_app, CompiledStateGraph):
-            print(f'line 48: DEBUG: Using param: workflow_app type={type(workflow_app)}')
+            #print(f'line 48: DEBUG: Using param: workflow_app type={type(workflow_app)}')
             return workflow_app.invoke(inputs)
 
         # If workflow_app is not found or None, build the agent
         agentic_rag_tool = AgenticRagTool(llm, retriever)
         workflow_app = agentic_rag_tool.compile()
-        print(f'line 54: DEBUG: workflow_app type={type(workflow_app)}')
+        #print(f'line 54: DEBUG: workflow_app type={type(workflow_app)}')
         
         return workflow_app.invoke(inputs)
 
-    print('\nDEBUG: line 59 returning agentic_rag')
+    #print(f'\nDEBUG: line 59 returning agentic_rag of type {type(agentic_rag)}')
+    # Returns here if --start is in args
     return agentic_rag

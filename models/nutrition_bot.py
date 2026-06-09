@@ -5,8 +5,8 @@
 # +-----------------------+
 
 # Python Libraries
-import time
-from typing import Dict, List, Any
+import logging
+from typing import Any
 from datetime import datetime
 from mem0 import MemoryClient
 
@@ -17,7 +17,7 @@ from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
 
 # Local Libraries
-from src.config import INACTIVE_SESSION_DUR, MEM0_API_KEY, RETRIEVAL_LIMIT
+from src.config import I_THUMBS_DOWN, INACTIVE_SESSION_DUR, MEM0_API_KEY, RETRIEVAL_LIMIT
 from src.utils import get_time, start_timer
 
 
@@ -36,7 +36,6 @@ class NutritionBot:
         self.memory = MemoryClient(api_key=MEM0_API_KEY)  # Complete the code to define the memory client API key
 
         # Initialize the OpenAI client using the provided credentials
-        #open_ai_model = OpenAIModel()
         self.client = llm_chatbot
 
         # Define the system prompt to set the behavior of the chatbot
@@ -67,38 +66,29 @@ class NutritionBot:
         self.agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
     def start_session(self):
-        self.session_starts_at = start_timer()
+        self._session_starts_at = start_timer()
 
+    def update_latest_input_at(self, input_at: float) -> None:
+        self._latest_input_at = input_at
 
-    def store_customer_interaction_old_version(self, user_id: str, message: str, response: str, metadata: dict) -> None:
-        """
-        Store customer interaction in memory for future reference.
+    def has_session_exp(self) -> bool:
+        # If chat session just started return False.  Next time it will be evaluated
+        if self._latest_input_at is None:
+            return False
 
-        Args:
-            user_id (str): Unique identifier for the customer.
-            message (str): Customer's query or message.
-            response (str): Chatbot's response.
-            metadata (Dict, optional): Additional metadata for the interaction.
-        """
-         
+        # Max session is 20 minutes.  Anything after that needs to be run again.
+        diff_in_secs = abs(start_timer() - self._latest_input_at)
 
-        # Add a timestamp to the metadata for tracking purposes
-        metadata["timestamp"] = datetime.now().isoformat()
+        if diff_in_secs > INACTIVE_SESSION_DUR:
+            print(f'DEBUG: diff_in_secs={diff_in_secs}')
+            print(f'\n{I_THUMBS_DOWN} Session has expired.  Exiting chat.')
+            return True
 
-        # Format the conversation for storage
-        conversation = [
-            {"role": "user", "content": message},
-            {"role": "assistant", "content": response}
-        ]
+        return False
 
-        # Store the interaction in the memory client
-        self.memory.add(
-            conversation,
-            user_id=user_id,
-            output_format="v1.1",
-            metadata=metadata
-        )
-
+    def get_session_duration(self, session_ends_at) -> str:
+        return get_time(self._session_starts_at, session_ends_at)
+        
     def store_customer_interaction(self, user_id: str, message: str, response: str, metadata: dict) -> None:
         """
         Store customer interaction in memory for future reference.
@@ -111,16 +101,14 @@ class NutritionBot:
             {"role": "assistant", "content": response}
         ]
 
-        # BEFORE: user_id=user_id
-        # AFTER (FIXED):
         self.memory.add(
             conversation,
-            filters={"user_id": user_id},  # <-- Uniformly wrap tracking constraints here
+            filters={"user_id": user_id},
             output_format="v1.1",
             metadata=metadata
         )
 
-    def get_relevant_history_old_version(self, user_id: str, query: str) -> dict[str, Any]:
+    def get_relevant_history(self, user_id: str, query: str) -> dict[str, Any]:
         """
         Retrieve past interactions relevant to the current query.
 
@@ -131,21 +119,10 @@ class NutritionBot:
         Returns:
             List[Dict]: A list of relevant past interactions.
         """
-        return self.memory.search(
-            query=query,  # Search for interactions related to the query
-            user_id=user_id,  # Restrict search to the specific user
-            limit=RETRIEVAL_LIMIT  # Complete the code to define the limit for retrieved interactions
-        )
-
-    def get_relevant_history(self, user_id: str, query: str) -> dict[str, Any]:
-        """
-        Retrieve past interactions relevant to the current query.
-        """
-        # BEFORE: user_id=user_id
-        # AFTER (FIXED):
+      
         return self.memory.search(
             query=query,  
-            filters={"user_id": user_id},  # <-- Nest under filters to fix the error
+            filters={"user_id": user_id}, 
             limit=RETRIEVAL_LIMIT  
         )
 
@@ -160,19 +137,61 @@ class NutritionBot:
         Returns:
             str: Chatbot's response.
         """
+        logger = logging.getLogger(__name__)
 
         # Retrieve relevant past interactions for context
         relevant_history = self.get_relevant_history(user_id, query)
+        logger.info(f'relevant_history={relevant_history}')
+        
 
         # Build a context string from the relevant history
         context = "Previous relevant interactions:\n"
+
+        """
         for history in relevant_history:
+            logger.info(f'history={history}')
             context += f"Customer: {history['memory']}\n"  # Customer's past messages
             context += f"Support: {history['memory']}\n"  # Chatbot's past responses
             context += "---\n"
 
+        
+        memories = relevant_history.get('results', [])
+        logger.info(f'memories={memories}')
+
+        if memories:
+            context += "\nPast messages and responses:\n"
+            for item in memories:
+                memory_text = item.get('memory', '')
+                if memory_text:
+                    context += f'- {memory_text}'
+        else:
+            context += "\nNo relevant past profile history found.\n"
+        """
+
+        
+        if isinstance(relevant_history, dict):
+            # Target the inner list under the 'results' key (defaults to an empty list if missing)
+            memories_list = relevant_history.get("results", [])
+            for history in memories_list:
+                logger.info(f'history object found in dict: {history}')
+                if isinstance(history, dict) and 'memory' in history:
+                    context += f"- Context Fact: {history['memory']}\n"
+                elif isinstance(history, str):
+                    context += f"- Context Fact: {history}\n"
+                    
+        elif isinstance(relevant_history, list):
+            # Fallback in case a different version/mock payload returns a flat list directly
+            for history in relevant_history:
+                logger.info(f'history object found in list: {history}')
+                if isinstance(history, dict) and 'memory' in history:
+                    context += f"- Context Fact: {history['memory']}\n"
+                elif isinstance(history, str):
+                    context += f"- Context Fact: {history}\n"
+       
+
         # Print context for debugging purposes
-        print("Context: ", context)
+        #logger.info("Context: ", context)
+        logger.info(f"Context Compiled Successfully:\n {context}")
 
         # Prepare a prompt combining past context and the current query
         prompt = f"""
@@ -182,10 +201,12 @@ class NutritionBot:
         Current customer query: {query}
 
         Provide a helpful response that takes into account any relevant past interactions.
-        """
+        """.strip()
 
+        logger.info(f'line 219 DEBUG: prompt:{prompt}')
+        
         # Generate a response using the agent
-        response = self.agent_executor.invoke({"input": prompt.strip()})
+        response = self.agent_executor.invoke({"input": prompt})
 
         # Store the current interaction for future reference
         self.store_customer_interaction(
@@ -197,24 +218,3 @@ class NutritionBot:
 
         # Return the chatbot's response
         return response['output']
-
-    def update_latest_input_at(self, input_at: float) -> None:
-        self._latest_input_at = input_at
-
-
-    def has_session_exp(self) -> bool:
-
-        # Max session is 20 minutes.  Anything after that needs to be run again.
-        diff = abs(start_timer() - self._latest_input_at)
-
-        if diff > INACTIVE_SESSION_DUR:
-            print(f'diff={diff}')
-            print('Session has expired.  Exiting chat.')
-            return True
-
-        return False
-
-    def get_session_duration(self, session_ends_at) -> str:
-        return get_time(self._session_starts_at, session_ends_at)
-        
-

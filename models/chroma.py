@@ -224,6 +224,7 @@ class ChromaModel:
         chunks = pdf_loader.load_and_split(self.semantic_text_splitter)
         semantic_chunks.extend(chunks)
         print(f"Total Semantic Chunks Created: {len(semantic_chunks)}")
+        
         return semantic_chunks
 
     def _format_dir(self, path: str) -> str:

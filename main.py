@@ -6,8 +6,6 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy.sql import false
 
-from src import doc_handler
-
 # Force load_dotenv to overwrite any existing terminal environmental variables
 load_dotenv(override=True)
 
@@ -82,12 +80,12 @@ if sys.version_info >= (3, 13):
     print("CRITICAL: This project requires Python 3.11 or 3.12. Python 3.13+ is not yet supported.")
     sys.exit(1)
 
-import sys
 import warnings
-
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='pydantic')
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='langchain')
 
 # Vendor Libraries
+import logging
 import numpy as np
 np.float_ = np.float64
 
@@ -133,18 +131,24 @@ def _parse_args(command_line_args: list[str]) -> dict:
 
 # Ensure your entry block checks against '__main__', not 'main'
 if __name__ == '__main__':
+    logger = logging.getLogger(__name__)
     run_id = get_run_id()
     print(f'\n-----> {I_TIMER} START RUN ID: {run_id} {I_TIMER} <-----\n')
     start_time = start_timer()
 
     args = _parse_args(sys.argv[1:])
     mock = args.get('mock', False)
-    log = args.get('log', false)
+    log = args.get('log', False)
 
     show_title_banner()
 
     if mock:
         print(f'{I_INFO} Mock mode is turned on!')
+
+    if log:
+        logging.basicConfig(level=logging.INFO) #DEBUG
+    else:
+        logging.basicConfig(level=logging.INFO)
 
     # Wipe documents directory before Chroma is created.
     if args.get('data'):

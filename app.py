@@ -1035,7 +1035,7 @@ class NutritionBot:
         # Store the interaction in the memory client
         self.memory.add(
             conversation,
-            user_id=user_id,
+            filters={"user_id": user_id},
             output_format="v1.1",
             metadata=metadata
         )
@@ -1054,7 +1054,7 @@ class NutritionBot:
         """
         return self.memory.search(
             query=query,  # Search for interactions related to the query
-            user_id=user_id,  # Restrict search to the specific user
+            filters={"user_id": user_id},  # Restrict search to the specific user
             limit=RETRIEVAL_LIMIT  # Complete the code to define the limit for retrieved interactions
         )
 
@@ -1113,7 +1113,7 @@ class NutritionBot:
 @st.cache_resource
 def get_chatbot_instance():
     """Initializes and caches the NutritionBot instance."""
-    print("--- Initializing NutritionBot ---")
+    print(f"\n# --- Initializing NutritionBot --- #")
     return NutritionBot()
 
 

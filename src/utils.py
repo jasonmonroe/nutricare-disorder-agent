@@ -22,6 +22,7 @@ from src.config import (
     HF_TOKEN,
     I_BOT, 
     I_FLAG,
+    I_HANDSHAKE,
     LLAMA_KEY, 
     MAX_RUN_ID, 
     MEM0_API_KEY, 
@@ -29,7 +30,10 @@ from src.config import (
     MSEC, 
     OPENAI_API_BASE, 
     OPENAI_API_KEY, 
-    SECS_IN_MIN
+    OPENAI_EMBEDDING_MODEL,
+    OPENAI_MODEL,
+    SECS_IN_MIN,
+    SLEEP_TIME_INC
 )
 
 def get_run_id() -> str:
@@ -75,45 +79,27 @@ def show_banner(title: str, section: str = '') -> None:
 
     print('')
 
-def show_title_banner2() -> str:
-    print(f"""
-        +-------------------------------------+
-        |{APP_TITLE:^35}|
-        |{AI_ROLE:^35}|
-        +-------------------------------------+""".strip())
-
 def show_title_banner() -> str:
-    print(f"""
-    +-------------------------------------+
-    |     Nutricare Disorder Agent        |
-    |   Nutrition Disorder Specialist     |
-    +-------------------------------------+\n
-    """.strip())
-
-def show_ai_agent_banner2() -> str:
-    print(f"""\n
-        +--------------------------------------------------------------+
-        | {AI_TITLE:^60}|
-        +--------------------------------------------------------------+
-        | Welcome! I'm your dedicated AI Nutrition Agent. Ask me anything about nutrition disorders, including their symptoms, causes, treatments, or preventative measures. I am here to assist with your health-related questions. |  
-        |                                                              |
-        | Type '{EXIT_CMD}' to end the conversation.                   |
-        +--------------------------------------------------------------+
-    """.strip())
-
+    print('+-------------------------------------+')
+    print('|                                     |')
+    print(f'|      {APP_TITLE}       |')
+    print('|                                     |')
+    print('+-------------------------------------+')
+    print(f'# === {I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE} === #')
+    print('+-------------------------------------+\n')
+    
 def show_ai_agent_banner() -> str:
-    print(f"""
-    +--------------------------------------------------------------+
-    |           {I_BOT}SMART NUTRITION DISORDER SPECIALIST BOT{I_BOT}            |
-    +--------------------------------------------------------------+
-    | Welcome! I'm your dedicated AI Nutrition Agent. Ask me       |
-    | anything about nutrition disorders, including their symptoms,| 
-    | causes, treatments, or preventative measures. I am here to   |
-    | assist with your health-related questions.                   |  
-    |                                                              |
-    | Type 'exit' to end the conversation.                         |
-    +--------------------------------------------------------------+
-    """.strip())
+    print('\n+--------------------------------------------------------------+')
+    print(f'|        {I_BOT} SMART NUTRITION DISORDER SPECIALIST BOT {I_BOT}         |')
+    print('+--------------------------------------------------------------+')
+    print('| Welcome! I\'m your dedicated AI Nutrition Agent.              |')
+    print('| Ask me anything about nutrition disorders, including their   |')
+    print('| symptoms,causes, treatments, or preventative measures. I am  |')
+    print('| here to  assist with your health-related questions.          |')
+    print('|                                                              |')
+    print('+--------------------------------------------------------------+')
+    print(f'| Type "{EXIT_CMD}" to end the conversation.                         |')
+    print('+--------------------------------------------------------------+\n')
 
 def set_os_environ():
     # --- Environment Keys ---
@@ -126,13 +112,12 @@ def set_os_environ():
     os.environ["MEM0_API_KEY"] = MEM0_API_KEY.strip()
     os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE.strip()
     os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY.strip()
-    os.environ["OPENAI_EMB_MODEL"] = OPENAI_EMB_MODEL.strip()
+    os.environ["OPENAI_EMBEDDING_MODEL"] = OPENAI_EMBEDDING_MODEL.strip()
     os.environ["OPENAI_MODEL"] = OPENAI_MODEL.strip()
     os.environ["CHROMA_TELEMETRY_DISABLED"] = "1"
     # --- Environment Keys ---
 
-
-    # --- HELPER FUNCTIONS
+# --- HELPER FUNCTIONS --- #
 def show_datetime() -> str:
     now_utc = datetime.now(UTC)
 
@@ -151,7 +136,7 @@ def handle_rate_limit_error(e, subject: str, current_sleep_time: int, i:int) -> 
     if "Error code: 429" in str(e):
         # Increase sleep time by 15%
         rate_limit_hit = True
-        new_sleep_time = current_sleep_time + round(current_sleep_time * 0.15)
+        new_sleep_time = current_sleep_time + round(current_sleep_time * SLEEP_TIME_INC)
         print(f"{I_FLAG} FATAL: Rate limit hit. Updating sleep time from {current_sleep_time} to {new_sleep_time} seconds...")
         if new_sleep_time > SECS_IN_MIN:
             new_sleep_time = SECS_IN_MIN
