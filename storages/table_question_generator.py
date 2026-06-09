@@ -37,7 +37,7 @@ class TableQuestionGenerator(ChromaModel):
     @staticmethod
     def _prompt():
         # Define a prompt for generating hypothetical questions for tables
-        return f"""
+        return """
         [SYSTEM INSTRUCTION]
         You are an AI {AI_ROLE} specialized in generating precise, clinically relevant questions for information retrieval.
         Your task is to analyze the provided CONTEXT and TABLE DATA, and generate a list of three hypothetical questions that are directly answerable by the data.
@@ -83,7 +83,7 @@ class TableQuestionGenerator(ChromaModel):
                     page_content_text = page_texts.get(document, {}).get(page_number, "")
 
                     formatted_response = hypothetical_questions_prompt.format(
-                        ROLE=AI_ROLE,
+                        AI_ROLE=AI_ROLE,
                         docs=page_content_text,
                         tables=table_in_page,
                         PROMPT_INSTR=PROMPT_INSTR,

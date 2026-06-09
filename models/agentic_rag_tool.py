@@ -131,7 +131,7 @@ class AgenticRagTool:
         query_feedback = state.get('query_feedback') # Gets feedback if present
 
         # --- Start with the ROBUST V1 Prompt ---
-        system_message = f"""
+        system_message = """
         You are an expert AI {AI_ROLE} specializing in nutritional disorders and academic literature search.
 
         Your task is to rewrite the user's query into a single detailed, precise, and technical search query optimized for retrieving relevant academic research papers on nutrition disorders.
@@ -227,7 +227,7 @@ class AgenticRagTool:
         """
         print("\n--- craft_response ---")
 
-        system_message = f"""
+        system_message = """
         You are an expert AI {AI_ROLE}, specializing in **Nutritional Disorders**. Your sole task is to analyze the provided CONTEXT and synthesize a direct, comprehensive answer to the user's QUERY.
 
         **STRICT GENERATION RULES:**
@@ -277,7 +277,7 @@ class AgenticRagTool:
 
         print("\n# --- check_groundedness --- #")
 
-        system_message = f"""You are a meticulous AI {AI_ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
+        system_message = """You are a meticulous AI {AI_ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
         Calculate a score from 0.0 to 1.0 that represents the fraction of claims in the response that are directly and verifiably supported by the context.
         - A score of 1.0 means every claim in the response is fully supported by the context.
         - A score of 0.0 means no claims in the response are supported by the context.
@@ -322,7 +322,7 @@ class AgenticRagTool:
 
         print("\n# --- check_precision --- #")
 
-        system_message = f"""
+        system_message = """
         As an AI {AI_ROLE} evaluate whether the response precisely addresses the user's query.
         Evaluate, assign and return the precision score for the response.  Your evaluation is based solely on the relationship between the response and the query. Do not consider anything else.
 
@@ -368,7 +368,7 @@ class AgenticRagTool:
 
         print("\n# --- refine_response --- #")
 
-        system_message = f"""
+        system_message = """
         You are an AI {AI_ROLE} Quality Analyst and Critic. Your sole task is to provide constructive feedback on a given response based on the user's original query.
         Your feedback should identify potential gaps, ambiguities, or missing details and suggest specific improvements to enhance the response's accuracy and completeness.
 
@@ -423,7 +423,7 @@ class AgenticRagTool:
             term_clarifications: List[str]
 
         # This prompt forces the JSON structure and ensures high-quality clinical input
-        system_message = f"""
+        system_message = """
         You are an AI Search Query Analyst specializing in clinical nutrition literature.
         Your sole task is to provide constructive feedback on the provided expanded query to enhance its search precision for academic databases.
 
@@ -541,9 +541,11 @@ class AgenticRagTool:
 
     def display_workflow(self, wf_app: CompiledStateGraph) -> None:
         """
-        Generates the graph diagram and saves it as a local file 
-        so it can be viewed outside of a Jupyter environment.
+        Generates the graph diagram and saves it as a local file so it can be viewed outside of a Jupyter environment.
+        :param wf_app:
+        :return: None
         """
+
         print(f'{I_INFO}  Generating and saving Workflow Flowchart Image...')
         
         try:

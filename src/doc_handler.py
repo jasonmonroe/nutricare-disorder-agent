@@ -39,7 +39,7 @@ from src.config import (
 
 class DocHandler():
     def __init__(self, llama_parser: LlamaParse):
-        self.documents = []  # Explicit state tracking placeholder (Set outside the class)
+        self.documents = []
         self.document_content_description = "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
         self.folder_path = DOCUMENT_DIR
         self.metadata_info = self._get_metadata_info()

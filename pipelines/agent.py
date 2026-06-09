@@ -95,7 +95,7 @@ def start(dataset: dict) -> None:
     user_id = input(f"{I_THINKING} Agent: Tell me, what is your name? _ ")  # Get user ID for tracking conversation sessions
     print(f"\n# --- Session Start: {I_CLOCK} {show_datetime()} --- #\n")
 
-    while True and not chatbot.has_session_exp():
+    while chatbot.has_session_exp():
         
         # Get user input
         print(f"{I_SMILING} Agent: How can I help you?\n")

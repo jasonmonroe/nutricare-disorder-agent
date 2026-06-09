@@ -32,7 +32,7 @@ class QuestionGenerator(ChromaModel):
 
     @staticmethod
     def _prompt() -> str:
-        return f"""
+        return """
             You are an AI {AI_ROLE} specialized in generating precise, clinically relevant questions for information retrieval.
             Your task is to analyze the provided TEXT CHUNK and generate a list of exactly three hypothetical questions for which the chunk contains the complete answer.
             

@@ -87,6 +87,11 @@ class NutritionBot:
         return False
 
     def get_session_duration(self, session_ends_at) -> str:
+        """
+        Set duration
+        :param session_ends_at:
+        :return:
+        """
         return get_time(self._session_starts_at, session_ends_at)
         
     def store_customer_interaction(self, user_id: str, message: str, response: str, metadata: dict) -> None:

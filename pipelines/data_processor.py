@@ -68,10 +68,6 @@ def run(dataset: dict) -> None:
     chroma_db.add_semantic_documents(document_chunks)
 
     # Perform similarity search in the vectorstore
-    #doc_handle.documents = chroma_db.semantic_storage.similarity_search(
-    #    query=SIMILARITY_SEARCH_QUERY,
-    #    k=VECTOR_RESULT_CNT
-    #)
     doc_handle.documents = chroma_db.get_documents()
     doc_handle.show_documents()
 
