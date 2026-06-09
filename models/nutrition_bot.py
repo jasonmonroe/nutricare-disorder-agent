@@ -141,9 +141,9 @@ class NutritionBot:
 
         # Retrieve relevant past interactions for context
         relevant_history = self.get_relevant_history(user_id, query)
+        
         logger.info(f'relevant_history={relevant_history}')
         
-
         # Build a context string from the relevant history
         context = "Previous relevant interactions:\n"
 
@@ -165,7 +165,7 @@ class NutritionBot:
                 if memory_text:
                     context += f'- {memory_text}'
         else:
-            context += "\nNo relevant past profile history found.\n"
+            context += "\nNo previous relevant interactions found.\n"
         """
 
         

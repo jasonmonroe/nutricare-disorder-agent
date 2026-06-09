@@ -14,7 +14,18 @@ from models.agentic_rag_tool import AgenticRagTool
 from models.nutrition_bot import NutritionBot
 from tools.agentic_rag import make_agentic_rag_tool
 
-from src.config import AI_TITLE, EXIT_CMD, I_CLOCK, I_CONFUSED, I_CROSSMARK, I_RUNNING, I_SAD, I_SMILING, I_SURPRISED, I_THINKING, I_WATCH
+from src.config import (
+    EXIT_CMD, 
+    I_CLOCK, 
+    I_CONFUSED, 
+    I_CROSSMARK, 
+    I_RUNNING, 
+    I_SAD, 
+    I_SMILING, 
+    I_SURPRISED, 
+    I_THINKING, 
+    I_WATCH
+)
 from src.utils import show_ai_agent_banner, show_datetime, start_timer, get_time
 
 """
@@ -45,7 +56,6 @@ def build(dataset: dict) -> CompiledStateGraph:
 
     return workflow_app
 
-
 def start(dataset: dict) -> None:
     print(f'\n# --- {I_RUNNING} Starting agent pipeline {I_RUNNING} --- #')
 
@@ -54,7 +64,8 @@ def start(dataset: dict) -> None:
 
     A conversational agent that answers nutrition-disorder-related questions using a RAG-based workflow with safety
     filtering and user session handling.
-    :param dataset:
+
+    :param dataset: dict
     :return: None
     """
 
@@ -75,16 +86,13 @@ def start(dataset: dict) -> None:
     # Apply the nested async loop to allow async code execution in the notebook
     nest_asyncio.apply()
     
-    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever, workflow_app)
-    
+    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever, workflow_app) 
     chatbot = NutritionBot(llm_chatbot, tools=[rag_tool])
     chatbot.agent_executor.verbose = show_logs  # Set logging preferences
-
-    # This provides a way to initiate a chat as different users.
     chatbot.start_session()
     q_time = 0
-    user_id = input(f"{I_THINKING} Agent: Tell me, what is your name? ")  # Get user ID for tracking conversation sessions
-    
+
+    user_id = input(f"{I_THINKING} Agent: Tell me, what is your name? _ ")  # Get user ID for tracking conversation sessions
     print(f"\n# --- Session Start: {I_CLOCK} {show_datetime()} --- #\n")
 
     while True and not chatbot.has_session_exp():
@@ -100,10 +108,9 @@ def start(dataset: dict) -> None:
         # Define the logic for exiting the loop' [if the user types in exit]
         if user_query.lower() == EXIT_CMD:
             print(f"\n{I_SURPRISED} Agent: Goodbye! Feel free to return if you have more questions.")
-            print(f"# --- Session End: {show_datetime()} --- #")
+            print(f"# --- Session End: {I_CLOCK} {show_datetime()} --- #")
             q_time = start_timer()
             break
-
 
         # Note: If user just enters blank, skip Llama and ask for another query.
         if user_query == '':
@@ -116,7 +123,7 @@ def start(dataset: dict) -> None:
 
         # Check if filtered_result is SAFE or UNSAFE
         if filtered_result in ["SAFE", "BYPASS_SAFE"]:
-            # Process the user query using the RAG workflow
+            # Process the user query using the RAG workflow.
             try:
                 response = chatbot.handle_customer_query(user_id, user_query)  # Call chatbot handler function
                 print(f"{I_SMILING} Agent: {response}\n")
@@ -132,5 +139,4 @@ def start(dataset: dict) -> None:
 
 
     # Display session duration
-    print(f'DEBUG: q_time={q_time}')
     print(f'{I_WATCH} Session Duration: {chatbot.get_session_duration(q_time)}')

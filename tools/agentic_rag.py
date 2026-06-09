@@ -56,6 +56,5 @@ def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, work
         
         return workflow_app.invoke(inputs)
 
-    #print(f'\nDEBUG: line 59 returning agentic_rag of type {type(agentic_rag)}')
     # Returns here if --start is in args
     return agentic_rag
