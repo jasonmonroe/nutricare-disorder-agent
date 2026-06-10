@@ -166,11 +166,13 @@ class AgenticRagTool:
         chain = expand_prompt | self.llm | StrOutputParser()
 
         # Invoke the chain
-        state['expanded_query'] = chain.invoke({
+        expanded_query = chain.invoke({
             "query": original_query,
             # Note: Feedback is injected via the system_message,
             "AI_ROLE": state['AI_ROLE'],
         })
+
+        state['expanded_query'] = expanded_query
 
         # Clear the feedback for the next node
         state['query_feedback'] = ""

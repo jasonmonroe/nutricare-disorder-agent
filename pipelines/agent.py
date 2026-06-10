@@ -33,7 +33,7 @@ from src.utils import show_ai_agent_banner, show_datetime, start_timer, get_time
 Section 2: Building an Intelligent Nutrition Disorder Agent with Advanced Retrieval and Safety Mechanisms
 """
 
-def build(dataset: dict) -> CompiledStateGraph:
+def build(dataset: dict):
     """
     Builds the agentic app by compile workflow object.
     :param dataset:
@@ -68,6 +68,7 @@ def start(dataset: dict) -> None:
 
     :param dataset: dict
     :return: None
+    
     """
 
     show_ai_agent_banner()

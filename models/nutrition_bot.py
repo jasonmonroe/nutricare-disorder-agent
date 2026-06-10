@@ -132,7 +132,15 @@ class NutritionBot:
         )
 
     def handle_customer_query_old(self, user_id: str, query: str) -> str:
-        
+        """
+        Process a customer's query and provide a response, taking into account past interactions.
+
+        :param user_id:
+        :param query:
+        :return:
+        """
+
+
         """
         Process a customer's query and provide a response, taking into account past interactions.
 
@@ -198,7 +206,6 @@ class NutritionBot:
        
 
         # Print context for debugging purposes
-        #logger.info("Context: ", context)
         logger.info(f"Context Compiled Successfully:\n {context}")
 
         # Prepare a prompt combining past context and the current query
@@ -231,7 +238,12 @@ class NutritionBot:
     def handle_customer_query(self, user_id: str, query: str) -> str:
         """
         Process a customer's query and provide a response, taking into account past interactions.
+
+        :param user_id:
+        :param query:
+        :return:
         """
+
         logger = logging.getLogger(__name__)
 
         # 1. Retrieve relevant past memory facts
@@ -267,7 +279,7 @@ class NutritionBot:
 
         # 4. Use LangChain system instructions or clean formatting tags 
         # to separate the memory profile from the core question.
-        structured_input = f"""
+        structured_input = """
         [USER METADATA PROFILE]
         {context_header}
 
@@ -275,7 +287,7 @@ class NutritionBot:
         {query}
         """.strip()
 
-        logger.info(f'DEBUG: Executing agent invocation with structured input.')
+        logger.info('DEBUG: Executing agent invocation with structured input.')
         
         # Generate a response using the agent
         response = self.agent_executor.invoke({"input": structured_input})

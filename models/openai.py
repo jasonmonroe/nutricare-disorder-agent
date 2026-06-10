@@ -8,14 +8,12 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.language_models.fake_chat_models import FakeListChatModel # Temp
 
 # Local Libraries
-
 from src.config import (
     OPENAI_API_BASE,
     OPENAI_API_KEY,
     OPENAI_EMBEDDING_MODEL,
     OPENAI_MODEL
 )
-
 
 class OpenAIModel:
     def __init__(self, mock: bool=False):

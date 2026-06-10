@@ -29,6 +29,7 @@ from src.config import (
     I_BROOM,
     I_CHECKMARK,
     I_DB,
+    I_DIR,
     I_DISK,
     I_DOCUMENT,
     I_FLAG,
@@ -297,11 +298,11 @@ class DocHandler():
         Wipes data inside target persistent storage directories to allow clean ingestion.
         FIXED: Uses recursive shutil tree removal to clear nested ChromaDB states safely.
         """
-        print(f"\n# --- {I_BROOM} Wiping {VECTORS_DIR} {I_BROOM} --- #")
+        print(f"\n# --- {I_BROOM} Wiping {I_DIR} {VECTORS_DIR} {I_BROOM} --- #")
 
         if not os.path.exists(VECTORS_DIR):
             # Create fresh db directory
-            print(f'{I_WARNING} {VECTORS_DIR} does not exist.  Creating {I_DB} it now...')
+            print(f'{I_WARNING} {I_DIR} {VECTORS_DIR} does not exist.  Creating {I_DB} it now...')
             os.makedirs(VECTORS_DIR, exist_ok=True)
             return None
 
@@ -319,7 +320,7 @@ class DocHandler():
                     print(f"{I_FLAG} Failed to wipe element path target {file_path}. Exception: {e}")
            
         if next(os.scandir(VECTORS_DIR), None) is None:
-            print("Directory exists and is empty.")
+            print(f"\n{I_DIR} Directory exists and is empty.")
 
         return None
 

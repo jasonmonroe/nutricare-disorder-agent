@@ -92,8 +92,8 @@ def run(dataset: dict) -> None:
     doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name.title())
 
     # --- Temp --- #
-    import uuid
-    ids = [str(uuid.uuid4()) for _ in range(len(hypothetical_questions_doc))]
+    #import uuid
+    #ids = [str(uuid.uuid4()) for _ in range(len(hypothetical_questions_doc))]
     # --- Temp --- #
     chroma_db.add_vector_documents(hypothetical_questions_doc)
 

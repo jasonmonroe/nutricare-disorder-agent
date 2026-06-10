@@ -85,6 +85,7 @@ def show_title_banner() -> str:
     print(f'|      {APP_TITLE}       |')
     print('|                                     |')
     print('+-------------------------------------+')
+    print('|                                     |')
     print('+-------------------------------------+\n')
     print(f'# === {I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE} === #')
 

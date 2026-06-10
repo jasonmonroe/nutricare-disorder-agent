@@ -175,6 +175,29 @@ class ChromaModel:
             k=VECTOR_RESULT_CNT
         )
 
+    def query_questions(self, is_hyp: bool = False, pluck: bool = False) -> None:
+        """
+        Query questions using either structured hypothetical retriever or structured retriever.
+        :param is_hyp:
+        :param pluck:
+        :return: None
+        """
+        retriever = self.structured_hyp_retriever if is_hyp else self.structured_retriever
+        print('--- Hypothetical Retriever ---' if is_hyp else '--- Retriever ---')
+
+        if pluck:
+            ques = random.choice(self.queries())
+            semantic_chunks_retrieved = retriever.invoke(ques)
+            print(f"Question: {ques}{I_QUES}")
+            print(f"Retrieved Documents: {semantic_chunks_retrieved}")
+        else:
+            for ques in self.queries():
+                semantic_chunks_retrieved = retriever.invoke(ques)
+                print(f"Number of Semantic Chunks Retrieved: {len(semantic_chunks_retrieved)}")
+                print(f"Question: {ques}{I_QUES}")
+                print(f"Retrieved Documents: {semantic_chunks_retrieved}")
+                print("---\n")
+
     @staticmethod
     def queries() -> list:
         return [
