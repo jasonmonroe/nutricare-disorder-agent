@@ -33,7 +33,8 @@ from src.config import (
     OPENAI_EMBEDDING_MODEL,
     OPENAI_MODEL,
     SECS_IN_MIN,
-    SLEEP_TIME_INC
+    SLEEP_TIME_INC,
+    VECTORS_DIR
 )
 
 def get_run_id() -> str:
@@ -169,3 +170,7 @@ def is_jupyter() -> bool:
             
     except NameError:
         return False
+
+# Format persist directory
+def format_dir(path: str) -> str:
+    return f"./{VECTORS_DIR}/{path}_db"

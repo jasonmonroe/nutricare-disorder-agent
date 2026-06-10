@@ -1,11 +1,8 @@
 # storage/question_generator.py
 
-# +-------------------+
-# |     QUESTIONS     |
-# +-------------------+
-
 # Python Libraries
 import time
+import random
 
 # Vendor Libraries
 
@@ -19,16 +16,16 @@ from src.utils import handle_rate_limit_error, show_timer
 
 class QuestionGenerator(ChromaModel):
     def __init__(self, dataset: dict):
-        super().__init__(dataset)
-
         self.batch_size = None
         self.doc_handle = None
         self.document_content_description = None
         self.llm = None
+
+        super().__init__(dataset)
         self.prompt = self._prompt().strip()
         self.title = 'Hypothetical Questions'
 
-        self._set_attrs(dataset)
+        #self._set_attrs(dataset)
 
     @staticmethod
     def _prompt() -> str:
@@ -50,21 +47,24 @@ class QuestionGenerator(ChromaModel):
         print(f'\n# --- {I_QUES} Getting Hypothetical Questions {I_QUES} --- #')
 
         start_time = time.time()
-        rate_limit_hit = False
-        sleep_time = RATE_LIMIT_TIME
         hypothetical_questions = []
         hypothetical_questions_prompt = self._prompt().strip()
 
-        print(f'{I_INFO} Rate limit sleep timer: {sleep_time}\n')
-        for batch_start in range(0, len(semantic_chunks), self.batch_size):
-            batch = semantic_chunks[batch_start: batch_start + self.batch_size]
+        # Track total items for progress logging
+        total_chunks = len(semantic_chunks)
+        print(f'{I_INFO} Processing {total_chunks} chunks using batch size {self.batch_size}.\n')
 
-            # List to store documents with hypothetical questions.
+        for batch_start in range(0, total_chunks, self.batch_size):
+            batch = semantic_chunks[batch_start: batch_start + self.batch_size]
             batched_hypothetical_questions = []
 
             for i, document in enumerate(batch, start=batch_start):
+                rate_limit_hit = False
+                
+                # Dynamic per-request jittered sleep to keep the API gateway happy
+                current_sleep_time = self.get_new_sleep_time()
+
                 try:
-                    # Invoke the LLM to generate questions based on the chunk content
                     formatted_response = hypothetical_questions_prompt.format(
                         AI_ROLE=AI_ROLE,
                         PROMPT_INSTR=PROMPT_INSTR,
@@ -74,41 +74,39 @@ class QuestionGenerator(ChromaModel):
                     questions = OpenAIModel.filter_response(self.llm.invoke(formatted_response), i)
 
                 except Exception as e:
-                    handle_rate_limit_error(e, self.collection_name, sleep_time)
-                    questions = EMPTY_RESP # Formerly "NA"
-                    sleep_time, rate_limit_hit = handle_rate_limit_error(e, self.collection_name, sleep_time, i)
-
-                if rate_limit_hit:
-                    break
-
-                # Only append metadata for successful responses
-                if questions and questions != EMPTY_RESP:
-
-                    # Create metadata for the generated question
-                    questions_metadata = {
-                        'original_content': document.page_content, # Store the original chunk content
-                        'source': document.metadata['source'],     # Source document of the chunk
-                        'page': document.metadata['page'],         # Page number where the chunk appears
-                        'doc_type': self.collection_name,               # Indicate the content type
-                    }
-
-                    # Create and store the document containing generated questions
-                    batched_hypothetical_questions.append(
-                        self.doc_handle.create(
-                            questions,
-                            questions_metadata
-                        )
+                    questions = EMPTY_RESP
+                    # Single call to cleanly parse the exception payload
+                    current_sleep_time, rate_limit_hit = handle_rate_limit_error(
+                        e, self.collection_name, current_sleep_time, i
                     )
 
-            # Store each chunk into the master list of documents with hypothetical questions
+                if rate_limit_hit:
+                    print(f"⚠️ Skipping chunk {i} due to rate limit threshold.\n")
+                    continue
+
+                if questions and questions != EMPTY_RESP:
+                    questions_metadata = {
+                        'original_content': document.page_content,
+                        'source': document.metadata['source'],
+                        'page': document.metadata['page'],
+                        'doc_type': self.collection_name,
+                    }
+
+                    batched_hypothetical_questions.append(
+                        self.doc_handle.create(questions, questions_metadata)
+                    )
+
+                # --- ⏳ PER-REQUEST THROTTLING ⏳ ---
+                # We cool down immediately AFTER the execution inside the loop,
+                # rather than dumping a massive burst and sleeping at the end of the batch.
+                print(f"Chunk {i+1}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
+                time.sleep(current_sleep_time)
+
             hypothetical_questions.extend(batched_hypothetical_questions)
 
-            # ** Wait for 1 minute before processing the next batch **
-            chunk_cnt = (batch_start + self.batch_size) / len(semantic_chunks)
-            print(f"\nProcessed {chunk_cnt} chunks.  Waiting {sleep_time} seconds...")
-            time.sleep(sleep_time)
+            # Optional: Keep a high-level batch update log
+            processed_count = min(batch_start + self.batch_size, total_chunks)
+            print(f"📊 Batch completed. Total progress: {processed_count}/{total_chunks} chunks written.")
 
         show_timer(start_time)
-
-        print(hypothetical_questions)
         return hypothetical_questions

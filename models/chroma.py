@@ -22,13 +22,13 @@ from src.config import (
     DOCUMENT_DIR,
     I_INFO,
     I_QUES,
-    OPENAI_API_BASE, 
-    OPENAI_API_KEY,
+    RATE_LIMIT_TIME,
     SEMANTIC_THRESH_LIMIT,
     SIMILARITY_SEARCH_QUERY,
     VECTOR_RESULT_CNT,
     VECTORS_DIR
 )
+from src.utils import format_dir
 
 class ChromaModel:
     """
@@ -57,11 +57,8 @@ class ChromaModel:
 
         self.collection_name = None
         self.document_content_description = None
-        
-        # 👑 DYNAMIC DECOUPLING: Instantiate a local embedding layer 
-        # that bypasses OpenAI / Groq network proxy formatting entirely
-        self.embedding_model = HuggingFaceEmbeddings(model_name="nomic-ai/nomic-embed-text-v1.5")
-        
+        self.embedding_model = None
+        #self.embedding_model = HuggingFaceEmbeddings(model_name="nomic-ai/nomic-embed-text-v1.5")
         self.llm = None
         self.metadata_info = {}
 
@@ -72,10 +69,7 @@ class ChromaModel:
         self.semantic_storage = self._get_semantic_storage()
         self.vector_storage = self._get_vector_storage()
         self.retriever = self.get_retriever()
-        
         self.semantic_text_splitter = self._get_semantic_text_splitter()
-
-        # Build self-query capabilities
         self.structured_retriever = self._get_structured_retriever()
         self.structured_hyp_retriever = self._get_structured_hyp_retriever()
 
@@ -87,6 +81,18 @@ class ChromaModel:
         if self.llm is None and 'openai_model' in dataset:
             openai_model = dataset['openai_model']
             self.llm = openai_model.llm
+
+    @staticmethod
+    def queries() -> list:
+        return [
+            "What is the recommended dosage for treating scurvy?",
+            "What is definition of Vitamin C but only from content found in the first quarter of the document?",
+            "Describe the clinical signs of deficiency but exclude any data from the source `Pediatric Nutrition Guide.pdf`.",
+            "What type of nutritional support is needed for patients to increase lean body mass?",
+            "On page 35, please explain the correlation between Vitamin B12 levels and tissue deficiency.",
+            "What are the laboratory and clinical standards for diagnosing Vitamin D deficiency? Specifically address adult patients."
+        ]
+        
 
     def get_retriever(self) -> VectorStoreRetriever:
         """Initializes vector retriever using the unified client runtime pool."""
@@ -112,7 +118,8 @@ class ChromaModel:
         return Chroma(
             client=self.chromadb_client,
             embedding_function=self.embedding_model,
-            collection_name=self.collection_name
+            collection_name=self.collection_name,
+            persist_directory=format_dir(self.collection_name)
         )
 
     def _get_semantic_text_splitter(self) -> SemanticChunker:
@@ -158,6 +165,7 @@ class ChromaModel:
         pdf_loader = PyPDFDirectoryLoader(folder_path)
         chunks = pdf_loader.load_and_split(self.semantic_text_splitter)
         semantic_chunks.extend(chunks)
+
         return semantic_chunks
 
     def add_semantic_documents(self, semantic_chunks: list) -> None:
@@ -209,14 +217,6 @@ class ChromaModel:
                 print(f"{I_INFO} Retrieved Documents: {semantic_chunks_retrieved}")
                 print("---\n")
 
-    @staticmethod
-    def queries() -> list:
-        return [
-            "What is the recommended dosage for treating scurvy?",
-            "What is definition of Vitamin C but only from content found in the first quarter of the document?",
-            "Describe the clinical signs of deficiency but exclude any data from the source `Pediatric Nutrition Guide.pdf`.",
-            "What type of nutritional support is needed for patients to increase lean body mass?",
-            "On page 35, please explain the correlation between Vitamin B12 levels and tissue deficiency.",
-            "What are the laboratory and clinical standards for diagnosing Vitamin D deficiency? Specifically address adult patients."
-        ]
-        
+    
+    def get_new_sleep_time() -> int:
+        return RATE_LIMIT_TIME + random.uniform(2.0, 7.0)

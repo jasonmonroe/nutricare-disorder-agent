@@ -9,6 +9,7 @@ from langchain_core.language_models.fake_chat_models import FakeListChatModel # 
 
 # Local Libraries
 from src.config import (
+    I_FLAG,
     OPENAI_API_BASE,
     OPENAI_API_KEY,
     OPENAI_EMBEDDING_MODEL,
@@ -20,6 +21,7 @@ class OpenAIModel:
         self._mock = mock
 
         self.embedding_model = self._get_embedding_model()
+        #self.embedding_model = self._get_hf_embedding_model()
         self.llm = self._load_llm()
         self.llm_chatbot = self._load_llm_chatbot()
 
@@ -38,6 +40,13 @@ class OpenAIModel:
             max_retries=2,                   # openai client retries, Added for robustness (was =3)
             request_timeout=60,              # avoid timeouts on backoff
         )
+
+    def _get_hf_embedding_model(self):
+        # 👑 DYNAMIC DECOUPLING: Instantiate a local embedding layer 
+        # that bypasses OpenAI / Groq network proxy formatting entirely
+        from langchain_huggingface import HuggingFaceEmbeddings
+        
+        return HuggingFaceEmbeddings(model_name=OPENAI_EMBEDDING_MODEL)
 
     def _load_llm(self) -> ChatOpenAI:
         # This initializes the Chat OpenAI model using the provided endpoint, API key, deployment name.
@@ -91,7 +100,7 @@ class OpenAIModel:
             return "[]" # Treat unexpected types as an empty response
 
         if len(content) == 0:
-            print(f'No generated hypothetical questions found for chunk {index}.')
+            print(f'{I_FLAG} No generated hypothetical questions found for chunk {index}.')
             return "[]"
 
         # The output is wrapped in outer quotes and parentheses, e.g., ("['...']")
@@ -108,4 +117,3 @@ class OpenAIModel:
         # Important: In the LLM-as-string case, you might get "[]" here.
         # The calling code handles the difference between an empty string and the literal string "[]"
         return content
-
