@@ -131,7 +131,8 @@ class NutritionBot:
             limit=RETRIEVAL_LIMIT  
         )
 
-    def handle_customer_query(self, user_id: str, query: str) -> str:
+    def handle_customer_query_old(self, user_id: str, query: str) -> str:
+        
         """
         Process a customer's query and provide a response, taking into account past interactions.
 
@@ -151,6 +152,8 @@ class NutritionBot:
         
         # Build a context string from the relevant history
         context = "Previous relevant interactions:\n"
+
+        # @todo - figure this out!!!
 
         """
         for history in relevant_history:
@@ -222,4 +225,67 @@ class NutritionBot:
         )
 
         # Return the chatbot's response
+        return response['output']
+
+
+    def handle_customer_query(self, user_id: str, query: str) -> str:
+        """
+        Process a customer's query and provide a response, taking into account past interactions.
+        """
+        logger = logging.getLogger(__name__)
+
+        # 1. Retrieve relevant past memory facts
+        relevant_history = self.get_relevant_history(user_id, query)
+        logger.info(f'relevant_history={relevant_history}')
+        
+        # 2. Build a clear, factual user profile block
+        facts = []
+        
+        if isinstance(relevant_history, dict):
+            memories_list = relevant_history.get("results", [])
+            for history in memories_list:
+                if isinstance(history, dict) and 'memory' in history:
+                    facts.append(history['memory'])
+                elif isinstance(history, str):
+                    facts.append(history)
+                    
+        elif isinstance(relevant_history, list):
+            for history in relevant_history:
+                if isinstance(history, dict) and 'memory' in history:
+                    facts.append(history['memory'])
+                elif isinstance(history, str):
+                    facts.append(history)
+
+        # 3. Format the background profile for the Agent
+        if facts:
+            context_string = "\n".join(f"- {fact}" for fact in facts)
+            context_header = f"Known user background profiles and preferences:\n{context_string}"
+        else:
+            context_header = "No prior user preferences or background profiles recorded."
+
+        logger.info(f"Context Compiled Successfully:\n{context_header}")
+
+        # 4. Use LangChain system instructions or clean formatting tags 
+        # to separate the memory profile from the core question.
+        structured_input = f"""
+        [USER METADATA PROFILE]
+        {context_header}
+
+        [CURRENT USER QUESTION]
+        {query}
+        """.strip()
+
+        logger.info(f'DEBUG: Executing agent invocation with structured input.')
+        
+        # Generate a response using the agent
+        response = self.agent_executor.invoke({"input": structured_input})
+
+        # Store the current interaction for future reference
+        self.store_customer_interaction(
+            user_id=user_id,
+            message=query,
+            response=response["output"],
+            metadata={"type": "support_query"}
+        )
+
         return response['output']

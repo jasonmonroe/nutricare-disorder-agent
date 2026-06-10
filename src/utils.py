@@ -85,9 +85,9 @@ def show_title_banner() -> str:
     print(f'|      {APP_TITLE}       |')
     print('|                                     |')
     print('+-------------------------------------+')
-    print(f'# === {I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE} === #')
     print('+-------------------------------------+\n')
-    
+    print(f'# === {I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE} === #')
+
 def show_ai_agent_banner() -> str:
     print('\n+--------------------------------------------------------------+')
     print(f'|        {I_BOT} SMART NUTRITION DISORDER SPECIALIST BOT {I_BOT}         |')
@@ -95,7 +95,7 @@ def show_ai_agent_banner() -> str:
     print('| Welcome! I\'m your dedicated AI Nutrition Agent.              |')
     print('| Ask me anything about nutrition disorders, including their   |')
     print('| symptoms,causes, treatments, or preventative measures. I am  |')
-    print('| here to  assist with your health-related questions.          |')
+    print('| here to assist with your health-related questions.           |')
     print('|                                                              |')
     print('+--------------------------------------------------------------+')
     print(f'| Type "{EXIT_CMD}" to end the conversation.                         |')

@@ -123,7 +123,7 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 # Llama
 # see: https://llama.developer.meta.com/docs/api-keys/
 LLAMA_KEY = os.getenv("LLAMA_KEY")  # Fill in your Llama API key, Used for LlamaParse()
-LLAMA_MODEL = "meta-llama/llama-guard-4-12b"
+LLAMA_MODEL = os.getenv("LLAMA_MODEL")
 
 # Mem0
 # see: https://mem0.ai
@@ -204,7 +204,6 @@ def show_datetime() -> str:
 def start_timer() -> float:
     return time.time()
 
-
 def get_time(start_time_int: float) -> str:
     diff = abs(time.time() - start_time_int)
     _, remainder = divmod(diff, (SECS_IN_MIN*SECS_IN_MIN))
@@ -214,10 +213,8 @@ def get_time(start_time_int: float) -> str:
 
     return f"{int(minutes)}m {int(seconds)}s {int(ms)}ms"
 
-
 def show_timer(start_time_int: float) -> None:
     print(f"\nRun Time: {get_time(start_time_int)}")
-
 
 def filter_response(resp, index=None) -> str:
     # 1. Check if the response is already a string (raw output)
@@ -360,7 +357,7 @@ if st.session_state[session_doc_found] is None:
 
 
 # --- Start Program --- #
-print("# --- START PROGRAM --- #")
+print("# --- START PROGRAM (app.py) --- #")
 
 # --- FILTER INPUT WITH LLAMA GUARD
 # Initialize the Llama Guard client with the API key

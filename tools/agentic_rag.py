@@ -45,16 +45,17 @@ def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, work
             "AI_ROLE": AI_ROLE,
         }
         
-        if isinstance(workflow_app, CompiledStateGraph):
-            #print(f'line 48: DEBUG: Using param: workflow_app type={type(workflow_app)}')
-            return workflow_app.invoke(inputs)
-
-        # If workflow_app is not found or None, build the agent
-        agentic_rag_tool = AgenticRagTool(llm, retriever)
-        workflow_app = agentic_rag_tool.compile()
-        #print(f'line 54: DEBUG: workflow_app type={type(workflow_app)}')
+        # Use a local reference variable to avoid the scoping trap
+        active_app = workflow_app
         
-        return workflow_app.invoke(inputs)
+        if isinstance(active_app, CompiledStateGraph):
+            return active_app.invoke(inputs)
+
+        # Fallback: If workflow_app was passed in as None, compile it inline
+        agentic_rag_tool = AgenticRagTool(llm, retriever)
+        active_app = agentic_rag_tool.compile()
+        
+        return active_app.invoke(inputs)
 
     # Returns here if --start is in args
     return agentic_rag

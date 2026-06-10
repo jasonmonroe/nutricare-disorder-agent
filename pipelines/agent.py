@@ -21,7 +21,8 @@ from src.config import (
     I_CROSSMARK, 
     I_RUNNING, 
     I_SAD, 
-    I_SMILING, 
+    I_SMILING,
+    I_STAR, 
     I_SURPRISED, 
     I_THINKING, 
     I_WATCH
@@ -95,11 +96,11 @@ def start(dataset: dict) -> None:
     user_id = input(f"{I_THINKING} Agent: Tell me, what is your name? _ ")  # Get user ID for tracking conversation sessions
     print(f"\n# --- Session Start: {I_CLOCK} {show_datetime()} --- #\n")
 
-    while chatbot.has_session_exp():
+    while not chatbot.has_session_exp():
         
         # Get user input
         print(f"{I_SMILING} Agent: How can I help you?\n")
-        user_query = input(f"{user_id}: ")
+        user_query = input(f"{I_STAR} {user_id}: ")
 
         # Set timer for each question
         q_time = start_timer()
@@ -136,7 +137,6 @@ def start(dataset: dict) -> None:
 
         # Show answer duration per query
         print(f"[{I_WATCH} Answered in {get_time(q_time)}]\n")
-
 
     # Display session duration
     print(f'{I_WATCH} Session Duration: {chatbot.get_session_duration(q_time)}')
