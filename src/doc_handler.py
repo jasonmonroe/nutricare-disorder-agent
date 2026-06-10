@@ -320,7 +320,7 @@ class DocHandler():
                     print(f"{I_FLAG} Failed to wipe element path target {file_path}. Exception: {e}")
            
         if next(os.scandir(VECTORS_DIR), None) is None:
-            print(f"\n{I_DIR} Directory exists and is empty.")
+            print(f"\n{I_DIR} Directory exists and is empty.\n")
 
         return None
 
@@ -363,6 +363,7 @@ class DocHandler():
                 
                 sleep(1)
 
+        # --- Check if file was successfully unzipped! --- #
         # Final logic boundary check utilizing your new path constant
         if os.path.exists(DOCUMENT_FILEPATH):
             print(f'{I_DOCUMENT} {DOCUMENT_FILEPATH} successfully unzipped and ready for processing.')

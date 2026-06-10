@@ -35,7 +35,7 @@ class OpenAIModel:
             openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
             openai_api_key=OPENAI_API_KEY,   # Fill in the API key
             model=OPENAI_EMBEDDING_MODEL,          # Fill in the model name
-            max_retries=8,                   # openai client retries, Added for robustness (was =3)
+            max_retries=2,                   # openai client retries, Added for robustness (was =3)
             request_timeout=60,              # avoid timeouts on backoff
         )
 
@@ -59,7 +59,7 @@ class OpenAIModel:
             openai_api_base=OPENAI_API_BASE,    
             openai_api_key=OPENAI_API_KEY,   # Fill in the API key+
             max_tokens=None,
-            max_retries=5,                   # Retry failed calls
+            max_retries=2,                   # Retry failed calls
             model=OPENAI_MODEL,              # Fill in the deployment name (e.g., gpt-4o-mini)
             streaming=False,
             temperature=0.0,                 # Set for factual, deterministic output for robustness and quality

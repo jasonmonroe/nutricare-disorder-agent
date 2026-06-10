@@ -57,9 +57,9 @@ class AgenticRagTool:
         workflow.add_node("retrieve_context", self.retrieve_context)             # Step 2: Retrieve relevant documents.
         workflow.add_node("craft_response", self.craft_response)                 # Step 3: Generate a response based on retrieved data.
         workflow.add_node("score_groundedness", self.score_groundedness)         # Step 4: Evaluate response grounding.
-        workflow.add_node("refine_response", self.refine_response)               # Step 5: Improve response if it's weakly grounded.
+        workflow.add_node("refine_response", self.refine_response)                 # Step 5: Improve response if it's weakly grounded.
         workflow.add_node("check_precision", self.check_precision)               # Step 6: Evaluate response precision.
-        workflow.add_node("refine_query", self.refine_query)                     # Step 7: Improve query if response lacks precision.
+        workflow.add_node("refine_query", self.refine_query)                       # Step 7: Improve query if response lacks precision.
         workflow.add_node("max_iterations_reached", self.max_iterations_reached) # Step 8: Handle max iterations.
 
         # Define the entry point where to start

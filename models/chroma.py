@@ -20,6 +20,7 @@ from src.config import (
     CHROMA_SERVER_NO_TELEMETRY,
     DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_DIR,
+    I_INFO,
     I_QUES,
     OPENAI_API_BASE, 
     OPENAI_API_KEY,
@@ -107,7 +108,7 @@ class ChromaModel:
 
     def _get_vector_storage(self) -> Chroma:
         """Instantiates the generalized primary target layout collection."""
-        # 👑 FIX: Removed persist_directory to respect the master path defined in self.chromadb_client.
+        # 👑 @todo FIX: Removed persist_directory to respect the master path defined in self.chromadb_client.
         return Chroma(
             client=self.chromadb_client,
             embedding_function=self.embedding_model,
@@ -175,6 +176,16 @@ class ChromaModel:
             k=VECTOR_RESULT_CNT
         )
 
+    def export(self) -> dict:
+        """Exports attributes to be injected into child or dependent pipeline classes."""
+        return {
+            'collection_name': self.collection_name,
+            'document_content_description': self.document_content_description,
+            'embedding_model': self.embedding_model,
+            'llm': self.llm,
+            'metadata_info': self.metadata_info,
+        }
+
     def query_questions(self, is_hyp: bool = False, pluck: bool = False) -> None:
         """
         Query questions using either structured hypothetical retriever or structured retriever.
@@ -189,13 +200,13 @@ class ChromaModel:
             ques = random.choice(self.queries())
             semantic_chunks_retrieved = retriever.invoke(ques)
             print(f"Question: {ques}{I_QUES}")
-            print(f"Retrieved Documents: {semantic_chunks_retrieved}")
+            print(f"{I_INFO} Retrieved Documents: {semantic_chunks_retrieved}")
         else:
             for ques in self.queries():
                 semantic_chunks_retrieved = retriever.invoke(ques)
-                print(f"Number of Semantic Chunks Retrieved: {len(semantic_chunks_retrieved)}")
+                print(f"{I_INFO} Number of Semantic Chunks Retrieved: {len(semantic_chunks_retrieved)}")
                 print(f"Question: {ques}{I_QUES}")
-                print(f"Retrieved Documents: {semantic_chunks_retrieved}")
+                print(f"{I_INFO} Retrieved Documents: {semantic_chunks_retrieved}")
                 print("---\n")
 
     @staticmethod

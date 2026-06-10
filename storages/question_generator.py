@@ -5,7 +5,6 @@
 # +-------------------+
 
 # Python Libraries
-import random
 import time
 
 # Vendor Libraries
@@ -13,7 +12,8 @@ import time
 # Local Libraries
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
-from src.config import AI_ROLE, PROMPT_INSTR, EMPTY_RESP, I_QUES
+
+from src.config import AI_ROLE, I_INFO, PROMPT_INSTR, EMPTY_RESP, I_QUES, RATE_LIMIT_TIME
 from src.utils import handle_rate_limit_error, show_timer
 
 
@@ -41,20 +41,21 @@ class QuestionGenerator(ChromaModel):
             2. Phrasing must be natural and sound like a question a {AI_ROLE} would actually ask.
             
             TEXT CHUNK:
-            {{docs}}
+            {docs}
             
-            {{PROMPT_INSTR}}
+            {PROMPT_INSTR}
             """
 
     def get_hypothetical_questions(self, semantic_chunks) -> list:
-        print(f'# --- Getting Hypothetical Questions {I_QUES} --- #')
+        print(f'\n# --- {I_QUES} Getting Hypothetical Questions {I_QUES} --- #')
 
         start_time = time.time()
         rate_limit_hit = False
-        sleep_time = random.randint(25, 45) # Used to prevent http status code 429
+        sleep_time = RATE_LIMIT_TIME
+        hypothetical_questions = []
         hypothetical_questions_prompt = self._prompt().strip()
 
-        hypothetical_questions = []
+        print(f'{I_INFO} Rate limit sleep timer: {sleep_time}\n')
         for batch_start in range(0, len(semantic_chunks), self.batch_size):
             batch = semantic_chunks[batch_start: batch_start + self.batch_size]
 
@@ -75,7 +76,6 @@ class QuestionGenerator(ChromaModel):
                 except Exception as e:
                     handle_rate_limit_error(e, self.collection_name, sleep_time)
                     questions = EMPTY_RESP # Formerly "NA"
-
                     sleep_time, rate_limit_hit = handle_rate_limit_error(e, self.collection_name, sleep_time, i)
 
                 if rate_limit_hit:
@@ -111,5 +111,4 @@ class QuestionGenerator(ChromaModel):
         show_timer(start_time)
 
         print(hypothetical_questions)
-
         return hypothetical_questions

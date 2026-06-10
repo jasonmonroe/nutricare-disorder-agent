@@ -5,7 +5,7 @@
 # +------------------------+
 
 # Python Libraries
-import random
+
 
 # Vendor Libraries
 from langchain_classic.chains.query_constructor.schema import AttributeInfo
@@ -17,8 +17,10 @@ from models.openai import OpenAIModel
 from src.config import (
     AI_ROLE, 
     EMPTY_RESP,
+    I_INFO,
     I_QUES,
-    PROMPT_INSTR, 
+    PROMPT_INSTR,
+    RATE_LIMIT_TIME, 
 )
 from src.utils import handle_rate_limit_error, show_timer, start_timer
 
@@ -51,27 +53,28 @@ class TableQuestionGenerator(ChromaModel):
 
         [FULL CONTEXT]
         ---TEXT ADJACENT TO TABLE---
-        {{docs}}
+        {docs}
 
         --- TABLE DATA (Structured for Analysis) ---
-        {{tables}}
+        {tables}
 
         [OUTPUT FORMAT]
         Generate a JSON object containing a list of questions under the key "questions".
         The list must contain **a minimum of 1 and a maximum of 3** questions.
 
-        {{PROMPT_INSTR}}
+        {PROMPT_INSTR}
         """
 
     def get_hypothetical_questions(self, page_texts, tables):
-        print(f'# --- Getting Hypothetical Table Questions {I_QUES} --- #')
+        print(f'\n# --- {I_QUES} Getting Hypothetical Table Questions {I_QUES} --- #')
         
         start_time = start_timer()
         rate_limit_hit = False
         table_hypothetical_questions = []
-        sleep_time = random.randint(25, 45)
-
+        sleep_time = RATE_LIMIT_TIME
         hypothetical_questions_prompt = self._prompt().strip()
+
+        print(f'{I_INFO} Rate limit sleep timer: {sleep_time}\n')
 
         # Generate hypothetical questions for each table in the documents
         for i, document in enumerate(tables, start = 1):  # Iterate over all processed documents
@@ -95,15 +98,13 @@ class TableQuestionGenerator(ChromaModel):
                 except Exception as e:
                     handle_rate_limit_error(e, self.collection_name, sleep_time, i)
                     questions = EMPTY_RESP
-
                     sleep_time, rate_limit_hit = handle_rate_limit_error(e, self.collection_name, sleep_time, i)
 
                 if rate_limit_hit:
                     break
 
+                # Metadata for each table
                 if questions and questions != EMPTY_RESP:
-
-                    # Metadata for each table
                     questions_metadata = {
                         'original_content': str(table_in_page),  # Store the content of the original table
                         'source': document,  # Store the source document name or identifier

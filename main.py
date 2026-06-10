@@ -2,27 +2,6 @@ from __future__ import annotations
 
 # main.py
 
-import os
-from dotenv import load_dotenv
-from sqlalchemy.sql import false
-
-# Force load_dotenv to overwrite any existing terminal environmental variables
-load_dotenv(override=True)
-
-# --- OpenAI Base URL Settings --- #
-OPENAI_API_BASE_ENV = os.environ.get("OPENAI_API_BASE")
-
-# Defensive Safety Guard: Ensure the environment variable actually loaded
-if not OPENAI_API_BASE_ENV:
-    print("\n[CRITICAL ERROR] 'OPENAI_API_BASE' is missing from your .env file.")
-    print("Please check your configuration files before running the pipeline.\n")
-    import sys
-    sys.exit(1)
-
-# Explicitly re-bind it to guarantee LangChain background workers capture it
-os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE_ENV
-# --- OpenAI Base URL Settings --- #
-
 """
 +--------------+
 |     MAIN     |
@@ -71,9 +50,30 @@ __copyright__ = "Copyright November 11-26 2024, Scripts for AI Agent for Hugging
 __date__ = "2024-11-16"
 __version__ = "1.0.0"
 
-
 # Global compilation configurations
 global workflow_app
+
+import os
+from dotenv import load_dotenv
+#from sqlalchemy.sql import false
+
+# Force load_dotenv to overwrite any existing terminal environmental variables
+load_dotenv(override=True)
+
+# --- OpenAI Base URL Settings --- #
+OPENAI_API_BASE_ENV = os.environ.get("OPENAI_API_BASE")
+
+# Defensive Safety Guard: Ensure the environment variable actually loaded
+if not OPENAI_API_BASE_ENV:
+    print("\n[CRITICAL ERROR] 'OPENAI_API_BASE' is missing from your .env file.")
+    print("Please check your configuration files before running the pipeline.\n")
+    import sys
+    sys.exit(1)
+
+# Explicitly re-bind it to guarantee LangChain background workers capture it
+os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE_ENV
+# --- OpenAI Base URL Settings --- #
+
 
 import sys
 if sys.version_info >= (3, 13):
