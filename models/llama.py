@@ -7,8 +7,13 @@
 # Vendor Libraries
 from groq import Groq
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from llama_parse import LlamaParse  # Document parsing library
 from llama_index.core import Settings
+from llama_parse import LlamaParse  # Document parsing library
+from llama_parse.utils import ResultType
+
+from openai.types.chat import ChatCompletion, ChatCompletionChunk
+from openai.types.chat.chat_completion_chunk import Choice as ChunkChoice
+from typing import Iterator
 
 # Local Libraries
 from src.config import (
@@ -30,18 +35,17 @@ class LlamaModel:
     https://www.llama.com/docs/overview/
     """
 
-    def __init__(self, llm: ChatOpenAI, embedding_model: OpenAIEmbeddings, log: bool=False):
+    def __init__(self, llm: ChatOpenAI, embedding_model, log: bool=False):
         """
         Initialize the Llama Guard client with the API key.  Set the LLM and embedding model in the LlamaIndex settings.
 
         :param log: determines if logs will be outputted in terminal
-        :param llm:
-        :param embedding_model:
+        :param llm: ChatOpenAI model
+        :param embedding_model:  HuggingFaceEmbeddings or OpenAIEmbeddings
         """
 
         self._log = log
-
-        self.llama_guard_client = Groq(api_key=GROQ_API_KEY)
+        self.client = Groq(api_key=GROQ_API_KEY)
         self.parser = self._get_parser()
 
         Settings.llm = llm
@@ -54,7 +58,7 @@ class LlamaModel:
         """
 
         return LlamaParse(
-            result_type='markdown',  # Specify the result format
+            result_type=ResultType.MD,  # Specify the result format
             skip_diagonal_text=True, # Skip diagonal text in the PDFs
             fast_mode=False,         # Use normal mode for parsing
             num_workers=9,           # Number of workers for parallel processing
@@ -79,22 +83,33 @@ class LlamaModel:
 
         try:
             # Create a request to Llama Guard to filter the user input
-            llama_response = self.llama_guard_client.chat.completions.create(
-                messages=[{
-                    "role": "user",
-                    "content": user_input_str.strip()
-                }],
+            llama_response = self.client.chat.completions.create(
+                messages=[{"role": "user", "content": user_input_str.strip()}],
                 model=LLAMA_MODEL,
             )
 
             # Return the filtered input
+            print(f'llama_response type = {type(llama_response)}')
+
             result = llama_response.choices[0].message.content.strip()
 
+            print(f'result type = {type(result)}')
+
+
             if self._log:
+                print('\nDEBUG --- LLAMA RESPONSE --- ')
+                print(f'llama_response = {llama_response}')
+                # 👑 FIX: The attribute is plural 'choices', not 'choice'
+                print(f'llama_response.choices = {llama_response.choices}')
+                print(f'llama_response.choices[0].message = {llama_response.choices[0].message}')
+                print(f'llama_response.choices[0].message.content = {llama_response.choices[0].message.content}')
+                print('DEBUG --- LLAMA RESPONSE ---\n')
                 print(f"\n# --- {I_PEN}  Open Guard result {I_PEN} --- #")
                 print(result)
                 print(f"# --- {I_PEN}  Close Guard result {I_PEN} --- #\n")
 
+            """"
+            # apply guard
             if "unsafe" in result:
                 if any(code.strip() in LLAMA_UNSAFE_CODES for code in result.replace("unsafe ", "").strip().split(",")):
                     return "BYPASS_SAFE"
@@ -102,8 +117,21 @@ class LlamaModel:
                     return "UNSAFE"
             else:
                 return "SAFE"
+            """
+
+            return self._apply_guard(result)
 
         except Exception as e:
             print(f"{I_CROSSMARK} Error with Llama Guard: {e}")
             return ""
-            
+
+    @staticmethod
+    def _apply_guard(self, result: str) -> str:
+        # Added type hint for clarity
+        if "unsafe" in result:
+            if any(code.strip() in LLAMA_UNSAFE_CODES for code in result.replace("unsafe ", "").strip().split(",")):
+                return "BYPASS_SAFE"
+            else:
+                return "UNSAFE"
+        else:
+            return "SAFE"

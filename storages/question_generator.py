@@ -18,14 +18,11 @@ class QuestionGenerator(ChromaModel):
     def __init__(self, dataset: dict):
         self.batch_size = 0
         self.doc_handle = None
-        #self.document_content_description = ''
-        #self.llm = None
 
         super().__init__(dataset)
+
         self.prompt = self._prompt().strip()
         self.title = 'Hypothetical Questions'
-
-        #self._set_attrs(dataset)
 
     @staticmethod
     def _prompt() -> str:

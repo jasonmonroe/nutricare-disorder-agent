@@ -24,9 +24,9 @@ class OpenAIModel:
         self.llm = self._load_llm()
         self.llm_chatbot = self._load_llm_chatbot()
 
-    @staticmethod
     def _get_embedding_model(self) -> OpenAIEmbeddings:
         """
+        Note: We're not using this at this time for this project on a free tier!
         Get the embedding model. Uses HuggingFaceEmbeddings for local processing
         which avoids rate limits and API quota issues.
         """
@@ -44,9 +44,13 @@ class OpenAIModel:
         # 👑 DYNAMIC DECOUPLING: Instantiate a local embedding layer
         # that bypasses OpenAI / Groq network proxy formatting entirely
 
+        # Optimization: Use 'mps' for Mac GPU acceleration, fallback to 'cpu'
+        import torch
+        device = "mps" if torch.backends.mps.is_available() else "cpu"
+
         return HuggingFaceEmbeddings(
             model_name=OPENAI_EMBEDDING_MODEL,
-            model_kwargs={'device': 'cpu'}
+            model_kwargs={'device': device}
         )
 
     def _load_llm(self) -> ChatOpenAI:
@@ -54,9 +58,8 @@ class OpenAIModel:
         # Initialize the Chat OpenAI model
 
         return ChatOpenAI(
-            # base_url=OPENAI_API_BASE,      # Fill in the endpoint
-            openai_api_base=OPENAI_API_BASE,    
-            openai_api_key=OPENAI_API_KEY,   # Fill in the API key+
+            openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
+            openai_api_key=OPENAI_API_KEY,   # Fill in the API key
             max_tokens=None,
             max_retries=2,                   # Retry failed calls
             model=OPENAI_MODEL,              # Fill in the deployment name (e.g., gpt-4o-mini)
@@ -67,8 +70,7 @@ class OpenAIModel:
     def _load_llm_chatbot(self) -> ChatOpenAI:
         # Note: This is for Nutrition Bot
         return ChatOpenAI(
-            model_name=OPENAI_MODEL,  # Specify the model to use (e.g., a GPT-4 optimized version)
-            #base_url = OPENAI_API_BASE,
+            model=OPENAI_MODEL,
             openai_api_base=OPENAI_API_BASE,
             openai_api_key=OPENAI_API_KEY,  # API key for authentication
             temperature=0  # Controls randomness in responses; 0 ensures deterministic results

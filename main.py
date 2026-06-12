@@ -149,13 +149,10 @@ if __name__ == '__main__':
     start_time = start_timer()
 
     args = _parse_args(sys.argv[1:])
-    mock = args.get('mock', False)
     log = args.get('log', False)
 
     show_title_banner()
 
-    if mock:
-        print(f'{I_INFO} Mock mode is turned on!')
 
     if log:
         logging.basicConfig(level=logging.INFO) #DEBUG
@@ -163,8 +160,11 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.INFO)
 
     # Wipe documents directory before Chroma is created.
-    if args.get('data'):
+    force_rebuild = False
+    if args.get('data', False):
         DocHandler.wipe_db_dir()
+        force_rebuild = True
+
         
     # --- Load all models --- #
     openai_model = OpenAIModel()
@@ -174,6 +174,7 @@ if __name__ == '__main__':
         'llm': openai_model.llm,
         'embedding_model': openai_model.embedding_model,
         'collection_name': 'nutritional',
+        'force_rebuild': force_rebuild
     })
 
     llama = LlamaModel(openai_model.llm, openai_model.embedding_model, log)

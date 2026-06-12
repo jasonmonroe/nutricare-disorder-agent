@@ -1,25 +1,22 @@
 # src/streamlit.py
 
-# +-------------------+
-# |     STREAMLIT     |
-# +-------------------+
-
-
-# Python Libraries
 import os
+import logging
 import zipfile
-
-# Vendor Libraries
 import streamlit as st
+from models import ChromaModel
 
 # Local Libraries
+from models.agentic_rag_tool import AgenticRagTool
 from models.nutrition_bot import NutritionBot
+from models.openai import OpenAIModel
+
 from src.config import (
+    AGENT_EXIT_CMDS,
     AI_TITLE,
     APP_TITLE,
     DOCUMENT_DIR,
-    DOCUMENT_ZIP, 
-    AGENT_EXIT_CMD,
+    DOCUMENT_ZIP,
     GROQ_API_KEY,
     I_ANGRY,
     I_BOT,
@@ -44,69 +41,82 @@ from src.config import (
     OPENAI_MODEL,
 )
 from src.utils import show_datetime
+from tools.agentic_rag import make_agentic_rag_tool
+
+logger = logging.getLogger(__name__)
+
+def get_nutrition_bot_params() -> tuple:
+    openai_model = OpenAIModel()
+    llm = openai_model.llm
+    llm_chatbot = openai_model.llm_chatbot
+
+    # Create vector storage for nutritional information
+    chroma_db = ChromaModel({
+        'llm': llm,
+        'embedding_model': openai_model.embedding_model,
+        'collection_name': 'nutritional',
+    })
+
+    retriever = chroma_db.retriever
+    agentic_rag_tool = AgenticRagTool(llm, retriever)
+    workflow_app = agentic_rag_tool.compile()
+    rag_tool = make_agentic_rag_tool(llm, retriever, workflow_app)
+
+    return llm_chatbot, rag_tool
 
 
-# Cache ChatBot Instance
 @st.cache_resource
 def get_chatbot_instance() -> NutritionBot:
-    """
-    Initializes and caches the NutritionBot instance.
+    """Initializes and caches the NutritionBot instance."""
+    logger.info("\n# --- Loading NutritionBot Unified Instance --- #")
+    llm_chatbot, rag_tool = get_nutrition_bot_params()
 
-    :return: NutritionBot
-    """
-    print(f"# {I_GEAR} --- Loading NutritionBot --- {I_GEAR} #")
-
-    return NutritionBot()
+    return NutritionBot(llm_chatbot, tools=[rag_tool])
 
 
 class StreamLitApp:
 
-    # https://streamlit.io
-    # Documentation: https://docs.streamlit.io
-
     def __init__(self, llama) -> None:
-
         self.llama = llama
         self.start_session()
 
     def start_session(self) -> None:
-        # --- INITIALIZE PERSISTENT STATE ---
-        session_keys_valid = None
-        session_doc_found = None
+        # --- INITIALIZE PERSISTENT STATE USING EXPLICIT STRINGS ---
+        if "keys_valid" not in st.session_state:
+            st.session_state["keys_valid"] = None
 
-        if session_keys_valid not in st.session_state:
-            st.session_state[session_keys_valid] = session_keys_valid
+        if "doc_found" not in st.session_state:
+            st.session_state["doc_found"] = None
 
-        if session_doc_found not in st.session_state:
-            st.session_state[session_doc_found] = session_doc_found
-
-        # --- VALIDATE API CREDENTIALS KEYS AND CHECK THE SOURCE FILE --- #
-        if st.session_state[session_keys_valid] is None:
+        # --- VALIDATE API CREDENTIALS KEYS ---
+        if st.session_state["keys_valid"] is None:
             is_valid = self.check_program_keys()
-            st.session_state[session_keys_valid] = is_valid
+            st.session_state["keys_valid"] = is_valid
 
-            if not is_valid:
-                st.stop()
+        if st.session_state["keys_valid"] is False:
+            st.stop()
 
-        # --- FIND & REFERENCE DOCUMENT FOR CHUNKING  --- #
-        if st.session_state[session_doc_found] is None:
+        # --- FIND & REFERENCE DOCUMENT FOR CHUNKING ---
+        if st.session_state["doc_found"] is None:
             doc_found = self.check_document_file()
-            st.session_state[session_doc_found] = doc_found
+            st.session_state["doc_found"] = doc_found
 
-            if not doc_found:
-                st.stop()
+        if st.session_state["doc_found"] is False:
+            st.stop()
 
-    # Checks if all necessary keys are being used
+        # Cache the heavy engine interface tool early in the lifecycle
+        if "chatbot" not in st.session_state:
+            st.session_state["chatbot"] = get_chatbot_instance()
+
     def check_program_keys(self) -> bool:
-        # Load keys and check if any or missing to kill the script.
         keys_to_check = {
             "GROQ_API_KEY": GROQ_API_KEY,
             "HF_TOKEN": HF_TOKEN,
             "HF_REPO_ID": HF_REPO_ID,
-            "LLAMA_KEY": LLAMA_KEY, # This is the alias for os.getenv("LLAMA_KEY")
+            "LLAMA_KEY": LLAMA_KEY,
             "LLAMA_MODEL": LLAMA_MODEL,
             "MEM0_API_KEY": MEM0_API_KEY,
-            "OPENAI_API_KEY": OPENAI_API_KEY, # formerly config.json("API_KEY")
+            "OPENAI_API_KEY": OPENAI_API_KEY,
             "OPENAI_API_BASE": OPENAI_API_BASE,
             "OPENAI_EMBEDDING_MODEL": OPENAI_EMBEDDING_MODEL,
             "OPENAI_MODEL": OPENAI_MODEL
@@ -114,48 +124,38 @@ class StreamLitApp:
 
         missing_keys = []
         for key_name, key_value in keys_to_check.items():
-            error_msg = f"{I_CROSSMARK} {key_name} value is None!"
-            if not key_value: # Checks if the value is None (i.e., not found)
+            if not key_value:
                 missing_keys.append(key_name)
-            if key_value is None:
+                error_msg = f"{I_CROSSMARK} {key_name} value is None!"
                 st.error(error_msg)
-                print(error_msg)
+                logger.error(error_msg)
 
-        error_msg = f"{I_FLAG} FATAL ERROR: The following secrets are missing... {', '.join(missing_keys)}."
         if missing_keys:
-            st.error(error_msg)
-            print(error_msg)
+            fatal_msg = f"{I_FLAG} FATAL ERROR: Missing secrets... {', '.join(missing_keys)}."
+            st.error(fatal_msg)
+            logger.critical(fatal_msg)
             return False
 
         return True
 
-    # Checks if the document directory exists
     def check_document_file(self) -> bool:
-
         if not os.path.isdir(DOCUMENT_DIR):
-            st.warning(f"{I_WARNING} WARNING: Document directory: `{DOCUMENT_DIR}`  not found!")
-            print(f"{I_WARNING} WARNING: Document directory: `{DOCUMENT_DIR}`  not found!")
+            warning_msg = f"{I_WARNING} WARNING: Document directory: `{DOCUMENT_DIR}` not found!"
+            st.warning(warning_msg)
+            logger.warning(warning_msg)
 
-            # Check for a zip file
             if not os.path.exists(DOCUMENT_ZIP):
-                st.error(f"{I_FLAG} ERROR: Required zip file `{DOCUMENT_ZIP}` not found either.  Please upload it.")
-                print(os.listdir('.'))
+                error_msg = f"{I_FLAG} ERROR: Required zip file `{DOCUMENT_ZIP}` not found. Please upload it."
+                st.error(error_msg)
+                logger.error(f"Current root tree files: {os.listdir('.')}")
                 return False
-
             else:
-                st.info(f"{I_DOCUMENT} Zip file: `{DOCUMENT_ZIP}` found!\nExtracting zip file...")
-                print(f"{I_DOCUMENT} Zip file: `{DOCUMENT_ZIP}` found!\nExtracting zip file...")
-
+                st.info(f"{I_DOCUMENT} Zip file: `{DOCUMENT_ZIP}` found! Extracting...")
                 with zipfile.ZipFile(DOCUMENT_ZIP, 'r') as zip_ref:
                     zip_ref.extractall(".")
-
-                st.info(f"{I_DOCUMENT} Zip file: `{DOCUMENT_ZIP}` extracted.")
-                print(f"{I_DOCUMENT} Zip file: `{DOCUMENT_ZIP}` extracted.")
+                st.info(f"{I_DOCUMENT} Zip file: `{DOCUMENT_ZIP}` extracted successfully.")
                 return True
-
-        else:
-            print(f"{I_DOCUMENT} Document directory found: `{DOCUMENT_DIR}`.")
-            return True
+        return True
 
     def show_title(self) -> None:
         st.title(f"{I_BOT} {AI_TITLE}")
@@ -163,40 +163,31 @@ class StreamLitApp:
         st.info(body=f"""
         Welcome! I'm your **{I_BOT}{APP_TITLE}**.
         I specialize in providing information about **nutrition disorders**, including **symptoms, causes, treatment options, and preventative measures.**
-        I'm ready to answer your health-related questions.
         """.strip(), icon="📢")
-
-        st.warning(body=f"Type **{AGENT_EXIT_CMD}** at anytime to end the conversation.", icon="🪬") # Used AGENT_EXIT_CMD constant here
-
+        st.warning(body=f"Type **{', '.join(AGENT_EXIT_CMDS)}** at anytime to end the conversation.", icon="🪬")
 
     def run(self) -> None:
-        """
-        A Streamlit-based UI for the Nutrition Disorder Specialist Agent.
-        """
         self.show_title()
 
-        # Initialize the session state for chat history and user_id if they don't exist
         if 'chat_history' not in st.session_state:
             st.session_state.chat_history = []
 
         if 'user_id' not in st.session_state:
             st.session_state.user_id = None
 
-        # Login form: Only if the user is not logged in
         if st.session_state.user_id is None:
             self._unknown_user()
-
         else:
-            # Display chat history
             for message in st.session_state.chat_history:
                 with st.chat_message(message["role"]):
                     st.write(message["content"])
 
-            # Chat input with custom placeholder text.  The user-facing prompt
-            user_query = st.chat_input(f"{I_THINKING} Agent: Ask your question here, {st.session_state.user_id} (or '{AGENT_EXIT_CMD}')...")
+            # Resolved quotes nesting mismatch on the input placeholder string layout
+            exit_options_str = ", ".join(AGENT_EXIT_CMDS)
+            user_query = st.chat_input(f"{I_THINKING} Agent: Ask your question here, {st.session_state.user_id} (or '{exit_options_str}')...")
 
             if user_query:
-                if user_query.lower() == AGENT_EXIT_CMD:
+                if user_query.lower() in AGENT_EXIT_CMDS:
                     self._exit_app()
 
                 st.session_state.chat_history.append({"role": "user", "content": user_query})
@@ -206,13 +197,10 @@ class StreamLitApp:
                 thinking = st.empty()
                 thinking.info(body="Thinking. . .", icon=f"{I_THINKING}")
 
-                # Filter input using Llama Guard
                 filtered_result = self.llama.filter_input_with_llama_guard(user_query)
-                filtered_result = filtered_result.replace("\n", " ").strip()  # Normalize the result
+                filtered_result = filtered_result.replace("\n", " ").strip()
 
-                # Check if input is safe based on allowed statuses
                 self._handle_input(filtered_result, user_query)
-
                 thinking.empty()
 
     def _unknown_user(self) -> None:
@@ -220,20 +208,18 @@ class StreamLitApp:
             st.write(f"{I_WATCH} Session Start: {show_datetime()}")
             user_id = st.text_input("Agent: Please enter your name to begin:").strip()
 
-            # Don't let the username themselves a keyword
-            if AGENT_EXIT_CMD in user_id:
-                st.error(body="You cannot name yourself a keyword.", icon="🚨")
+            if user_id in AGENT_EXIT_CMDS:
+                st.error(body="You cannot name yourself a system keyword.", icon="🚨")
                 st.stop()
 
             submit_button = st.form_submit_button("Login")
-
             if submit_button and user_id:
                 st.session_state.user_id = user_id
                 st.session_state.chat_history.append({
                     "role": "assistant",
-                    "content": f"{I_SMILING} Agent: Welcome, {user_id}! How can I help you with nutrition disorders today?"
+                    "content": f"{I_SMILING} Agent: Welcome, {user_id}! How can I help you today?"
                 })
-                st.session_state.login_submitted = True  # Set flag to trigger rerun
+                st.session_state.login_submitted = True
 
         if st.session_state.get("login_submitted", False):
             st.session_state.pop("login_submitted")
@@ -242,14 +228,11 @@ class StreamLitApp:
     def _handle_input(self, filtered_result, user_query) -> None:
         if filtered_result in ["SAFE", "BYPASS_SAFE", ""]:
             try:
-
-                # Get the cached chatbot instance
-                st.session_state.chatbot = get_chatbot_instance()
+                # Reliably pulls from the pre-cached session model safely
                 response = st.session_state.chatbot.handle_customer_query(
                     st.session_state.user_id,
                     user_query
                 )
-
                 with st.chat_message("assistant"):
                     st.write(response)
                 st.session_state.chat_history.append({"role": "assistant", "content": response})
@@ -259,21 +242,19 @@ class StreamLitApp:
                 error_str = f"Error: {str(e)}"
                 with st.chat_message("assistant"):
                     st.error(body=error_str, icon=f"{I_FROWN}")
-                st.session_state.chat_history.append({"role": "assistant", "content": error_msg + " " + error_str})
-
+                st.session_state.chat_history.append({"role": "assistant", "content": f"{error_msg} {error_str}"})
         else:
-            # Unsafe queries are handled here!
             inappropriate_msg = "I apologize, but I cannot process that input as it may be inappropriate. Please try again."
             with st.chat_message("assistant"):
                 st.warning(body=inappropriate_msg, icon=f"{I_ANGRY}")
-
             st.session_state.chat_history.append({"role": "assistant", "content": inappropriate_msg})
 
     def _exit_app(self) -> None:
-        st.session_state.chat_history.append({"role": "user", "content": AGENT_EXIT_CMD})
+        exit_cmd_str = ", ".join(AGENT_EXIT_CMDS)
+        st.session_state.chat_history.append({"role": "user", "content": exit_cmd_str})
 
         with st.chat_message("User"):
-            st.write(AGENT_EXIT_CMD)
+            st.write(exit_cmd_str)
 
         goodbye_msg = f"{I_SAD} Agent: Goodbye! Feel free to return if you have more questions about nutrition disorders."
         st.session_state.chat_history.append({"role": "assistant", "content": goodbye_msg})

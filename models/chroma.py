@@ -52,6 +52,7 @@ class ChromaModel:
         self.embedding_model = None 
         self.llm = None
         self.metadata_info = {}
+        self.force_rebuild = False
 
         # Set incoming pipeline dictionary variables
         self._set_attrs(dataset)
@@ -74,13 +75,13 @@ class ChromaModel:
 
         for key, value in dataset.items():
             if hasattr(self, key):
-                print(f'DEBUG: key={key}, value={value}')
+                #print(f'DEBUG: key={key}, value={value}')
                 setattr(self, key, value)
 
         if self.llm is None and 'openai_model' in dataset:
             openai_model = dataset['openai_model']
             self.llm = openai_model.llm
-            print(f'\nself.llm = {self.llm}')
+            #print(f'\nself.llm = {self.llm}')
 
     @staticmethod
     def queries() -> list:
@@ -96,7 +97,7 @@ class ChromaModel:
 
     def get_retriever(self) -> VectorStoreRetriever:
         """Initializes vector retriever using the unified client runtime pool."""
-        # 👑 FIX: Removed persist_directory parameter. 
+
         # The underlying 'client' object safely handles the persistent directory paths now.
         return self.vector_storage.as_retriever(
             search_type="similarity",
@@ -123,9 +124,6 @@ class ChromaModel:
         )
 
     def _get_semantic_text_splitter(self) -> SemanticChunker:
-        if self._mock:
-            from langchain_text_splitters import RecursiveCharacterTextSplitter
-            return RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
         return SemanticChunker(
             self.embedding_model,
@@ -149,11 +147,11 @@ class ChromaModel:
                     description="The explicit page number within the parsed medical document (0-indexed)",
                     type="integer",
                 ),
-                AttributeInfo(
-                    name="filename",
-                    description=f"The bare filename of the medical reference document (e.g., '{DOCUMENT_FILE}')",
-                    type="string",
-                ),
+                #AttributeInfo(
+                #    name="filename",
+                #    description=f"The bare filename of the medical reference document (e.g., '{DOCUMENT_FILE}')",
+                #    type="string",
+                #),
                 AttributeInfo(
                     name="page_content",
                     description="raw text of (sectional) document",
@@ -169,31 +167,36 @@ class ChromaModel:
         return SelfQueryRetriever.from_llm(
             llm=self.llm,
             vectorstore=self.vector_storage,
-            document_contents="Questions for " + DOCUMENT_FILE + " published by the Global Nutritional Health Organization",
-            metadata_field_info=[
+            # Update description to guide the LLM on query string preservation
+            document_content_description = "Hypothetical Questions for " + DOCUMENT_FILEPATH + " published by the Global Nutritional Health Organization",
+            #document_contents="A collection of full, explicitly detailed synthetic medical questions. "
+            ##                  "When generating the search query parameter, you MUST pass the user's full conversational question "
+            #                  "verbatim. Do not compress, truncate, or extract keyword noun phrases.",
+            metadata_field_info = [
                 AttributeInfo(
-                    name="original_content", 
-                    description="Original text extracted from medical documents", 
+                    name="original_content",
+                    description="Original text extracted from documents",
                     type="string"
                 ),
                 AttributeInfo(
-                    name="source", 
-                    description="File path or name of document", 
+                    name="source",
+                    description="File path of document",
                     type="string"
                 ),
                 AttributeInfo(
-                    name="page", 
-                    description="Page number of document", 
+                    name="page",
+                    description="Page number of document",
                     type="integer"
                 ),
                 AttributeInfo(
-                    name="type", 
-                    description="Content type (e.g., 'table', 'text')", 
+                    name="type",
+                    description="Datatype of attribute `original_content`",
                     type="string"
                 )
             ],
             structured_query_translator=ChromaTranslator(),
-            verbose=True
+            verbose=True,
+            use_original_query=True
         )
 
     def get_semantic_chunks(self, folder_path: str) -> list:
@@ -234,7 +237,6 @@ class ChromaModel:
         except Exception:
             return 0
 
-
     def export(self) -> dict:
         """Exports attributes to be injected into child or dependent pipeline classes."""
         return {
@@ -244,7 +246,6 @@ class ChromaModel:
             'llm': self.llm,
             'metadata_info': self.metadata_info,
         }
-
 
     def query_questions(self, is_hyp: bool = False, pluck: bool = False) -> None:
         """

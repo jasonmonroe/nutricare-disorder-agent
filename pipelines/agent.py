@@ -1,141 +1,109 @@
 # pipelines/agent.py
 
-# +---------------+
-# |     AGENT     |
-# +---------------+
-
-# Python Libraries
 import nest_asyncio
+import sys
+import time
 
-# Local Libraries
 from models.agentic_rag_tool import AgenticRagTool
 from models.nutrition_bot import NutritionBot
 from tools.agentic_rag import make_agentic_rag_tool
 
 from src.config import (
-    AGENT_EXIT_CMD,
     I_CLOCK,
-    I_CONFUSED,
     I_CROSSMARK,
     I_RUNNING,
     I_SAD,
     I_SMILING,
     I_STAR,
-    I_SURPRISED,
     I_THINKING,
     I_WATCH,
     LLAMA_SAFE
 )
-from src.utils import show_ai_agent_banner, show_datetime, start_timer, get_time
-
-"""
-Section 2: Building an Intelligent Nutrition Disorder Agent with Advanced Retrieval and Safety Mechanisms
-"""
+from src.utils import show_ai_agent_banner, show_datetime
 
 def build(dataset: dict):
-    """
-    Builds the agentic app by compile workflow object.
-    :param dataset:
-    :return: CompiledStateGraph
-    """
     print(f'\n# --- {I_RUNNING} Start Building agent pipeline {I_RUNNING} --- #')
-
     chroma_db = dataset['chroma_db']
     openai_model = dataset['openai_model']
     llm = openai_model.llm
 
-    # Apply the nested async loop to allow async code execution in the notebook
     nest_asyncio.apply()
 
-    # --- Visualize Workflow --- #
     agentic_rag_tool = AgenticRagTool(llm, chroma_db.retriever)
     workflow_app = agentic_rag_tool.compile()
     agentic_rag_tool.display_workflow(workflow_app)
 
     print(f'\n# --- {I_RUNNING} Completed agent pipeline {I_RUNNING} --- #')
-
     return workflow_app
 
 def start(dataset: dict) -> None:
     print(f'\n# --- {I_RUNNING} Starting agent pipeline {I_RUNNING} --- #')
-
-    """
-    Starts the agentic app!
-
-    A conversational agent that answers nutrition-disorder-related questions using a RAG-based workflow with safety
-    filtering and user session handling.
-
-    :param dataset: dict
-    :return: None
-    
-    """
-
     show_ai_agent_banner()
 
-    # Initialize streamlit persistent state
     show_logs = dataset.get('log', False)
-    print(f'DEBUG: show_logs:{show_logs}')
-
     chroma_db = dataset.get('chroma_db', None)
     openai_model = dataset.get('openai_model', None)
     llama = dataset.get('llama', None)
-    workflow_app = dataset.get('workflow_app', None) 
+    workflow_app = dataset.get('workflow_app', None)
+
+    # ✅ FIXED: Safe guard block evaluation order prevents unhandled NoneType errors
+    if chroma_db is None or openai_model is None or llama is None or workflow_app is None:
+        print(f"{I_CROSSMARK} Core dependencies didn't load properly. Exiting system!!! {I_CROSSMARK}")
+        sys.exit(0)
+
+    if chroma_db.get_document_count() == 0:
+        print(f"{I_CROSSMARK} No documents found in the vector store. Please run with --data first! {I_CROSSMARK}")
+        raise RuntimeError("Vector database is completely empty!")
 
     llm = openai_model.llm
     llm_chatbot = openai_model.llm_chatbot
 
-    # Apply the nested async loop to allow async code execution in the notebook
     nest_asyncio.apply()
-    
-    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever, workflow_app) 
-    chatbot = NutritionBot(llm_chatbot, tools=[rag_tool])
-    chatbot.agent_executor.verbose = show_logs  # Set logging preferences
-    chatbot.start_session()
-    q_time = 0
 
-    user_id = input(f"{I_THINKING} Agent: Tell me, what is your name? _ ")  # Get user ID for tracking conversation sessions
+    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever, workflow_app)
+    chatbot = NutritionBot(llm_chatbot, tools=[rag_tool])
+    chatbot.agent_executor.verbose = show_logs
+    chatbot.start_session()
+
+    # Get user ID for tracking conversation sessions
+    user_id = input(f"{I_THINKING} Agent: Tell me, what is your name? _ ").strip()
+    if not user_id:
+        user_id = "User"
+
     print(f"\n# --- Session Start: {I_CLOCK} {show_datetime()} --- #\n")
 
-    while not chatbot.has_session_exp():
-        
-        # Get user input
+    while True:
+        # ✅ FIXED: Evaluate session expiration using true wall-clock time BEFORE prompting for input
+        if chatbot.has_session_exp():
+            print('Session has expired.  Exiting chat.')
+            break
+
         print(f"{I_SMILING} Agent: How can I help you?\n")
         user_query = input(f"{I_STAR} {user_id}: ")
 
-        # Set timer for each question
-        q_time = start_timer()
-        chatbot.update_latest_input_at(q_time)
+        # Update input timestamp using absolute standard time epoch
+        q_start = time.time()
+        chatbot.update_latest_input_at(q_start)
 
-        # Define the logic for exiting the loop' [if the user types in exit]
-        if user_query.lower() == AGENT_EXIT_CMD:
-            print(f"\n{I_SURPRISED} Agent: Goodbye! Feel free to return if you have more questions.")
-            print(f"# --- Session End: {I_CLOCK} {show_datetime()} --- #")
-            q_time = start_timer()
+        action = chatbot.check_user_input(user_query)
+        if action == 'break':
             break
-
-        # Note: If user just enters blank, skip Llama and ask for another query.
-        if user_query == '':
-            print(f'{I_CONFUSED} You did\'t say anything {user_id}.  What\'s your question?')
+        if action == 'continue':
             continue
 
-        # Filter input through Llama Guard - returns "SAFE" or "UNSAFE"
-        filtered_result = llama.filter_input_with_llama_guard(user_query) # Call function to filter input
+        # Filter input through Llama Guard
+        filtered_result = llama.filter_input_with_llama_guard(user_query)
 
-        # Check if filtered_result is SAFE or UNSAFE
         if filtered_result in LLAMA_SAFE:
-            # Process the user query using the RAG workflow.
             try:
-                response = chatbot.handle_customer_query(user_id, user_query)  # Call chatbot handler function
-                print(f"{I_SMILING} Agent: {response}\n")
-
+                response = chatbot.handle_customer_query(user_id, user_query)
+                print(f"\n{I_SMILING} Agent: {response}\n")
             except Exception as e:
-                print(f"{I_SAD} Agent: Sorry, I encountered an error while processing your query. Please try again.")
+                print(f"\n{I_SAD} Agent: Sorry, I encountered an error while processing your query.")
                 print(f"{I_CROSSMARK} Customer Query Error: {e}\n")
         else:
-            print(f"{I_SAD} Agent: I apologize, but I cannot process that input `{filtered_result}` as it may be inappropriate. Please try again.")
+            print(f"\n{I_SAD} Agent: I apologize, but I cannot process that input as it may be inappropriate.")
 
-        # Show answer duration per query
-        print(f"[{I_WATCH} Answered in {get_time(q_time)}]\n")
+        print(f"[{I_WATCH} Answered in {round(time.time() - q_start, 2)}s]\n")
 
-    # Display session duration
-    print(f'{I_WATCH} Session Duration: {chatbot.get_session_duration(q_time)}')
+    print(f'{I_WATCH} Session Duration: {chatbot.get_session_duration(time.time())}')

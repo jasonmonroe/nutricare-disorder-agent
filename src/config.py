@@ -4,12 +4,9 @@
 # |     CONFIG     |
 # +----------------+
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 import os
-import random
+from dotenv import load_dotenv
+load_dotenv()
 
 # --- DEFINE CONFIGURATIONS AND CONSTANTS --- #
 # Note: os.getenv() are the secrets defined in the Huggingface.co settings page.
@@ -20,7 +17,7 @@ import random
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Hugging Face
-# see: https://hugginface.co
+# see: https://huggingface.co
 # see: Model -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-model
 # see: Space -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-bot
 # Note: Make sure you have your own Huggingface Repo ID!
@@ -47,12 +44,17 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Fill in your OpenAI API Token (f
 OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL")  # embedding models "text-embedding-ada-002", "text-embedding-3-large"
 OPENAI_MODEL = os.getenv("OPENAI_MODEL")  # Fill in the OpenAI model name (e.g., "gpt-4o-mini")
 
+# Titles
+AI_ROLE = "Nutrition Disorder Specialist"
+AI_TITLE = "SMART NUTRITION DISORDER SPECIALIST BOT"
+APP_TITLE = 'NUTRICARE DISORDER AGENT'
+
 # Agents
-AGENT_EVAL_THRESHOLD = 0.8
+AGENT_EVAL_THRESHOLD = 0.8 # 80% evaluation threshold
 AGENT_EMPTY_RESP = "[]" # Empty response
-AGENT_EXIT_CMD = "exit"
-AGENT_WORKFLOW_IMAGE = "outputs/graph_workflow.png"
+AGENT_EXIT_CMDS = ['exit', 'quit', 'bye']
 AGENT_RETRIEVAL_LIMIT = 5
+AGENT_WORKFLOW_IMAGE = "outputs/graph_workflow.png"
 
 # Define document directory paths and chunk sizes
 # Batch sizes (per batch) for processing documents and text chunks
@@ -66,15 +68,11 @@ DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
 CHROMA_SERVER_NO_TELEMETRY = "true"
 CHROMA_TELEMETRY_DISABLED = "1"
 RATE_LIMIT_TIME = 8 #random.randint(3, 7) # was, 1,3. Increased for free tier Groq API
+SEMANTIC_THRESH_LIMIT = 95  # Strict percentile boundary for high-precision chunks
 SLEEP_TIME_INC = 0.20 # was 0.15. Increased for more aggressive backoff
-SEMANTIC_THRESH_LIMIT = random.randint(80, 95)
-VECTOR_RESULT_CNT = random.randint(4, 5) #3
-VECTORS_DIR= "db/"
+VECTOR_RESULT_CNT = 5       # Max context depth matching AGENT_RETRIEVAL_LIMIT
+VECTORS_DIR= "db"
 
-# Used for searching the document for pairing subject for building an effective RAG system.
-# This query asks a specific question about vitamin deficiencies and memory impairment.
-# Match keywords and map them with embedding models.
-SIMILARITY_SEARCH_QUERY = "What nutritional deficiency, such as folate deficiency or that caused by alcoholism, is clinically linked to anemia, and what specific standard diagnostic metric is used for its confirmation?"
 
 # --- Prompt variables ---
 PROMPT_INSTR = """
@@ -84,9 +82,10 @@ PROMPT_INSTR = """
     If the content cannot answer any question(s), your output MUST be the empty Python list: [].
     """.strip()
 
-AI_ROLE = "Nutrition Disorder Specialist"
-AI_TITLE = "SMART NUTRITION DISORDER SPECIALIST BOT"
-APP_TITLE = 'NUTRICARE DISORDER AGENT'
+# Used for searching the document for pairing subject for building an effective RAG system.
+# This query asks a specific question about vitamin deficiencies and memory impairment.
+# Match keywords and map them with embedding models.
+SIMILARITY_SEARCH_QUERY = "What nutritional deficiency, such as folate deficiency or that caused by alcoholism, is clinically linked to anemia, and what specific standard diagnostic metric is used for its confirmation?"
 
 """
 Define prompt messages and queries
@@ -120,7 +119,6 @@ SECS_IN_MIN = 60 # secs in min
 INACTIVE_SESSION_DUR = SECS_IN_MIN * 5 # 5  minutes 
 RUN_MIN_ID = 10000
 RUN_MAX_ID = 99999
-
 
 # Icons
 I_ANGRY = '😠'

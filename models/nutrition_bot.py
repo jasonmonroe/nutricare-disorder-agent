@@ -16,8 +16,16 @@ from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
 
 # Local Libraries
-from src.config import I_THUMBS_DOWN, INACTIVE_SESSION_DUR, MEM0_API_KEY, AGENT_RETRIEVAL_LIMIT
-from src.utils import get_time, start_timer
+from src.config import (
+    AGENT_EXIT_CMDS,
+    AGENT_RETRIEVAL_LIMIT,
+    I_CLOCK,
+    I_SURPRISED,
+    I_THUMBS_DOWN,
+    INACTIVE_SESSION_DUR,
+    MEM0_API_KEY,
+)
+from src.utils import get_time, start_timer, show_datetime
 
 
 class NutritionBot:
@@ -189,3 +197,25 @@ class NutritionBot:
         )
 
         return response['output']
+
+    def check_user_input(self, user_input: str) -> str:
+        """
+        Checks user input and returns an action.
+        :param user_input:
+        :return:
+        """
+        input_str = user_input.strip()
+
+        # Define the logic for exiting the loop' [if the user types in exit]
+        if input_str.lower() in AGENT_EXIT_CMDS:
+            print(f"\n{I_SURPRISED} Agent: Goodbye! Feel free to return if you have more questions.")
+            print(f"# --- Session End: {I_CLOCK} {show_datetime()} --- #")
+            return 'break'
+
+        # Note: If user just enters blank, skip Llama and ask for another query.
+        elif len(input_str) == 0:
+            print(f"{I_THUMBS_DOWN} Hey, you didn\'t say anything. Please ask a question.")
+            return 'continue'
+
+        else:
+            return 'process'

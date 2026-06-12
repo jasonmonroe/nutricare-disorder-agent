@@ -15,7 +15,7 @@ import time
 from src.config import (
     AI_ROLE,
     APP_TITLE,
-    AGENT_EXIT_CMD,
+    AGENT_EXIT_CMDS,
     CHROMA_TELEMETRY_DISABLED,
     GROQ_API_KEY,
     HF_TOKEN,
@@ -85,9 +85,9 @@ def show_title_banner() -> None:
     print(f'|      {APP_TITLE}       |')
     print('|                                     |')
     print('+-------------------------------------+')
-    print(f'|        {I_BOT} An AI Agent         |')
-    print('+-------------------------------------+\n')
-    print(f'\n# === {I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE} === #')
+    print(f'|          {I_BOT} An AI Agent     |')
+    print('+-------------------------------------+')
+    print(f'\n{I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE}')
 
 def show_ai_agent_banner() -> None:
     print('\n+--------------------------------------------------------------+')
@@ -99,7 +99,7 @@ def show_ai_agent_banner() -> None:
     print('| here to assist with your health-related questions.           |')
     print('|                                                              |')
     print('+--------------------------------------------------------------+')
-    print(f'| Type "{AGENT_EXIT_CMD}" to end the conversation.                         |')
+    print(f'| Type "{", ".join(AGENT_EXIT_CMDS)}" to end the conversation.                         |')
     print('+--------------------------------------------------------------+\n')
 
 def set_os_environ():

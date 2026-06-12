@@ -64,7 +64,7 @@ class DocHandler():
         if "type" not in metadata:
             metadata["type"] = "Document"
 
-        print(f'Creating document = {metadata}')
+        # @todo - print(f'Creating document = {metadata}')
 
         return Document(
             id=metadata["doc_id"],
@@ -285,34 +285,33 @@ class DocHandler():
     @staticmethod
     def wipe_db_dir() -> None:
         """
-        Wipes data inside target persistent storage directories to allow clean ingestion.
-        FIXED: Uses recursive shutil tree removal to clear nested ChromaDB states safely.
+        Aggressively purges only the target database directory (db/)
+        to force a true factory reset of ChromaDB states.
         """
-        print(f"# --- {I_BROOM} Wiping {I_DIR} {VECTORS_DIR} {I_BROOM} --- #")
+        # 👑 FORCE TARGET HARD-CODED LITERALLY TO PREVENT CONFIG MISMATCHES
+        target_db_dir = os.path.abspath(VECTORS_DIR)
 
-        if not os.path.exists(VECTORS_DIR):
-            # Create fresh db directory
-            print(f'{I_WARNING} {I_DIR} {VECTORS_DIR} does not exist.  Creating {I_DB} it now...')
-            os.makedirs(VECTORS_DIR, exist_ok=True)
-            return None
+        print(f"\n# --- {I_BROOM} Wiping Database Directory: {target_db_dir} {I_BROOM} --- #")
 
-        # Target internal database children dynamically to maintain database directories cleanly
-        if os.path.exists(VECTORS_DIR):
-            for filename in os.listdir(VECTORS_DIR):
-                file_path = os.path.join(VECTORS_DIR, filename)
-                try:
-                    print(f"{I_CHECKMARK} Wiping {I_DOCUMENT} internal component: {file_path} ...")
-                    if os.path.isfile(file_path) or os.path.islink(file_path):
-                        os.unlink(file_path)
-                    elif os.path.isdir(file_path):
-                        shutil.rmtree(file_path)
-                except Exception as e:
-                    print(f"{I_FLAG} Failed to wipe element path target {file_path}. Exception: {e}")
-           
-        if next(os.scandir(VECTORS_DIR), None) is None:
-            print(f"{I_DIR} Directory exists and is empty.\n")
+        if not os.path.exists(target_db_dir):
+            print(f'{I_WARNING} Directory {target_db_dir} does not exist. Creating a fresh instance now...')
+            os.makedirs(target_db_dir, exist_ok=True)
+            return
 
-        return None
+        # Loop through the children of db/ specifically, leaving data/ completely alone
+        for filename in os.listdir(target_db_dir):
+            file_path = os.path.join(target_db_dir, filename)
+            try:
+                print(f"{I_CHECKMARK} Purging database artifact: {file_path} ...")
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print(f"{I_FLAG} Failed to wipe element path target {file_path}. Exception: {e}")
+
+        if next(os.scandir(target_db_dir), None) is None:
+            print(f"{I_DIR} Database directory `{VECTORS_DIR}` is completely empty and reset!\n")
 
     @staticmethod
     def _unzip() -> bool:

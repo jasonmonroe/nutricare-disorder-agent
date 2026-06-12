@@ -91,7 +91,7 @@ config_emb = read_config("config2_emb_tested.json")
 # --- AI Vendor Credentials ---
 
 # Hugging Face
-# see: https://hugginface.co
+# see: https://huggingface.co
 # see: Model -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-model
 # see: Space -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-bot
 # Fill in the Hugging Face repository ID (e.g., "google/flan-t5-xxl")
@@ -1975,7 +1975,7 @@ from datetime import datetime, UTC
 # os.getenv() is for READING a variable from the operating system's environment.
 
 # Hugging Face
-# see: https://hugginface.co
+# see: https://huggingface.co
 # see: Model -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-model
 # see: Space -> https://huggingface.co/jasonmonroe/smart-nutri-disorder-specialist-bot
 HF_REPO_ID = "jasonmonroe/smart-nutri-disorder-specialist-bot"
