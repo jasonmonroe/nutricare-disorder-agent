@@ -13,7 +13,7 @@ from models.openai import OpenAIModel
 
 from src.config import (
     AI_ROLE, 
-    EMPTY_RESP,
+    AGENT_EMPTY_RESP,
     I_INFO,
     I_QUES,
     PROMPT_INSTR,
@@ -97,7 +97,7 @@ class TableQuestionGenerator(ChromaModel):
                     questions = OpenAIModel.filter_response(response, page_number)
 
                 except Exception as e:
-                    questions = EMPTY_RESP
+                    questions = AGENT_EMPTY_RESP
                     # Single execution point prevents log thrashing and double mutations
                     current_sleep_time, rate_limit_hit = handle_rate_limit_error(
                         e, self.collection_name, current_sleep_time, page_number
@@ -107,7 +107,7 @@ class TableQuestionGenerator(ChromaModel):
                     print(f"⚠️ Terminating run for document '{document}' due to rate limits.")
                     break
 
-                if questions and questions != EMPTY_RESP:
+                if questions and questions != AGENT_EMPTY_RESP:
                     questions_metadata = {
                         'original_content': str(table_in_page), 
                         'source': document,  

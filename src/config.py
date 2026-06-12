@@ -48,11 +48,11 @@ OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL")  # embedding models
 OPENAI_MODEL = os.getenv("OPENAI_MODEL")  # Fill in the OpenAI model name (e.g., "gpt-4o-mini")
 
 # Agents
-EVAL_THRESHOLD = 0.8
-EMPTY_RESP = "[]" # Empty response
-EXIT_CMD = "exit"
-WORKFLOW_IMAGE = "outputs/graph_workflow.png"
-RETRIEVAL_LIMIT = 5
+AGENT_EVAL_THRESHOLD = 0.8
+AGENT_EMPTY_RESP = "[]" # Empty response
+AGENT_EXIT_CMD = "exit"
+AGENT_WORKFLOW_IMAGE = "outputs/graph_workflow.png"
+AGENT_RETRIEVAL_LIMIT = 5
 
 # Define document directory paths and chunk sizes
 # Batch sizes (per batch) for processing documents and text chunks
@@ -64,6 +64,7 @@ DOCUMENT_FILEPATH = DOCUMENT_DIR + '/' + DOCUMENT_FILE
 DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
 
 CHROMA_SERVER_NO_TELEMETRY = "true"
+CHROMA_TELEMETRY_DISABLED = "1"
 RATE_LIMIT_TIME = 8 #random.randint(3, 7) # was, 1,3. Increased for free tier Groq API
 SLEEP_TIME_INC = 0.20 # was 0.15. Increased for more aggressive backoff
 SEMANTIC_THRESH_LIMIT = random.randint(80, 95)

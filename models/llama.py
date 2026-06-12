@@ -7,13 +7,10 @@
 # Vendor Libraries
 from groq import Groq
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-
-# LlamaParse & LlamaIndex imports
 from llama_parse import LlamaParse  # Document parsing library
-from llama_index.core import Settings, SimpleDirectoryReader
-# Core functionalities of the LlamaIndex
+from llama_index.core import Settings
 
-# Local
+# Local Libraries
 from src.config import (
     GROQ_API_KEY,
     I_CROSSMARK,

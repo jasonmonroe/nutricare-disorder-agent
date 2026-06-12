@@ -124,10 +124,10 @@ OPENAI_MODEL = "gpt-4o-mini"  # Fill in the OpenAI model name (e.g., "gpt-4o-min
 # Batch sizes (per batch) for processing documents and text chunks
 CHUNK_DOC_BATCH_SIZE = 100
 CHUNK_TEXT_BATCH_SIZE = 50
-EMPTY_RESP = "[]" # Empty response
-EVAL_THRESHOLD = 0.8
-EXIT_CMD = "exit"
-RETRIEVAL_LIMIT = 5
+AGENT_EMPTY_RESP = "[]" # Empty response
+AGENT_EVAL_THRESHOLD = 0.8
+AGENT_EXIT_CMD = "exit"
+AGENT_RETRIEVAL_LIMIT = 5
 SECS_IN_MIN = 60 # secs in min
 SEMANTIC_THRESH_LIMIT = random.randint(80, 85)
 VECTOR_RESULT_CNT = 3
@@ -670,7 +670,7 @@ for batch_start in range(0, len(semantic_chunks), batch_size):
 
         except Exception as e:
             handle_rate_limit_error(e, collection_name, sleep_time)
-            questions = EMPTY_RESP # Formerly "NA"
+            questions = AGENT_EMPTY_RESP # Formerly "NA"
 
             sleep_time, rate_limit_hit = handle_rate_limit_error(e, collection_name, sleep_time)
 
@@ -678,7 +678,7 @@ for batch_start in range(0, len(semantic_chunks), batch_size):
             break
 
         # Only append metadata for successful responses
-        if questions and questions != EMPTY_RESP:
+        if questions and questions != AGENT_EMPTY_RESP:
 
             # Create metadata for the generated question
             questions_metadata = {
@@ -766,14 +766,14 @@ for document in tables:  # Iterate over all processed documents
 
         except Exception as e:
             handle_rate_limit_error(e, collection_name, sleep_time)
-            questions = EMPTY_RESP # Formerly "NA"
+            questions = AGENT_EMPTY_RESP # Formerly "NA"
 
             sleep_time, rate_limit_hit = handle_rate_limit_error(e, collection_name, sleep_time)
 
         if rate_limit_hit:
             break
 
-        if questions and questions != EMPTY_RESP:
+        if questions and questions != AGENT_EMPTY_RESP:
 
             # Metadata for each table
             questions_metadata = {
@@ -1448,7 +1448,7 @@ def should_continue_groundedness(state):
       print("\n-------- should_continue_groundedness --------")
       print("groundedness loop count: ", state['groundedness_loop_count'])
 
-  if state["groundedness_score"] >= EVAL_THRESHOLD:  # Threshold for groundedness
+  if state["groundedness_score"] >= AGENT_EVAL_THRESHOLD:  # Threshold for groundedness
       if show_logs:
           print("Moving to precision")
 
@@ -1470,7 +1470,7 @@ def should_continue_precision(state: Dict) -> str:
         print("\n-------- should_continue_precision --------")
         print("precision loop count: ", state['precision_loop_count'])
 
-    if state["precision_score"] >= EVAL_THRESHOLD:  # Threshold for precision
+    if state["precision_score"] >= AGENT_EVAL_THRESHOLD:  # Threshold for precision
         return "pass"  # Complete the workflow
     else:
         if is_max_iterations_reached(state, "precision_loop_count"):  # Maximum allowed loops
@@ -1756,7 +1756,7 @@ class NutritionBot:
         return self.memory.search(
             query=query,  # Search for interactions related to the query
             user_id=user_id,  # Restrict search to the specific user
-            limit=RETRIEVAL_LIMIT  # Complete the code to define the limit for retrieved interactions
+            limit=AGENT_RETRIEVAL_LIMIT  # Complete the code to define the limit for retrieved interactions
         )
 
 
@@ -1822,7 +1822,7 @@ def nutrition_disorder_agent():
     print("| Welcome! I'm your dedicated AI Nutrition Agent.")
     print("| Ask me anything about nutrition disorders. You can inquire about\n| symptoms, causes, treatment options, or preventative measures.\n| I'm ready to help with your health-related questions.")
     print("|")
-    print(f"| Type '{EXIT_CMD}' to end the conversation.")
+    print(f"| Type '{AGENT_EXIT_CMD}' to end the conversation.")
     print("|--------------------------------------------------------------------\n")
 
     chatbot = NutritionBot()  # Initialize chatbot instance
@@ -1842,7 +1842,7 @@ def nutrition_disorder_agent():
         q_time = start_timer()
 
         # Define the logic for exiting the loop' [if the user types in exit]
-        if user_query.lower() == EXIT_CMD:
+        if user_query.lower() == AGENT_EXIT_CMD:
             print("\nAgent: Goodbye! Feel free to return if you have more questions.")
             print(f"--- Session End: {show_datetime()} ---")
             break
@@ -2015,10 +2015,10 @@ os.environ["CHROMA_TELEMETRY_DISABLED"] = "1"
 # --- Environment Keys ---
 
 # --- CONSTANTS ---
-EVAL_THRESHOLD = 0.8
-EXIT_CMD = "exit"
+AGENT_EVAL_THRESHOLD = 0.8
+AGENT_EXIT_CMD = "exit"
 MILLI_IN_SECS = 1000
-RETRIEVAL_LIMIT = 5
+AGENT_RETRIEVAL_LIMIT = 5
 SECS_IN_MIN = 60 # secs in min
 VECTOR_RESULT_CNT = 3
 
@@ -2687,7 +2687,7 @@ def should_continue_groundedness(state):
     print("--- should_continue_groundedness ---")
     print("groundedness loop count: ", state['groundedness_loop_count'])
 
-    if state["groundedness_score"] >= EVAL_THRESHOLD:  # Threshold for groundedness
+    if state["groundedness_score"] >= AGENT_EVAL_THRESHOLD:  # Threshold for groundedness
         print("Moving to precision")
 
         return "check_precision"
@@ -2709,7 +2709,7 @@ def should_continue_precision(state: Dict) -> str:
     print("--- should_continue_precision ---")
     print("precision loop count: ", state['precision_loop_count'])
 
-    if state["precision_score"] >= EVAL_THRESHOLD:  # Threshold for precision
+    if state["precision_score"] >= AGENT_EVAL_THRESHOLD:  # Threshold for precision
         return "pass"  # Complete the workflow
 
     else:
@@ -2914,7 +2914,7 @@ class NutritionBot:
         return self.memory.search(
             query=query,  # Search for interactions related to the query
             user_id=user_id,  # Restrict search to the specific user
-            limit=RETRIEVAL_LIMIT  # Complete the code to define the limit for retrieved interactions
+            limit=AGENT_RETRIEVAL_LIMIT  # Complete the code to define the limit for retrieved interactions
         )
 
 
@@ -2989,7 +2989,7 @@ def nutrition_disorder_streamlit():
     I'm ready to answer your health-related questions.
     """, icon="📢")
 
-    st.warning(body=f"Type **{EXIT_CMD}** at anytime to end the conversation.", icon="🪬") # Used EXIT_CMD constant here
+    st.warning(body=f"Type **{AGENT_EXIT_CMD}** at anytime to end the conversation.", icon="🪬") # Used AGENT_EXIT_CMD constant here
 
     # Initialize the session state for chat history and user_id if they don't exist
     if 'chat_history' not in st.session_state:
@@ -3005,7 +3005,7 @@ def nutrition_disorder_streamlit():
             user_id = st.text_input("Agent: Please enter your name to begin:").strip()
 
             # Don't let the username themselves a keyword
-            if EXIT_CMD in user_id:
+            if AGENT_EXIT_CMD in user_id:
                 st.error(body="You cannot name yourself a keyword.", icon="🚨")
                 st.stop()
 
@@ -3029,14 +3029,14 @@ def nutrition_disorder_streamlit():
                 st.write(message["content"])
 
         # Chat input with custom placeholder text.  The user-facing prompt
-        user_query = st.chat_input(f"Agent: Ask your question here, {st.session_state.user_id} (or '{EXIT_CMD}')...")
+        user_query = st.chat_input(f"Agent: Ask your question here, {st.session_state.user_id} (or '{AGENT_EXIT_CMD}')...")
 
         if user_query:
-            if user_query.lower() == EXIT_CMD:
-                st.session_state.chat_history.append({"role": "user", "content": EXIT_CMD})
+            if user_query.lower() == AGENT_EXIT_CMD:
+                st.session_state.chat_history.append({"role": "user", "content": AGENT_EXIT_CMD})
 
                 with st.chat_message("User"):
-                    st.write(EXIT_CMD)
+                    st.write(AGENT_EXIT_CMD)
 
                 goodbye_msg = "Agent: Goodbye! Feel free to return if you have more questions about nutrition disorders."
                 st.session_state.chat_history.append({"role": "assistant", "content": goodbye_msg})

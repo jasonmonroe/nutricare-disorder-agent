@@ -12,12 +12,11 @@ from mem0 import MemoryClient
 
 # Vendor Libraries
 # LangChain imports
-#from langchain_core.output_parsers import StrOutputParser, JsonOutputParser  # String output parser
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
 
 # Local Libraries
-from src.config import I_THUMBS_DOWN, INACTIVE_SESSION_DUR, MEM0_API_KEY, RETRIEVAL_LIMIT
+from src.config import I_THUMBS_DOWN, INACTIVE_SESSION_DUR, MEM0_API_KEY, AGENT_RETRIEVAL_LIMIT
 from src.utils import get_time, start_timer
 
 
@@ -128,180 +127,8 @@ class NutritionBot:
         return self.memory.search(
             query=query,  
             filters={"user_id": user_id}, 
-            limit=RETRIEVAL_LIMIT  
+            limit=AGENT_RETRIEVAL_LIMIT  
         )
-
-    def handle_customer_query_old(self, user_id: str, query: str) -> str:
-        """
-        Process a customer's query and provide a response, taking into account past interactions.
-
-        :param user_id:
-        :param query:
-        :return:
-        """
-
-
-        """
-        Process a customer's query and provide a response, taking into account past interactions.
-
-        Args:
-            user_id (str): Unique identifier for the customer.
-            query (str): Customer's query.
-
-        Returns:
-            str: Chatbot's response.
-        """
-        logger = logging.getLogger(__name__)
-
-        # Retrieve relevant past interactions for context
-        relevant_history = self.get_relevant_history(user_id, query)
-        
-        logger.info(f'relevant_history={relevant_history}')
-        
-        # Build a context string from the relevant history
-        context = "Previous relevant interactions:\n"
-
-        # @todo - figure this out!!!
-
-        """
-        for history in relevant_history:
-            logger.info(f'history={history}')
-            context += f"Customer: {history['memory']}\n"  # Customer's past messages
-            context += f"Support: {history['memory']}\n"  # Chatbot's past responses
-            context += "---\n"
-
-        
-        memories = relevant_history.get('results', [])
-        logger.info(f'memories={memories}')
-
-        if memories:
-            context += "\nPast messages and responses:\n"
-            for item in memories:
-                memory_text = item.get('memory', '')
-                if memory_text:
-                    context += f'- {memory_text}'
-        else:
-            context += "\nNo previous relevant interactions found.\n"
-        """
-
-        
-        if isinstance(relevant_history, dict):
-            # Target the inner list under the 'results' key (defaults to an empty list if missing)
-            memories_list = relevant_history.get("results", [])
-            for history in memories_list:
-                logger.info(f'history object found in dict: {history}')
-                if isinstance(history, dict) and 'memory' in history:
-                    context += f"- Context Fact: {history['memory']}\n"
-                elif isinstance(history, str):
-                    context += f"- Context Fact: {history}\n"
-                    
-        elif isinstance(relevant_history, list):
-            # Fallback in case a different version/mock payload returns a flat list directly
-            for history in relevant_history:
-                logger.info(f'history object found in list: {history}')
-                if isinstance(history, dict) and 'memory' in history:
-                    context += f"- Context Fact: {history['memory']}\n"
-                elif isinstance(history, str):
-                    context += f"- Context Fact: {history}\n"
-       
-
-        # Print context for debugging purposes
-        logger.info(f"Context Compiled Successfully:\n {context}")
-
-        # Prepare a prompt combining past context and the current query
-        prompt = f"""
-        Context:
-        {context}
-
-        Current customer query: {query}
-
-        Provide a helpful response that takes into account any relevant past interactions.
-        """.strip()
-
-        logger.info(f'line 219 DEBUG: prompt:{prompt}')
-        
-        # Generate a response using the agent
-        response = self.agent_executor.invoke({"input": prompt})
-
-        # Store the current interaction for future reference
-        self.store_customer_interaction(
-            user_id=user_id,
-            message=query,
-            response=response["output"],
-            metadata={"type": "support_query"}
-        )
-
-        # Return the chatbot's response
-        return response['output']
-
-
-    def handle_customer_query2(self, user_id: str, query: str) -> str:
-        """
-        Process a customer's query and provide a response, taking into account past interactions.
-
-        :param user_id:
-        :param query:
-        :return:
-        """
-
-        logger = logging.getLogger(__name__)
-
-        # 1. Retrieve relevant past memory facts
-        relevant_history = self.get_relevant_history(user_id, query)
-        logger.info(f'relevant_history={relevant_history}')
-        
-        # 2. Build a clear, factual user profile block
-        facts = []
-        
-        if isinstance(relevant_history, dict):
-            memories_list = relevant_history.get("results", [])
-            for history in memories_list:
-                if isinstance(history, dict) and 'memory' in history:
-                    facts.append(history['memory'])
-                elif isinstance(history, str):
-                    facts.append(history)
-                    
-        elif isinstance(relevant_history, list):
-            for history in relevant_history:
-                if isinstance(history, dict) and 'memory' in history:
-                    facts.append(history['memory'])
-                elif isinstance(history, str):
-                    facts.append(history)
-
-        # 3. Format the background profile for the Agent
-        if facts:
-            context_string = "\n".join(f"- {fact}" for fact in facts)
-            context_header = f"Known user background profiles and preferences:\n{context_string}"
-        else:
-            context_header = "No prior user preferences or background profiles recorded."
-
-        logger.info(f"Context Compiled Successfully:\n{context_header}")
-
-        # 4. Use LangChain system instructions or clean formatting tags 
-        # to separate the memory profile from the core question.
-        structured_input = f"""
-        [USER METADATA PROFILE]
-        {context_header}
-
-        [CURRENT USER QUESTION]
-        {query}
-        """.strip()
-
-        logger.info('DEBUG: Executing agent invocation with structured input.')
-        
-        # Generate a response using the agent
-        response = self.agent_executor.invoke({"input": structured_input})
-
-        # Store the current interaction for future reference
-        self.store_customer_interaction(
-            user_id=user_id,
-            message=query,
-            response=response["output"],
-            metadata={"type": "support_query"}
-        )
-
-        return response['output']
-
 
     def handle_customer_query(self, user_id: str, query: str) -> str:
         """

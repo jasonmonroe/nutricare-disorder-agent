@@ -10,7 +10,7 @@ import random
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
 
-from src.config import AI_ROLE, I_INFO, PROMPT_INSTR, EMPTY_RESP, I_QUES, RATE_LIMIT_TIME, I_WARNING
+from src.config import AI_ROLE, I_INFO, PROMPT_INSTR, AGENT_EMPTY_RESP, I_QUES, RATE_LIMIT_TIME, I_WARNING
 from src.utils import handle_rate_limit_error, show_timer
 
 
@@ -74,7 +74,7 @@ class QuestionGenerator(ChromaModel):
                     questions = OpenAIModel.filter_response(self.llm.invoke(formatted_response), i)
 
                 except Exception as e:
-                    questions = EMPTY_RESP
+                    questions = AGENT_EMPTY_RESP
                     # Single call to cleanly parse the exception payload
                     current_sleep_time, rate_limit_hit = handle_rate_limit_error(
                         e, self.collection_name, current_sleep_time, i
@@ -84,7 +84,7 @@ class QuestionGenerator(ChromaModel):
                     print(f"{I_WARNING}️ Skipping chunk {i} due to rate limit threshold.\n")
                     continue
 
-                if questions and questions != EMPTY_RESP:
+                if questions and questions != AGENT_EMPTY_RESP:
                     questions_metadata = {
                         'original_content': document.page_content,
                         'source': document.metadata['source'],

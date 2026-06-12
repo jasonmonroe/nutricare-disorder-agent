@@ -13,7 +13,7 @@ from models.nutrition_bot import NutritionBot
 from tools.agentic_rag import make_agentic_rag_tool
 
 from src.config import (
-    EXIT_CMD,
+    AGENT_EXIT_CMD,
     I_CLOCK,
     I_CONFUSED,
     I_CROSSMARK,
@@ -107,7 +107,7 @@ def start(dataset: dict) -> None:
         chatbot.update_latest_input_at(q_time)
 
         # Define the logic for exiting the loop' [if the user types in exit]
-        if user_query.lower() == EXIT_CMD:
+        if user_query.lower() == AGENT_EXIT_CMD:
             print(f"\n{I_SURPRISED} Agent: Goodbye! Feel free to return if you have more questions.")
             print(f"# --- Session End: {I_CLOCK} {show_datetime()} --- #")
             q_time = start_timer()

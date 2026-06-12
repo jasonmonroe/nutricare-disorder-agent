@@ -8668,10 +8668,10 @@ rfc3987-syntax 1.1.0 requires lark&gt;=1.2.2, but you have lark 1.1.9 which is i
 <span class="c1"># Batch sizes (per batch) for processing documents and text chunks</span>
 <span class="n">CHUNK_DOC_BATCH_SIZE</span> <span class="o">=</span> <span class="mi">100</span>
 <span class="n">CHUNK_TEXT_BATCH_SIZE</span> <span class="o">=</span> <span class="mi">50</span>
-<span class="n">EMPTY_RESP</span> <span class="o">=</span> <span class="s2">"[]"</span> <span class="c1"># Empty response</span>
-<span class="n">EVAL_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.8</span>
-<span class="n">EXIT_CMD</span> <span class="o">=</span> <span class="s2">"exit"</span>
-<span class="n">RETRIEVAL_LIMIT</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">AGENT_EMPTY_RESP</span> <span class="o">=</span> <span class="s2">"[]"</span> <span class="c1"># Empty response</span>
+<span class="n">AGENT_EVAL_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.8</span>
+<span class="n">AGENT_EXIT_CMD</span> <span class="o">=</span> <span class="s2">"exit"</span>
+<span class="n">AGENT_RETRIEVAL_LIMIT</span> <span class="o">=</span> <span class="mi">5</span>
 <span class="n">SECS_IN_MIN</span> <span class="o">=</span> <span class="mi">60</span> <span class="c1"># secs in min</span>
 <span class="n">SEMANTIC_THRESH_LIMIT</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">85</span><span class="p">)</span>
 <span class="n">VECTOR_RESULT_CNT</span> <span class="o">=</span> <span class="mi">3</span>
@@ -21893,7 +21893,7 @@ Run Time: 0m 8s 630ms
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">handle_rate_limit_error</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">collection_name</span><span class="p">,</span> <span class="n">sleep_time</span><span class="p">)</span>
-            <span class="n">questions</span> <span class="o">=</span> <span class="n">EMPTY_RESP</span> <span class="c1"># Formerly "NA"</span>
+            <span class="n">questions</span> <span class="o">=</span> <span class="n">AGENT_EMPTY_RESP</span> <span class="c1"># Formerly "NA"</span>
 
             <span class="n">sleep_time</span><span class="p">,</span> <span class="n">rate_limit_hit</span> <span class="o">=</span> <span class="n">handle_rate_limit_error</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">collection_name</span><span class="p">,</span> <span class="n">sleep_time</span><span class="p">)</span>
 
@@ -21901,7 +21901,7 @@ Run Time: 0m 8s 630ms
             <span class="k">break</span>
 
         <span class="c1"># Only append metadata for successful responses</span>
-        <span class="k">if</span> <span class="n">questions</span> <span class="ow">and</span> <span class="n">questions</span> <span class="o">!=</span> <span class="n">EMPTY_RESP</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">questions</span> <span class="ow">and</span> <span class="n">questions</span> <span class="o">!=</span> <span class="n">AGENT_EMPTY_RESP</span><span class="p">:</span>
 
             <span class="c1"># Create metadata for the generated question</span>
             <span class="n">questions_metadata</span> <span class="o">=</span> <span class="p">{</span>
@@ -22109,14 +22109,14 @@ Hypothetical Questions:
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">handle_rate_limit_error</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">collection_name</span><span class="p">,</span> <span class="n">sleep_time</span><span class="p">)</span>
-            <span class="n">questions</span> <span class="o">=</span> <span class="n">EMPTY_RESP</span> <span class="c1"># Formerly "NA"</span>
+            <span class="n">questions</span> <span class="o">=</span> <span class="n">AGENT_EMPTY_RESP</span> <span class="c1"># Formerly "NA"</span>
 
             <span class="n">sleep_time</span><span class="p">,</span> <span class="n">rate_limit_hit</span> <span class="o">=</span> <span class="n">handle_rate_limit_error</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">collection_name</span><span class="p">,</span> <span class="n">sleep_time</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">rate_limit_hit</span><span class="p">:</span>
             <span class="k">break</span>
 
-        <span class="k">if</span> <span class="n">questions</span> <span class="ow">and</span> <span class="n">questions</span> <span class="o">!=</span> <span class="n">EMPTY_RESP</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">questions</span> <span class="ow">and</span> <span class="n">questions</span> <span class="o">!=</span> <span class="n">AGENT_EMPTY_RESP</span><span class="p">:</span>
 
             <span class="c1"># Metadata for each table</span>
             <span class="n">questions_metadata</span> <span class="o">=</span> <span class="p">{</span>
@@ -23741,7 +23741,7 @@ Run Time: 0m 2s 820ms
       <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">-------- should_continue_groundedness --------"</span><span class="p">)</span>
       <span class="nb">print</span><span class="p">(</span><span class="s2">"groundedness loop count: "</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="s1">'groundedness_loop_count'</span><span class="p">])</span>
 
-  <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">"groundedness_score"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">EVAL_THRESHOLD</span><span class="p">:</span>  <span class="c1"># Threshold for groundedness</span>
+  <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">"groundedness_score"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">AGENT_EVAL_THRESHOLD</span><span class="p">:</span>  <span class="c1"># Threshold for groundedness</span>
       <span class="k">if</span> <span class="n">show_logs</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
           <span class="nb">print</span><span class="p">(</span><span class="s2">"Moving to precision"</span><span class="p">)</span>
 
@@ -23797,7 +23797,7 @@ Run Time: 0m 2s 820ms
         <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">-------- should_continue_precision --------"</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">"precision loop count: "</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="s1">'precision_loop_count'</span><span class="p">])</span>
 
-    <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">"precision_score"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">EVAL_THRESHOLD</span><span class="p">:</span>  <span class="c1"># Threshold for precision</span>
+    <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">"precision_score"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">AGENT_EVAL_THRESHOLD</span><span class="p">:</span>  <span class="c1"># Threshold for precision</span>
         <span class="k">return</span> <span class="s2">"pass"</span>  <span class="c1"># Complete the workflow</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">is_max_iterations_reached</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="s2">"precision_loop_count"</span><span class="p">):</span>  <span class="c1"># Maximum allowed loops</span>
@@ -24457,7 +24457,7 @@ After clicking on submit, your API key will be displayed, click on Copy.
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
             <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>  <span class="c1"># Search for interactions related to the query</span>
             <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>  <span class="c1"># Restrict search to the specific user</span>
-            <span class="n">limit</span><span class="o">=</span><span class="n">RETRIEVAL_LIMIT</span>  <span class="c1"># Complete the code to define the limit for retrieved interactions</span>
+            <span class="n">limit</span><span class="o">=</span><span class="n">AGENT_RETRIEVAL_LIMIT</span>  <span class="c1"># Complete the code to define the limit for retrieved interactions</span>
         <span class="p">)</span>
 
 
@@ -24575,7 +24575,7 @@ Task: Identify locations renowned for exceptional parties.</p>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"| Welcome! I'm your dedicated AI Nutrition Agent."</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"| Ask me anything about nutrition disorders. You can inquire about</span><span class="se">\n</span><span class="s2">| symptoms, causes, treatment options, or preventative measures.</span><span class="se">\n</span><span class="s2">| I'm ready to help with your health-related questions."</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"|"</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"| Type '</span><span class="si">{</span><span class="n">EXIT_CMD</span><span class="si">}</span><span class="s2">' to end the conversation."</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"| Type '</span><span class="si">{</span><span class="n">AGENT_EXIT_CMD</span><span class="si">}</span><span class="s2">' to end the conversation."</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"|--------------------------------------------------------------------</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="n">chatbot</span> <span class="o">=</span> <span class="n">NutritionBot</span><span class="p">()</span>  <span class="c1"># Initialize chatbot instance</span>
@@ -24595,7 +24595,7 @@ Task: Identify locations renowned for exceptional parties.</p>
         <span class="n">q_time</span> <span class="o">=</span> <span class="n">start_timer</span><span class="p">()</span>
 
         <span class="c1"># Define the logic for exiting the loop' [if the user types in exit]</span>
-        <span class="k">if</span> <span class="n">user_query</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">EXIT_CMD</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">user_query</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">AGENT_EXIT_CMD</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Agent: Goodbye! Feel free to return if you have more questions."</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"--- Session End: </span><span class="si">{</span><span class="n">show_datetime</span><span class="p">()</span><span class="si">}</span><span class="s2"> ---"</span><span class="p">)</span>
             <span class="k">break</span>
@@ -24995,10 +24995,10 @@ Run Time: 2m 12s 456ms
 <span class="c1"># --- Environment Keys ---</span>
 
 <span class="c1"># --- CONSTANTS ---</span>
-<span class="n">EVAL_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.8</span>
-<span class="n">EXIT_CMD</span> <span class="o">=</span> <span class="s2">"exit"</span>
+<span class="n">AGENT_EVAL_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.8</span>
+<span class="n">AGENT_EXIT_CMD</span> <span class="o">=</span> <span class="s2">"exit"</span>
 <span class="n">MILLI_IN_SECS</span> <span class="o">=</span> <span class="mi">1000</span>
-<span class="n">RETRIEVAL_LIMIT</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">AGENT_RETRIEVAL_LIMIT</span> <span class="o">=</span> <span class="mi">5</span>
 <span class="n">SECS_IN_MIN</span> <span class="o">=</span> <span class="mi">60</span> <span class="c1"># secs in min</span>
 <span class="n">VECTOR_RESULT_CNT</span> <span class="o">=</span> <span class="mi">3</span>
 
@@ -25667,7 +25667,7 @@ Run Time: 2m 12s 456ms
     <span class="nb">print</span><span class="p">(</span><span class="s2">"--- should_continue_groundedness ---"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"groundedness loop count: "</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="s1">'groundedness_loop_count'</span><span class="p">])</span>
 
-    <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">"groundedness_score"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">EVAL_THRESHOLD</span><span class="p">:</span>  <span class="c1"># Threshold for groundedness</span>
+    <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">"groundedness_score"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">AGENT_EVAL_THRESHOLD</span><span class="p">:</span>  <span class="c1"># Threshold for groundedness</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">"Moving to precision"</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="s2">"check_precision"</span>
@@ -25689,7 +25689,7 @@ Run Time: 2m 12s 456ms
     <span class="nb">print</span><span class="p">(</span><span class="s2">"--- should_continue_precision ---"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"precision loop count: "</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="s1">'precision_loop_count'</span><span class="p">])</span>
 
-    <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">"precision_score"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">EVAL_THRESHOLD</span><span class="p">:</span>  <span class="c1"># Threshold for precision</span>
+    <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">"precision_score"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">AGENT_EVAL_THRESHOLD</span><span class="p">:</span>  <span class="c1"># Threshold for precision</span>
         <span class="k">return</span> <span class="s2">"pass"</span>  <span class="c1"># Complete the workflow</span>
 
     <span class="k">else</span><span class="p">:</span>
@@ -25893,7 +25893,7 @@ Run Time: 2m 12s 456ms
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
             <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>  <span class="c1"># Search for interactions related to the query</span>
             <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>  <span class="c1"># Restrict search to the specific user</span>
-            <span class="n">limit</span><span class="o">=</span><span class="n">RETRIEVAL_LIMIT</span>  <span class="c1"># Complete the code to define the limit for retrieved interactions</span>
+            <span class="n">limit</span><span class="o">=</span><span class="n">AGENT_RETRIEVAL_LIMIT</span>  <span class="c1"># Complete the code to define the limit for retrieved interactions</span>
         <span class="p">)</span>
 
 
@@ -25968,7 +25968,7 @@ Run Time: 2m 12s 456ms
 <span class="s2">    I'm ready to answer your health-related questions.</span>
 <span class="s2">    """</span><span class="p">,</span> <span class="n">icon</span><span class="o">=</span><span class="s2">"📢"</span><span class="p">)</span>
 
-    <span class="n">st</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">body</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Type **</span><span class="si">{</span><span class="n">EXIT_CMD</span><span class="si">}</span><span class="s2">** at anytime to end the conversation."</span><span class="p">,</span> <span class="n">icon</span><span class="o">=</span><span class="s2">"🪬"</span><span class="p">)</span> <span class="c1"># Used EXIT_CMD constant here</span>
+    <span class="n">st</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">body</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Type **</span><span class="si">{</span><span class="n">AGENT_EXIT_CMD</span><span class="si">}</span><span class="s2">** at anytime to end the conversation."</span><span class="p">,</span> <span class="n">icon</span><span class="o">=</span><span class="s2">"🪬"</span><span class="p">)</span> <span class="c1"># Used AGENT_EXIT_CMD constant here</span>
 
     <span class="c1"># Initialize the session state for chat history and user_id if they don't exist</span>
     <span class="k">if</span> <span class="s1">'chat_history'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="p">:</span>
@@ -25984,7 +25984,7 @@ Run Time: 2m 12s 456ms
             <span class="n">user_id</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">text_input</span><span class="p">(</span><span class="s2">"Agent: Please enter your name to begin:"</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 
             <span class="c1"># Don't let the username themselves a keyword</span>
-            <span class="k">if</span> <span class="n">EXIT_CMD</span> <span class="ow">in</span> <span class="n">user_id</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">AGENT_EXIT_CMD</span> <span class="ow">in</span> <span class="n">user_id</span><span class="p">:</span>
                 <span class="n">st</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">body</span><span class="o">=</span><span class="s2">"You cannot name yourself a keyword."</span><span class="p">,</span> <span class="n">icon</span><span class="o">=</span><span class="s2">"🚨"</span><span class="p">)</span>
                 <span class="n">st</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
 
@@ -26008,14 +26008,14 @@ Run Time: 2m 12s 456ms
                 <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">message</span><span class="p">[</span><span class="s2">"content"</span><span class="p">])</span>
 
         <span class="c1"># Chat input with custom placeholder text.  The user-facing prompt</span>
-        <span class="n">user_query</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">chat_input</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Agent: Ask your question here, </span><span class="si">{</span><span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2"> (or '</span><span class="si">{</span><span class="n">EXIT_CMD</span><span class="si">}</span><span class="s2">')..."</span><span class="p">)</span>
+        <span class="n">user_query</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">chat_input</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Agent: Ask your question here, </span><span class="si">{</span><span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2"> (or '</span><span class="si">{</span><span class="n">AGENT_EXIT_CMD</span><span class="si">}</span><span class="s2">')..."</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">user_query</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">user_query</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">EXIT_CMD</span><span class="p">:</span>
-                <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">chat_history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">EXIT_CMD</span><span class="p">})</span>
+            <span class="k">if</span> <span class="n">user_query</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">AGENT_EXIT_CMD</span><span class="p">:</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">chat_history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">AGENT_EXIT_CMD</span><span class="p">})</span>
 
                 <span class="k">with</span> <span class="n">st</span><span class="o">.</span><span class="n">chat_message</span><span class="p">(</span><span class="s2">"User"</span><span class="p">):</span>
-                    <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">EXIT_CMD</span><span class="p">)</span>
+                    <span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">AGENT_EXIT_CMD</span><span class="p">)</span>
 
                 <span class="n">goodbye_msg</span> <span class="o">=</span> <span class="s2">"Agent: Goodbye! Feel free to return if you have more questions about nutrition disorders."</span>
                 <span class="n">st</span><span class="o">.</span><span class="n">session_state</span><span class="o">.</span><span class="n">chat_history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"assistant"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">goodbye_msg</span><span class="p">})</span>

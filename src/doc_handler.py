@@ -320,6 +320,8 @@ class DocHandler():
         
         Uses DOCUMENT_FILEPATH for local path verification, while inspecting the 
         internal zip manifest to safely handle folder-nested contents inside the archive.
+        Note: Full document is 4,114 pages and can be found here:
+        https://benhvienanhson.com/media/post_attachments/The_Merck_Manual_of_Diagnosis_and_Therapy_2011_-_19th_Edn........pdf
         """
         # If the file already exists at our new explicit path, skip extraction entirely
         if not os.path.exists(DOCUMENT_FILEPATH):

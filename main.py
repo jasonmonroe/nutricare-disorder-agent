@@ -136,7 +136,7 @@ def _parse_args(command_line_args: list[str]) -> dict:
         print(f'{I_WARNING} No args present... exiting. {I_WARNING}')
         sys.exit(1)
 
-    args_list = ['--build', '--data', '--deploy', '--log', '--mock', '--run', '--start']
+    args_list = ['--build', '--data', '--deploy', '--log', '--run', '--start']
 
     return {arg.strip('--'): (arg in command_line_args) for arg in args_list}
 
@@ -167,14 +167,13 @@ if __name__ == '__main__':
         DocHandler.wipe_db_dir()
         
     # --- Load all models --- #
-    openai_model = OpenAIModel(mock=mock)
+    openai_model = OpenAIModel()
 
     # Create vector storage for nutritional information
     chroma_db = ChromaModel({
         'llm': openai_model.llm,
         'embedding_model': openai_model.embedding_model,
         'collection_name': 'nutritional',
-        'mock': mock
     })
 
     llama = LlamaModel(openai_model.llm, openai_model.embedding_model, log)
@@ -184,7 +183,6 @@ if __name__ == '__main__':
         'chroma_db': chroma_db,
         'llama': llama,
         'openai_model': openai_model,
-        'mock': mock,
         'log': log
     }
     

@@ -37,19 +37,11 @@ class ChromaModel:
     """
 
     def __init__(self, dataset: dict):
-        self._mock = dataset.get('mock', False)
 
         # Force telemetry down
         os.environ["CHROMA_SERVER_NO_TELEMETRY"] = CHROMA_SERVER_NO_TELEMETRY
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
-        # Clear system client cache if running a mock pipeline test
-        if self._mock:
-            try:
-                from chromadb.api.shared_system_client import SharedSystemClient
-                SharedSystemClient.clear()
-            except Exception:
-                pass
 
         # 👑 LOCK PATH HERE: This client dictates exactly where data lands on disk
         # Ensures everything stays tightly isolated inside your db directory
@@ -67,16 +59,19 @@ class ChromaModel:
         # Build downstream storage partitions
         self.semantic_storage = self._get_semantic_storage()
         self.vector_storage = self._get_vector_storage()
-        self.retriever = self.get_retriever() if not self._mock else None
-        self.semantic_text_splitter = self._get_semantic_text_splitter() if not self._mock else None
-        self.structured_retriever = self._get_structured_retriever() if not self._mock else None
-        self.structured_hyp_retriever = self._get_structured_hyp_retriever() if not self._mock else None
+        self.retriever = self.get_retriever()
+        self.semantic_text_splitter = self._get_semantic_text_splitter()
+        self.structured_retriever = self._get_structured_retriever()
+        self.structured_hyp_retriever = self._get_structured_hyp_retriever()
 
     def _set_attrs(self, dataset: dict) -> None:
-        """Safely maps dataset keys to class attributes, avoiding method overwrites."""
-        # Whitelist of allowed attributes to prevent overwriting internal methods or private variables
-        #target_attrs = {'collection_name', 'document_content_description', 'embedding_model', 'llm', 'metadata_info', 'mock'}
-        
+        """
+        Safely maps dataset keys to class attributes, avoiding method overwrites.
+
+        :param dataset:
+        :return:
+        """
+
         for key, value in dataset.items():
             if hasattr(self, key):
                 print(f'DEBUG: key={key}, value={value}')

@@ -19,7 +19,7 @@ from src.config import (
     APP_TITLE,
     DOCUMENT_DIR,
     DOCUMENT_ZIP, 
-    EXIT_CMD,
+    AGENT_EXIT_CMD,
     GROQ_API_KEY,
     I_ANGRY,
     I_BOT,
@@ -166,7 +166,7 @@ class StreamLitApp:
         I'm ready to answer your health-related questions.
         """.strip(), icon="📢")
 
-        st.warning(body=f"Type **{EXIT_CMD}** at anytime to end the conversation.", icon="🪬") # Used EXIT_CMD constant here
+        st.warning(body=f"Type **{AGENT_EXIT_CMD}** at anytime to end the conversation.", icon="🪬") # Used AGENT_EXIT_CMD constant here
 
 
     def run(self) -> None:
@@ -193,10 +193,10 @@ class StreamLitApp:
                     st.write(message["content"])
 
             # Chat input with custom placeholder text.  The user-facing prompt
-            user_query = st.chat_input(f"{I_THINKING} Agent: Ask your question here, {st.session_state.user_id} (or '{EXIT_CMD}')...")
+            user_query = st.chat_input(f"{I_THINKING} Agent: Ask your question here, {st.session_state.user_id} (or '{AGENT_EXIT_CMD}')...")
 
             if user_query:
-                if user_query.lower() == EXIT_CMD:
+                if user_query.lower() == AGENT_EXIT_CMD:
                     self._exit_app()
 
                 st.session_state.chat_history.append({"role": "user", "content": user_query})
@@ -221,7 +221,7 @@ class StreamLitApp:
             user_id = st.text_input("Agent: Please enter your name to begin:").strip()
 
             # Don't let the username themselves a keyword
-            if EXIT_CMD in user_id:
+            if AGENT_EXIT_CMD in user_id:
                 st.error(body="You cannot name yourself a keyword.", icon="🚨")
                 st.stop()
 
@@ -270,10 +270,10 @@ class StreamLitApp:
             st.session_state.chat_history.append({"role": "assistant", "content": inappropriate_msg})
 
     def _exit_app(self) -> None:
-        st.session_state.chat_history.append({"role": "user", "content": EXIT_CMD})
+        st.session_state.chat_history.append({"role": "user", "content": AGENT_EXIT_CMD})
 
         with st.chat_message("User"):
-            st.write(EXIT_CMD)
+            st.write(AGENT_EXIT_CMD)
 
         goodbye_msg = f"{I_SAD} Agent: Goodbye! Feel free to return if you have more questions about nutrition disorders."
         st.session_state.chat_history.append({"role": "assistant", "content": goodbye_msg})

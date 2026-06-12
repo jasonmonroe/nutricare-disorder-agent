@@ -22,9 +22,7 @@ from src.config import (
     DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
     DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_DIR,
-    I_RUNNING,
-    SIMILARITY_SEARCH_QUERY,
-    VECTOR_RESULT_CNT, 
+    I_RUNNING
 )
 from src.doc_handler import DocHandler
 from src.eda import show_histogram
@@ -49,10 +47,6 @@ def run(dataset: dict) -> None:
     # Apply the nested async loop to allow async code execution in the notebook
     nest_asyncio.apply()
 
-
-    # Text chunking using semantic chunker
-    # Note: Is hyp = False
-
     existing = chroma_db.get_semantic_count()
     if existing > 0:
         print(f"✅ Semantic collection already has {existing} documents — skipping ingestion.")
@@ -73,8 +67,6 @@ def run(dataset: dict) -> None:
 
         # Show Histogram @todo - uncomment when ready for prod
         #show_histogram(document_chunks)
-
-
 
     # Perform similarity search in the vectorstore
     doc_handle.documents = chroma_db.get_documents()

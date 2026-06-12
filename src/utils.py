@@ -15,7 +15,8 @@ import time
 from src.config import (
     AI_ROLE,
     APP_TITLE,
-    EXIT_CMD,
+    AGENT_EXIT_CMD,
+    CHROMA_TELEMETRY_DISABLED,
     GROQ_API_KEY,
     HF_TOKEN,
     I_BOT,
@@ -31,7 +32,6 @@ from src.config import (
     OPENAI_EMBEDDING_MODEL,
     OPENAI_MODEL,
     SECS_IN_MIN,
-    SLEEP_TIME_INC,
     VECTORS_DIR,
     LLAMA_MODEL
 )
@@ -99,7 +99,7 @@ def show_ai_agent_banner() -> None:
     print('| here to assist with your health-related questions.           |')
     print('|                                                              |')
     print('+--------------------------------------------------------------+')
-    print(f'| Type "{EXIT_CMD}" to end the conversation.                         |')
+    print(f'| Type "{AGENT_EXIT_CMD}" to end the conversation.                         |')
     print('+--------------------------------------------------------------+\n')
 
 def set_os_environ():
@@ -115,7 +115,7 @@ def set_os_environ():
     os.environ["OPENAI_API_KEY"] = str(OPENAI_API_KEY).strip()
     os.environ["OPENAI_EMBEDDING_MODEL"] = str(OPENAI_EMBEDDING_MODEL).strip()
     os.environ["OPENAI_MODEL"] = str(OPENAI_MODEL).strip()
-    os.environ["CHROMA_TELEMETRY_DISABLED"] = "1"
+    os.environ["CHROMA_TELEMETRY_DISABLED"] = CHROMA_TELEMETRY_DISABLED
     # --- Environment Keys ---
 
 # --- HELPER FUNCTIONS --- #

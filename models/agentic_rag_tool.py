@@ -22,13 +22,13 @@ from langgraph.graph import StateGraph, END, START  # State graph for managing s
 from models.agentic_state import AgentState
 from src.config import (
     AI_ROLE, 
-    EVAL_THRESHOLD, 
+    AGENT_EVAL_THRESHOLD, 
     I_HANDSHAKE, 
     I_DOCUMENT, 
     I_INFO, 
     I_PLUS, 
     I_WARNING, 
-    WORKFLOW_IMAGE
+    AGENT_WORKFLOW_IMAGE
     )
 from src.utils import is_jupyter
 
@@ -487,7 +487,7 @@ class AgenticRagTool:
         print("--- should_continue_groundedness ---")
         print("groundedness loop count: ", state['groundedness_loop_count'])
 
-        if state["groundedness_score"] >= EVAL_THRESHOLD:  # Threshold for groundedness
+        if state["groundedness_score"] >= AGENT_EVAL_THRESHOLD:  # Threshold for groundedness
             print(f"{I_HANDSHAKE} Moving to precision...")
 
             return "check_precision"
@@ -515,7 +515,7 @@ class AgenticRagTool:
         print("# --- should_continue_precision --- #")
         print("precision loop count: ", state['precision_loop_count'])
 
-        if state["precision_score"] >= EVAL_THRESHOLD:  # Threshold for precision
+        if state["precision_score"] >= AGENT_EVAL_THRESHOLD:  # Threshold for precision
             return "pass"  # Complete the workflow
 
         else:
@@ -555,10 +555,10 @@ class AgenticRagTool:
             png_bytes = wf_app.get_graph().draw_mermaid_png()
             
             # Write the bytes to your project directory
-            with open(WORKFLOW_IMAGE, "wb") as f:
+            with open(AGENT_WORKFLOW_IMAGE, "wb") as f:
                 f.write(png_bytes)
                 
-            print(f"✅ Success! Workflow diagram saved to: ./{WORKFLOW_IMAGE}")
+            print(f"✅ Success! Workflow diagram saved to: ./{AGENT_WORKFLOW_IMAGE}")
             print("💡 Tip: You can double-click this image in your project tree to view your flowchart!")
 
             # For Jupyter Notebooks, JupyterLab, or IPython Interactive Shells.
