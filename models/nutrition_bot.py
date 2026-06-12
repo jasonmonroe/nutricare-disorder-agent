@@ -235,7 +235,7 @@ class NutritionBot:
         return response['output']
 
 
-    def handle_customer_query(self, user_id: str, query: str) -> str:
+    def handle_customer_query2(self, user_id: str, query: str) -> str:
         """
         Process a customer's query and provide a response, taking into account past interactions.
 
@@ -279,7 +279,7 @@ class NutritionBot:
 
         # 4. Use LangChain system instructions or clean formatting tags 
         # to separate the memory profile from the core question.
-        structured_input = """
+        structured_input = f"""
         [USER METADATA PROFILE]
         {context_header}
 
@@ -293,6 +293,67 @@ class NutritionBot:
         response = self.agent_executor.invoke({"input": structured_input})
 
         # Store the current interaction for future reference
+        self.store_customer_interaction(
+            user_id=user_id,
+            message=query,
+            response=response["output"],
+            metadata={"type": "support_query"}
+        )
+
+        return response['output']
+
+
+    def handle_customer_query(self, user_id: str, query: str) -> str:
+        """
+        Process a customer's query and provide a response, taking into account past interactions.
+
+        :param user_id:
+        :param query:
+        :return:
+        """
+
+        logger = logging.getLogger(__name__)
+
+        # 1. Retrieve relevant past memory facts
+        relevant_history = self.get_relevant_history(user_id, query)
+        logger.info(f'relevant_history={relevant_history}')
+
+        # 2. Normalize into a single iterable regardless of mem0's response shape
+        if isinstance(relevant_history, dict):
+            memories_list = relevant_history.get("results", [])
+        elif isinstance(relevant_history, list):
+            memories_list = relevant_history
+        else:
+            memories_list = []
+
+        facts = [
+            h['memory'] if isinstance(h, dict) and 'memory' in h else h
+            for h in memories_list
+            if isinstance(h, str) or (isinstance(h, dict) and 'memory' in h)
+        ]
+
+        # 3. Format the background profile for the Agent
+        if facts:
+            context_string = "\n".join(f"- {fact}" for fact in facts)
+            context_header = f"Known user background profiles and preferences:\n{context_string}"
+        else:
+            context_header = "No prior user preferences or background profiles recorded."
+
+        logger.info(f"Context Compiled Successfully:\n{context_header}")
+
+        # 4. Structured input separates memory profile from the core question
+        structured_input = f"""
+        [USER METADATA PROFILE]
+        {context_header}
+    
+        [CURRENT USER QUESTION]
+        {query}
+        """.strip()
+
+        logger.info('DEBUG: Executing agent invocation with structured input.')
+
+        response = self.agent_executor.invoke({"input": structured_input})
+
         self.store_customer_interaction(
             user_id=user_id,
             message=query,

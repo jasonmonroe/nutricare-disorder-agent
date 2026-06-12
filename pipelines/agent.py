@@ -5,8 +5,6 @@
 # +---------------+
 
 # Python Libraries
-from typing import Any
-from langgraph.graph.state import CompiledStateGraph
 import nest_asyncio
 
 # Local Libraries
@@ -15,17 +13,18 @@ from models.nutrition_bot import NutritionBot
 from tools.agentic_rag import make_agentic_rag_tool
 
 from src.config import (
-    EXIT_CMD, 
-    I_CLOCK, 
-    I_CONFUSED, 
-    I_CROSSMARK, 
-    I_RUNNING, 
-    I_SAD, 
+    EXIT_CMD,
+    I_CLOCK,
+    I_CONFUSED,
+    I_CROSSMARK,
+    I_RUNNING,
+    I_SAD,
     I_SMILING,
-    I_STAR, 
-    I_SURPRISED, 
-    I_THINKING, 
-    I_WATCH
+    I_STAR,
+    I_SURPRISED,
+    I_THINKING,
+    I_WATCH,
+    LLAMA_SAFE
 )
 from src.utils import show_ai_agent_banner, show_datetime, start_timer, get_time
 
@@ -121,10 +120,9 @@ def start(dataset: dict) -> None:
 
         # Filter input through Llama Guard - returns "SAFE" or "UNSAFE"
         filtered_result = llama.filter_input_with_llama_guard(user_query) # Call function to filter input
-        filtered_result = filtered_result.replace("\n", " ").strip()   # Normalize the result
 
         # Check if filtered_result is SAFE or UNSAFE
-        if filtered_result in ["SAFE", "BYPASS_SAFE"]:
+        if filtered_result in LLAMA_SAFE:
             # Process the user query using the RAG workflow.
             try:
                 response = chatbot.handle_customer_query(user_id, user_query)  # Call chatbot handler function

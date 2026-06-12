@@ -10,16 +10,16 @@ import random
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
 
-from src.config import AI_ROLE, I_INFO, PROMPT_INSTR, EMPTY_RESP, I_QUES, RATE_LIMIT_TIME
+from src.config import AI_ROLE, I_INFO, PROMPT_INSTR, EMPTY_RESP, I_QUES, RATE_LIMIT_TIME, I_WARNING
 from src.utils import handle_rate_limit_error, show_timer
 
 
 class QuestionGenerator(ChromaModel):
     def __init__(self, dataset: dict):
-        self.batch_size = None
+        self.batch_size = 0
         self.doc_handle = None
-        self.document_content_description = None
-        self.llm = None
+        #self.document_content_description = ''
+        #self.llm = None
 
         super().__init__(dataset)
         self.prompt = self._prompt().strip()
@@ -81,7 +81,7 @@ class QuestionGenerator(ChromaModel):
                     )
 
                 if rate_limit_hit:
-                    print(f"⚠️ Skipping chunk {i} due to rate limit threshold.\n")
+                    print(f"{I_WARNING}️ Skipping chunk {i} due to rate limit threshold.\n")
                     continue
 
                 if questions and questions != EMPTY_RESP:

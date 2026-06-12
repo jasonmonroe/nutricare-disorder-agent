@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import random
+
 # pipelines/data_processor.py
 
 # +-------------------------+
@@ -11,7 +13,6 @@ from __future__ import annotations
 
 import nest_asyncio
 import warnings
-from zipfile import ZipFile
 
 # Local Libraries
 from storages.question_generator import QuestionGenerator
@@ -48,31 +49,39 @@ def run(dataset: dict) -> None:
     # Apply the nested async loop to allow async code execution in the notebook
     nest_asyncio.apply()
 
-    # === Document Ingestion & Processing ===
-
-    # Load Documents handle
-    doc_handle = DocHandler(llama.parser)
-    doc_handle.show_tables()
-
-    # === Vectorization & Storage === #
-
-    # Create vector storage for nutritional information
-    semantic_chunks = chroma_db.get_semantic_chunks(doc_handle.folder_path)
-    document_chunks = doc_handle.get_semantic_chunks(semantic_chunks)
-
-    # Show Histogram
-    show_histogram(document_chunks)
 
     # Text chunking using semantic chunker
     # Note: Is hyp = False
-    chroma_db.add_semantic_documents(document_chunks)
+
+    existing = chroma_db.get_semantic_count()
+    if existing > 0:
+        print(f"✅ Semantic collection already has {existing} documents — skipping ingestion.")
+        doc_handle = DocHandler(llama.parser, skip_parse=True)
+        document_chunks = []
+    else:
+        # === Document Ingestion & Processing ===
+
+        # Load Documents handle
+        doc_handle = DocHandler(llama.parser)
+        doc_handle.show_tables()
+
+        # Create vector storage for nutritional information
+        # === Vectorization & Storage === #
+        semantic_chunks = chroma_db.get_semantic_chunks(doc_handle.folder_path)
+        document_chunks = doc_handle.get_semantic_chunks(semantic_chunks)
+        chroma_db.add_semantic_documents(document_chunks)
+
+        # Show Histogram @todo - uncomment when ready for prod
+        #show_histogram(document_chunks)
+
+
 
     # Perform similarity search in the vectorstore
     doc_handle.documents = chroma_db.get_documents()
     doc_handle.show_documents()
 
     # Use structured receiver when quering all/random questions
-    chroma_db.query_questions(is_hyp=False, pluck=False)
+    chroma_db.query_questions(is_hyp=False, pluck=random.choice([True, False]))
 
     # Get hypothetical questions and add them to the vector storage
     document_content_desc =  DOCUMENT_DIR + ' published by the Global Nutritional Health Organization'
@@ -88,14 +97,17 @@ def run(dataset: dict) -> None:
     
     dataset = {**chroma_dataset, **questions_dataset}
     questions = QuestionGenerator(dataset)
-    hypothetical_questions_doc = questions.get_hypothetical_questions(document_chunks)
-    doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name.title())
 
-    # --- Temp --- #
-    #import uuid
-    #ids = [str(uuid.uuid4()) for _ in range(len(hypothetical_questions_doc))]
-    # --- Temp --- #
-    chroma_db.add_vector_documents(hypothetical_questions_doc)
+    existing_questions = questions.get_semantic_count()
+    if existing_questions > 0:
+        print(f"✅ Hypothetical questions collection already has {existing_questions} documents — skipping question generation.")
+    elif document_chunks is not None:
+        hypothetical_questions_doc = questions.get_hypothetical_questions(document_chunks)
+        questions.add_semantic_documents(hypothetical_questions_doc)
+        doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name.title())
+        chroma_db.add_vector_documents(hypothetical_questions_doc)
+    else:
+        print("Cannot generate hypothetical questions: document chunks unavailable.")
 
     # Get table hypothetical questions and add them to the vector storage
     table_questions_dataset = {
@@ -107,9 +119,15 @@ def run(dataset: dict) -> None:
 
     dataset = {**chroma_dataset, **table_questions_dataset}
     table_questions = TableQuestionGenerator(dataset)
-    table_hypothetical_questions_doc = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
-    doc_handle.show_sample(table_hypothetical_questions_doc, table_questions.collection_name.title())
-    chroma_db.add_vector_documents(table_hypothetical_questions_doc)
+
+    existing_table_questions = table_questions.get_semantic_count()
+    if existing_table_questions > 0:
+        print(f"✅ Hypothetical table questions collection already has {existing_table_questions} documents — skipping question generation.")
+    else:
+        table_hypothetical_questions_doc = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
+        table_questions.add_semantic_documents(table_hypothetical_questions_doc)
+        doc_handle.show_sample(table_hypothetical_questions_doc, table_questions.collection_name.title())
+        chroma_db.add_vector_documents(table_hypothetical_questions_doc)
 
     # --- Backup documents to Google Drive --- #
   
@@ -117,6 +135,6 @@ def run(dataset: dict) -> None:
 
     # Sample a random user query using hypothetical retriever
     # Note: To randomly pluck a question set pluck param to True
-    chroma_db.query_questions(is_hyp=True, pluck=False)
+    chroma_db.query_questions(is_hyp=True, pluck=random.choice([True, False]))
 
     print(f'\n# --- {I_RUNNING} Completed data processor pipeline {I_RUNNING} --- #')

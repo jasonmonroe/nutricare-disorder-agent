@@ -39,13 +39,13 @@ from src.config import (
 
 
 class DocHandler():
-    def __init__(self, llama_parser: LlamaParse):
+    def __init__(self, llama_parser: LlamaParse, skip_parse: bool = False):
         self.documents = []
-        self.document_content_description = "Text Semantic Chunks for " + DOCUMENT_DIR + " published by the Global Nutritional Health Organization"
+        self.document_content_description = "Text Semantic Chunks for " + DOCUMENT_FILE + " published by the Global Nutritional Health Organization"
         self.folder_path = DOCUMENT_DIR
-        self.metadata_info = self._get_metadata_info()
-        
-        if self._unzip():
+        self.page_texts, self.tables = {}, {}
+
+        if not skip_parse and self._unzip():
             json_objs = self._parse(llama_parser)
             self.page_texts, self.tables = self._extract_tables(json_objs)
         
@@ -56,11 +56,15 @@ class DocHandler():
         :param metadata:
         :return: Document
         """
+        if "source" in metadata and "filename" not in metadata:
+            metadata["filename"] = os.path.basename(metadata["source"])
 
         metadata["doc_id"] = self.gen_id(metadata["source"], metadata["page"], content)
 
         if "type" not in metadata:
             metadata["type"] = "Document"
+
+        print(f'Creating document = {metadata}')
 
         return Document(
             id=metadata["doc_id"],
@@ -279,26 +283,12 @@ class DocHandler():
                     print(f"\t{row}")
 
     @staticmethod
-    def _get_metadata_info() -> list[AttributeInfo]:
-        """
-        Provides metadata typing validation mappings configuration layers.
-
-        :return: list
-        """
-
-        return [
-            AttributeInfo(name="page", description="page number of document", type="integer"),
-            AttributeInfo(name="source", description="file path of document", type="string"),
-            AttributeInfo(name="page_content", description="raw text of (sectional) document", type="string")
-        ]
-
-    @staticmethod
     def wipe_db_dir() -> None:
         """
         Wipes data inside target persistent storage directories to allow clean ingestion.
         FIXED: Uses recursive shutil tree removal to clear nested ChromaDB states safely.
         """
-        print(f"\n# --- {I_BROOM} Wiping {I_DIR} {VECTORS_DIR} {I_BROOM} --- #")
+        print(f"# --- {I_BROOM} Wiping {I_DIR} {VECTORS_DIR} {I_BROOM} --- #")
 
         if not os.path.exists(VECTORS_DIR):
             # Create fresh db directory
@@ -320,7 +310,7 @@ class DocHandler():
                     print(f"{I_FLAG} Failed to wipe element path target {file_path}. Exception: {e}")
            
         if next(os.scandir(VECTORS_DIR), None) is None:
-            print(f"\n{I_DIR} Directory exists and is empty.\n")
+            print(f"{I_DIR} Directory exists and is empty.\n")
 
         return None
 

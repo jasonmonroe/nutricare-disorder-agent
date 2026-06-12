@@ -50,6 +50,16 @@ __copyright__ = "Copyright November 11-26 2024, Scripts for AI Agent for Hugging
 __date__ = "2024-11-16"
 __version__ = "1.0.0"
 
+
+#import sys
+#import langchain_core.language_models
+
+#if not hasattr(langchain_core.language_models, 'ModelProfile'):
+#    class DummyModelProfile:
+#        pass
+#    setattr(langchain_core.language_models, 'ModelProfile', DummyModelProfile)
+#    sys.modules['langchain_core.language_models'] = langchain_core.language_models
+
 # Global compilation configurations
 global workflow_app
 
@@ -79,6 +89,8 @@ import sys
 if sys.version_info >= (3, 13):
     print("CRITICAL: This project requires Python 3.11 or 3.12. Python 3.13+ is not yet supported.")
     sys.exit(1)
+
+
 
 import warnings
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='pydantic')

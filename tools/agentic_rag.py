@@ -44,7 +44,8 @@ def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, work
             "loop_max_iter": 4,
             "AI_ROLE": AI_ROLE,
         }
-        
+
+
         # Use a local reference variable to avoid the scoping trap
         active_app = workflow_app
         

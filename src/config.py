@@ -47,25 +47,27 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Fill in your OpenAI API Token (f
 OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL")  # embedding models "text-embedding-ada-002", "text-embedding-3-large"
 OPENAI_MODEL = os.getenv("OPENAI_MODEL")  # Fill in the OpenAI model name (e.g., "gpt-4o-mini")
 
+# Agents
 EVAL_THRESHOLD = 0.8
 EMPTY_RESP = "[]" # Empty response
 EXIT_CMD = "exit"
+WORKFLOW_IMAGE = "outputs/graph_workflow.png"
+RETRIEVAL_LIMIT = 5
 
-# Define directory paths
+# Define document directory paths and chunk sizes
+# Batch sizes (per batch) for processing documents and text chunks
+DOCUMENT_CHUNK_BATCH_SIZE = 100
+DOCUMENT_CHUNK_TEXT_BATCH_SIZE = 50
 DOCUMENT_DIR = "data/nutritional-medical-reference"
 DOCUMENT_FILE = 'nutritional-disorders.pdf'
 DOCUMENT_FILEPATH = DOCUMENT_DIR + '/' + DOCUMENT_FILE
 DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
 
-# Batch sizes (per batch) for processing documents and text chunks
-DOCUMENT_CHUNK_BATCH_SIZE = 100
-DOCUMENT_CHUNK_TEXT_BATCH_SIZE = 50
-RETRIEVAL_LIMIT = 5
-SECS_IN_MIN = 60 # secs in min
-RATE_LIMIT_TIME = random.randint(1, 3) # was, 25,45 Used to prevent http status code 429
-SLEEP_TIME_INC = 0.15
-SEMANTIC_THRESH_LIMIT = random.randint(80, 85)
-VECTOR_RESULT_CNT = 3
+CHROMA_SERVER_NO_TELEMETRY = "true"
+RATE_LIMIT_TIME = 8 #random.randint(3, 7) # was, 1,3. Increased for free tier Groq API
+SLEEP_TIME_INC = 0.20 # was 0.15. Increased for more aggressive backoff
+SEMANTIC_THRESH_LIMIT = random.randint(80, 95)
+VECTOR_RESULT_CNT = random.randint(4, 5) #3
 VECTORS_DIR= "db/"
 
 # Used for searching the document for pairing subject for building an effective RAG system.
@@ -83,9 +85,7 @@ PROMPT_INSTR = """
 
 AI_ROLE = "Nutrition Disorder Specialist"
 AI_TITLE = "SMART NUTRITION DISORDER SPECIALIST BOT"
-APP_TITLE = 'NUTRITION DISORDER AGENT'
-CHROMA_SERVER_NO_TELEMETRY = "true"
-WORKFLOW_IMAGE = "outputs/graph_workflow.png"
+APP_TITLE = 'NUTRICARE DISORDER AGENT'
 
 """
 Define prompt messages and queries
@@ -111,12 +111,15 @@ S14: Code Interpreter Abuse
 We will permit codes S6, S7, S8, and S13 for this Nutrition Disorder Specialist bot.
 """
 LLAMA_UNSAFE_CODES = ["S1", "S2", "S3", "S4", "S5", "S9", "S10", "S11", "S12"]
+LLAMA_SAFE = ["SAFE", "BYPASS_SAFE"]
 
 # Miscellaneous constants
-MIN_RUN_ID = 10000
-MAX_RUN_ID = 99999
-INACTIVE_SESSION_DUR = SECS_IN_MIN * 5 # 5  minutes 
 MSEC = 1000
+SECS_IN_MIN = 60 # secs in min
+INACTIVE_SESSION_DUR = SECS_IN_MIN * 5 # 5  minutes 
+RUN_MIN_ID = 10000
+RUN_MAX_ID = 99999
+
 
 # Icons
 I_ANGRY = '😠'

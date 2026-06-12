@@ -10,7 +10,8 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # LlamaParse & LlamaIndex imports
 from llama_parse import LlamaParse  # Document parsing library
-from llama_index.core import Settings, SimpleDirectoryReader  # Core functionalities of the LlamaIndex
+from llama_index.core import Settings, SimpleDirectoryReader
+# Core functionalities of the LlamaIndex
 
 # Local
 from src.config import (
@@ -24,7 +25,6 @@ from src.config import (
 
 
 class LlamaModel:
-
     """
     This guide provides information and resources to help you set up Llama including how to access the model, hosting, 
     how-to and integration guides. Additionally, you will find supplemental materials to further assist you while building 

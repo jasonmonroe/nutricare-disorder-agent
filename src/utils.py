@@ -12,34 +12,33 @@ import sys
 import time
 
 # Local Libraries
-from app import LLAMA_MODEL
 from src.config import (
     AI_ROLE,
-    AI_TITLE, 
     APP_TITLE,
-    EXIT_CMD, 
-    GROQ_API_KEY, 
+    EXIT_CMD,
+    GROQ_API_KEY,
     HF_TOKEN,
-    I_BOT, 
+    I_BOT,
     I_FLAG,
     I_HANDSHAKE,
-    LLAMA_KEY, 
-    MAX_RUN_ID, 
-    MEM0_API_KEY, 
-    MIN_RUN_ID, 
-    MSEC, 
-    OPENAI_API_BASE, 
-    OPENAI_API_KEY, 
+    LLAMA_KEY,
+    RUN_MAX_ID,
+    MEM0_API_KEY,
+    RUN_MIN_ID,
+    MSEC,
+    OPENAI_API_BASE,
+    OPENAI_API_KEY,
     OPENAI_EMBEDDING_MODEL,
     OPENAI_MODEL,
     SECS_IN_MIN,
     SLEEP_TIME_INC,
-    VECTORS_DIR
+    VECTORS_DIR,
+    LLAMA_MODEL
 )
 
 def get_run_id() -> str:
     """ Generates a unique ID for the current run. """
-    return str(random.randint(MIN_RUN_ID, MAX_RUN_ID))
+    return str(random.randint(RUN_MIN_ID, RUN_MAX_ID))
 
 
 def start_timer() -> float:
@@ -80,17 +79,17 @@ def show_banner(title: str, section: str = '') -> None:
 
     print('')
 
-def show_title_banner() -> str:
+def show_title_banner() -> None:
     print('+-------------------------------------+')
     print('|                                     |')
     print(f'|      {APP_TITLE}       |')
     print('|                                     |')
     print('+-------------------------------------+')
-    print('|                                     |')
+    print(f'|        {I_BOT} An AI Agent         |')
     print('+-------------------------------------+\n')
-    print(f'# === {I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE} === #')
+    print(f'\n# === {I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE} === #')
 
-def show_ai_agent_banner() -> str:
+def show_ai_agent_banner() -> None:
     print('\n+--------------------------------------------------------------+')
     print(f'|        {I_BOT} SMART NUTRITION DISORDER SPECIALIST BOT {I_BOT}         |')
     print('+--------------------------------------------------------------+')
@@ -107,15 +106,15 @@ def set_os_environ():
     # --- Environment Keys ---
     # Note: This line is for WRITING (or modifying) a variable within the Python process's environment.
     # Set the cleaned value back into the environment for libraries like LangChain to find
-    os.environ["HF_TOKEN"] = HF_TOKEN.strip()
-    os.environ["GROQ_API_KEY"] = GROQ_API_KEY.strip()
-    os.environ["LLAMA_KEY"] = LLAMA_KEY.strip()
-    os.environ["LLAMA_MODEL"] = LLAMA_MODEL.strip()
-    os.environ["MEM0_API_KEY"] = MEM0_API_KEY.strip()
-    os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE.strip()
-    os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY.strip()
-    os.environ["OPENAI_EMBEDDING_MODEL"] = OPENAI_EMBEDDING_MODEL.strip()
-    os.environ["OPENAI_MODEL"] = OPENAI_MODEL.strip()
+    os.environ["HF_TOKEN"] = str(HF_TOKEN).strip()
+    os.environ["GROQ_API_KEY"] = str(GROQ_API_KEY).strip()
+    os.environ["LLAMA_KEY"] = str(LLAMA_KEY).strip()
+    os.environ["LLAMA_MODEL"] = str(LLAMA_MODEL).strip()
+    os.environ["MEM0_API_KEY"] = str(MEM0_API_KEY).strip()
+    os.environ["OPENAI_API_BASE"] = str(OPENAI_API_BASE).strip()
+    os.environ["OPENAI_API_KEY"] = str(OPENAI_API_KEY).strip()
+    os.environ["OPENAI_EMBEDDING_MODEL"] = str(OPENAI_EMBEDDING_MODEL).strip()
+    os.environ["OPENAI_MODEL"] = str(OPENAI_MODEL).strip()
     os.environ["CHROMA_TELEMETRY_DISABLED"] = "1"
     # --- Environment Keys ---
 
@@ -125,23 +124,28 @@ def show_datetime() -> str:
 
     return now_utc.strftime("%b %d %Y %I:%M:%S %p %Z")
 
-def handle_rate_limit_error(e, subject: str, current_sleep_time: int, i:int) -> tuple[int, bool]:
-    """
-    Checks for a Rate Limit Error (429), calculates a new sleep time,
-    and returns the new sleep time and a flag indicating the hit.
-    """
-    print(f"{I_FLAG} {i}) Exception invoking a response for {subject}! Error: {e}")
 
+def handle_rate_limit_error(e, subject: str, current_sleep_time: int, i: int) -> tuple[int, bool]:
+    """
+    Checks for a Rate Limit Error (429), calculates a new sleep time, and returns the new sleep time and a flag
+    indicating the hit.
+
+    :param e:
+    :param subject:
+    :param current_sleep_time:
+    :param i:
+    :return:
+    """
     rate_limit_hit = False
     new_sleep_time = current_sleep_time
+    error_msg = str(e)
 
-    if "Error code: 429" in str(e):
-        # Increase sleep time by 15%
+    if "429" in error_msg or "rate_limit_exceeded" in error_msg.lower():
         rate_limit_hit = True
-        new_sleep_time = current_sleep_time + round(current_sleep_time * SLEEP_TIME_INC)
-        print(f"{I_FLAG} FATAL: Rate limit hit. Updating sleep time from {current_sleep_time} to {new_sleep_time} seconds...")
-        if new_sleep_time > SECS_IN_MIN:
-            new_sleep_time = SECS_IN_MIN
+        new_sleep_time = min(current_sleep_time * 2, SECS_IN_MIN)  # double it, cap at 60s
+        print(f"{I_FLAG} Rate limit hit. Backing off from {current_sleep_time}s → {new_sleep_time}s...")
+    else:
+        print(f"{I_FLAG} {i}) Non-RateLimit Exception for {subject}: {error_msg}")
 
     return new_sleep_time, rate_limit_hit
 
@@ -173,4 +177,5 @@ def is_jupyter() -> bool:
 
 # Format persist directory
 def format_dir(path: str) -> str:
+    print(f'format_dir(./{VECTORS_DIR}/{path}_db)\n')
     return f"./{VECTORS_DIR}/{path}_db"

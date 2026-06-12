@@ -7,46 +7,58 @@
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.language_models.fake_chat_models import FakeListChatModel # Temp
 
+
 # Local Libraries
 from src.config import (
     I_FLAG,
     OPENAI_API_BASE,
     OPENAI_API_KEY,
     OPENAI_EMBEDDING_MODEL,
-    OPENAI_MODEL
+    OPENAI_MODEL, I_WARNING
 )
 
 class OpenAIModel:
     def __init__(self, mock: bool=False):
         self._mock = mock
 
-        self.embedding_model = self._get_embedding_model()
-        #self.embedding_model = self._get_hf_embedding_model()
+        #self.embedding_model = self._get_embedding_model()
+        self.embedding_model = self._get_hf_embedding_model()
         self.llm = self._load_llm()
         self.llm_chatbot = self._load_llm_chatbot()
 
-    def _get_embedding_model(self) -> OpenAIEmbeddings:
-
+    def _get_embedding_model(self):
+        """
+        Get the embedding model. Uses HuggingFaceEmbeddings for local processing
+        which avoids rate limits and API quota issues.
+        """
         if self._mock:
             from models.mock_embeddings import MockEmbeddings
             return MockEmbeddings(dimensions=1536)
 
-        # Initialize the OpenAI Embeddings
-        # see: https://docs.langchain.com/oss/python/integrations/text_embedding/openai
-        return  OpenAIEmbeddings(
-            openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
-            openai_api_key=OPENAI_API_KEY,   # Fill in the API key
-            model=OPENAI_EMBEDDING_MODEL,          # Fill in the model name
-            max_retries=2,                   # openai client retries, Added for robustness (was =3)
-            request_timeout=60,              # avoid timeouts on backoff
-        )
+
+
+        else:
+
+
+
+            # Fallback to OpenAI embeddings (if using actual OpenAI)
+            return OpenAIEmbeddings(
+                openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
+                openai_api_key=OPENAI_API_KEY,   # Fill in the API key
+                model=OPENAI_EMBEDDING_MODEL,          # Fill in the model name
+                max_retries=2,                   # openai client retries, Added for robustness (was =3)
+                request_timeout=60,              # avoid timeouts on backoff
+            )
 
     def _get_hf_embedding_model(self):
         # 👑 DYNAMIC DECOUPLING: Instantiate a local embedding layer 
         # that bypasses OpenAI / Groq network proxy formatting entirely
         from langchain_huggingface import HuggingFaceEmbeddings
         
-        return HuggingFaceEmbeddings(model_name=OPENAI_EMBEDDING_MODEL)
+        return HuggingFaceEmbeddings(
+            model_name=OPENAI_EMBEDDING_MODEL,
+            model_kwargs={'device': 'cpu'}
+        )
 
     def _load_llm(self) -> ChatOpenAI:
         # This initializes the Chat OpenAI model using the provided endpoint, API key, deployment name.
@@ -96,7 +108,7 @@ class OpenAIModel:
 
         # 3. Handle unexpected types
         else:
-            print(f'Warning: Unexpected response type for chunk {index}. Type: {type(resp)}')
+            print(f'{I_WARNING} Warning: Unexpected response type for chunk {index}. Type: {type(resp)}')
             return "[]" # Treat unexpected types as an empty response
 
         if len(content) == 0:

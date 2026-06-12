@@ -24,3 +24,4 @@ langgraph
 groq
 mem0ai
 streamlit
+IPython
