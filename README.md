@@ -2,7 +2,7 @@
 
 An advanced **Retrieval-Augmented Generation (RAG)** chatbot that provides evidence-based information about nutritional disorders. Built as an AI Agent using LangGraph with a production-ready data pipeline.
 
-**Portfolio Project** | University of Texas / McCombs School of Business | AI Agent Specialization
+**Portfolio Project** | AI Agent Specialization
 
 ---
 
@@ -127,35 +127,35 @@ See [env.example](env.example) for complete template.
 
 ```
 nutricare-disorder-agent/
-├── main.py                          # Entry point
-├── requirements.txt                 # Dependencies
-├── .env                             # Configuration (not in repo)
+├── main.py                          # Application entry point & CLI parameter parser
+├── requirements.txt                 # Pinned python framework dependencies
+├── .env                             # Environment configuration (git-ignored)
 │
-├── models/                          # ML Models & AI Components
-│   ├── openai.py                    # LLM and embeddings setup
-│   ├── chroma.py                    # Vector database management
-│   ├── llama.py                     # Safety filters
-│   └── nutrition_bot.py             # Conversational agent
+├── models/                          # Core Intelligence & Class Wrappers
+│   ├── openai.py                    # LLM orchestration & HuggingFace embedding configuration
+│   ├── chroma.py                    # Vector store setups and collection initialization
+│   ├── llama.py                     # Safety guardrails and Llama Guard compliance validation
+│   └── nutrition_bot.py             # Agent conversational interface & Mem0 transactional logic
 │
-├── pipelines/                       # Processing Pipelines
-│   ├── data_processor.py            # Document processing pipeline
-│   ├── agent.py                     # LangGraph workflow
-│   ├── huggingface.py               # HF Spaces deployment
-│   └── streamlit_app.py             # Web UI
+├── pipelines/                       # State Graph Components & Workflows
+│   ├── data_processor.py            # Ingestion pipeline (Parsing, Chunking, Indexing)
+│   ├── agent.py                     # LangGraph workflow compile map and self-correction routing
+│   ├── huggingface.py               # HuggingFace Spaces container configuration logic
+│   └── streamlit_app.py             # Web Interface UI
 │
-├── storages/                        # Question Generation
-│   ├── question_generator.py        # Hypothetical Q generation
-│   └── table_question_generator.py  # Table Q extraction
+├── storages/                        # Synthetic Data Generation
+│   ├── question_generator.py        # Normal text chunk hypothetical Q generator
+│   └── table_question_generator.py  # Matrix/Table structure question extraction
 │
-├── src/                             # Utilities & Config
-│   ├── config.py                    # Constants and settings
-│   ├── doc_handler.py               # Document utilities
-│   ├── eda.py                       # Data analysis
-│   └── utils.py                     # Helper functions
+├── src/                             # Core System Utilities
+│   ├── config.py                    # Dynamic environment parser and variable mapper
+│   ├── doc_handler.py               # File system paths & raw PDF data IO helpers
+│   ├── eda.py                       # Exploratory analysis checking text densities
+│   └── utils.py                     # Global helper variables and formatting utilities
 │
 └── data/
     └── nutritional-medical-reference/
-        └── nutritional-disorders.pdf    # Source document
+        └── nutritional-disorders.pdf    # Source clinical data corpus 
 ```
 
 ---
