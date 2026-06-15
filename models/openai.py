@@ -9,6 +9,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # Local Libraries
 from src.config import (
+    AGENT_EMPTY_RESP,
     I_FLAG,
     I_WARNING,
     OPENAI_API_BASE,
@@ -27,7 +28,8 @@ class OpenAIModel:
     def _get_embedding_model(self) -> OpenAIEmbeddings:
         """
         Note: We're not using this at this time for this project on a free tier!
-        Get the embedding model. Uses HuggingFaceEmbeddings for local processing
+        Get the embedding model. Was used with `text-embedding-3-small`
+        Uses HuggingFaceEmbeddings for local processing
         which avoids rate limits and API quota issues.
         """
 
@@ -78,25 +80,25 @@ class OpenAIModel:
 
     @staticmethod
     def filter_response(resp: str, index=None) -> str:
-        # 1. Check if the response is already a string (raw output)
+        # Check if the response is already a string (raw output)
         if isinstance(resp, str):
             content = resp.strip()
 
-        # 2. Check if the response is a LangChain Message object
+        # Check if the response is a LangChain Message object
         elif hasattr(resp, 'content'):
             content = resp.content.strip()
 
-        # 3. Handle unexpected types
+        # Handle unexpected types
         else:
             print(f'{I_WARNING} Warning: Unexpected response type for chunk {index}. Type: {type(resp)}')
-            return "[]" # Treat unexpected types as an empty response
+            return AGENT_EMPTY_RESP # Treat unexpected types as an empty response
 
         if len(content) == 0:
             print(f'{I_FLAG} No generated hypothetical questions found for chunk {index}.')
-            return "[]"
+            return AGENT_EMPTY_RESP
 
         # The output is wrapped in outer quotes and parentheses, e.g., ("['...']")
-        # 2. Check for and remove the outer parentheses and quotes if present
+        # Check for and remove the outer parentheses and quotes if present
         if content.startswith('(') and content.endswith(')'):
 
             # Remove the outer parentheses

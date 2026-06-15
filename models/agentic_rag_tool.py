@@ -21,27 +21,26 @@ from langgraph.graph import StateGraph, END, START  # State graph for managing s
 # Local Libraries
 from models.agentic_state import AgentState
 from src.config import (
-    AI_ROLE, 
-    AGENT_EVAL_THRESHOLD, 
+    AGENT_EVAL_THRESHOLD,
+    AGENT_WORKFLOW_IMAGE,
     I_HANDSHAKE, 
     I_DOCUMENT, 
     I_INFO, 
     I_PLUS, 
-    I_WARNING, 
-    AGENT_WORKFLOW_IMAGE
+    I_WARNING
     )
 from src.utils import is_jupyter
 
 
 class AgenticRagTool:
-    def __init__(self, llm, retriever):
+    def __init__(self, llm, retriever, log: bool=False):
+        self._log = log
         self.llm = llm
         self.retriever = retriever
 
     def compile(self):
         return self._create().compile()
 
-    #
     def _create(self) -> StateGraph:
         """
         Used for LineGraph (library of Agentic RAG), a workflow is modeled as a StateGraph, which is simply a state
@@ -76,7 +75,7 @@ class AgenticRagTool:
             self.should_continue_groundedness,  # Use the conditional function
             {
                 "check_precision": "check_precision",              # If well-grounded, proceed to precision check.
-                "refine_response": "refine_response",                # If not, refine the response.
+                "refine_response": "refine_response",              # If not, refine the response.
                 "max_iterations_reached": "max_iterations_reached" # If max loops reached, exit.
             }
         )
@@ -98,9 +97,8 @@ class AgenticRagTool:
         workflow.add_edge("max_iterations_reached", END)
 
         return workflow
-            
 
-    # --- MAX ITERATIONS REACHED
+    # --- MAX ITERATIONS REACHED --- #
     def max_iterations_reached(self, state: AgentState) -> AgentState:
         """
         Handles the case where max iterations are reached.
@@ -112,7 +110,6 @@ class AgenticRagTool:
          
         state['response'] = "We need more context to provide an accurate answer."
         return state
-
 
     def expand_query(self, state: AgentState) -> AgentState:
         """
@@ -179,7 +176,6 @@ class AgenticRagTool:
 
         return state
 
-
     # --- RETRIEVE CONTEXT -- #
     def retrieve_context(self, state: AgentState) -> AgentState:
         """
@@ -194,13 +190,15 @@ class AgenticRagTool:
 
         query = state['expanded_query']
 
-        print("\n#--- retrieve_context ---#")
-        print("Query used for retrieval:", query)  # Debugging: Print the query
+        if self._log:
+            print("\n#--- retrieve_context ---#")
+            print("Query used for retrieval:", query)  # Debugging: Print the query
 
         # Retrieve documents from the vector store
         retrieved_docs = self.retriever.invoke(query)
 
-        print(f"{I_DOCUMENT} Retrieved documents:", retrieved_docs)  # Debugging: Print the raw docs object
+        if self._log:
+            print(f"{I_DOCUMENT} Retrieved documents:", retrieved_docs)  # Debugging: Print the raw docs object
 
         # Extract both page_content and metadata from each document
         state['context'] = [
@@ -211,10 +209,10 @@ class AgenticRagTool:
             for doc in retrieved_docs
         ]
 
-        print("Extracted context with metadata:", state['context'])  # Debugging: Print the extracted context
+        if self._log:
+            print("Extracted context with metadata:", state['context'])  # Debugging: Print the extracted context
 
         return state
-
 
     # --- CRAFT RESPONSE --- #
     def craft_response(self, state: Dict) -> Dict:
@@ -264,7 +262,6 @@ class AgenticRagTool:
 
         return state
 
-
     # --- SCORE GROUNDEDNESS --- #
     def score_groundedness(self, state: Dict) -> Dict:
         """
@@ -302,13 +299,13 @@ class AgenticRagTool:
 
         state['groundedness_loop_count'] += 1
 
-        print("groundedness_score: ", groundedness_score)
-        print(f"{I_PLUS} Groundedness Incremented {I_PLUS}")
+        if self._log:
+            print("groundedness_score: ", groundedness_score)
+            print(f"{I_PLUS} Groundedness Incremented {I_PLUS}")
 
         state['groundedness_score'] = groundedness_score
 
         return state
-
 
     # --- CHECK PRECISION --- #
     def check_precision(self, state: Dict) -> Dict:
@@ -350,11 +347,11 @@ class AgenticRagTool:
         state['precision_score'] = precision_score
         state['precision_loop_count'] += 1
 
-        print("precision_score:", precision_score)
-        print(f"{I_PLUS} Precision Incremented. {I_PLUS}")
+        if self._log:
+            print("precision_score:", precision_score)
+            print(f"{I_PLUS} Precision Incremented. {I_PLUS}")
 
         return state
-
 
     # --- REFINE RESPONSE --- #
     def refine_response(self, state: Dict) -> Dict:
@@ -395,13 +392,13 @@ class AgenticRagTool:
             })
         feedback = f"Previous Response: {state['response']}\nSuggestions: {suggestions}"
 
-        print(f"Feedback: {feedback}")
-        print(f"State: {state}")
+        if self._log:
+            print(f"Feedback: {feedback}")
+            print(f"State: {state}")
 
         state['feedback'] = feedback
 
         return state
-
 
     # --- REFINE QUERY --- #
     def refine_query(self, state: Dict) -> Dict:
@@ -458,20 +455,20 @@ class AgenticRagTool:
 
         state['query_feedback'] = suggestions_str
 
-        print(f"Query Feedback Generated (JSON):\n{suggestions_str}")
+        if self._log:
+            print(f"Query Feedback Generated (JSON):\n{suggestions_str}")
 
         return state
 
-
     # --- HAS MAX ITERATIONS REACHED? --- #
-    def has_max_iterations_reached(self, state: Dict, var: str) -> bool:
+    @staticmethod
+    def has_max_iterations_reached(state: Dict, var: str) -> bool:
         """
         # Checks if the maximum number of iterations has been reached
         # Note: This method must be before should_* methods.
         """
 
         return state[var] >= state["loop_max_iter"]
-
 
     # --- CHECK GROUNDEDNESS --- #
     def should_continue_groundedness(self, state) -> str:
@@ -500,7 +497,6 @@ class AgenticRagTool:
 
                 return "refine_response"
 
-
     # --- CHECK PRECISION --- #
     def should_continue_precision(self, state: Dict) -> str:
         """
@@ -527,23 +523,9 @@ class AgenticRagTool:
                 return "refine_query"  # Refine the query
 
 
-    # --- MAX ITERATIONS REACHED --- #
-    def max_iterations_reached(self, state: AgentState) -> AgentState:
-        """
-        Handles the case where max iterations are reached.
-
-        Args:
-        :param state:
-        :return:
-        """
-
-        state['response'] = "We need more context to provide an accurate answer."
-        return state
-
-
     def display_workflow(self, wf_app: CompiledStateGraph) -> None:
         """
-        Generates the graph diagram and saves it as a local file so it can be viewed outside of a Jupyter environment.
+        Generates the graph diagram and saves it as a local file so it can be viewed outside a Jupyter environment.
         :param wf_app:
         :return: None
         """

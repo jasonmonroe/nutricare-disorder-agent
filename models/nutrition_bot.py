@@ -87,7 +87,6 @@ class NutritionBot:
         diff_in_secs = abs(start_timer() - self._latest_input_at)
 
         if diff_in_secs > INACTIVE_SESSION_DUR:
-            print(f'DEBUG: diff_in_secs={diff_in_secs}')
             print(f'\n{I_THUMBS_DOWN} Session has expired.  Exiting chat.')
             return True
 
@@ -100,12 +99,12 @@ class NutritionBot:
         :return:
         """
         return get_time(self._session_starts_at, session_ends_at)
-        
+
     def store_customer_interaction(self, user_id: str, message: str, response: str, metadata: dict) -> None:
         """
         Store customer interaction in memory for future reference.
         """
-         
+
         metadata["timestamp"] = datetime.now().isoformat()
 
         conversation = [
@@ -113,18 +112,20 @@ class NutritionBot:
             {"role": "assistant", "content": response}
         ]
 
-        self.memory.add(
-            conversation,
-            filters={"user_id": user_id},
-            output_format="v1.1",
-            metadata=metadata
-        )
+        # Wrap the API call in a try/except guardrail so a memory glitch
+        # never crashes the entire user-facing agent session again.
+        try:
+            self.memory.add(
+                conversation,
+                user_id=user_id,
+                output_format="v1.1",
+                metadata=metadata
+            )
+            print(f"✨ Successfully synchronized memory loop for user: {user_id}")
 
-        #self.memory_client.add(
-        #    conversation,
-        #    user_id=user_id,  # This prevents the 'At least one entity ID is required' error
-        #    metadata=metadata
-        #)
+        except Exception as mem_err:
+            # Log the error but let the agent keep running smoothly
+            print(f"⚠️ [Memory Layer Warning]: Failed to sync interaction: {mem_err}")
 
     def get_relevant_history(self, user_id: str, query: str) -> dict[str, Any]:
         """
@@ -153,11 +154,11 @@ class NutritionBot:
         :return:
         """
 
-        logger = logging.getLogger(__name__)
+        #logger = logging.getLogger(__name__)
 
         # 1. Retrieve relevant past memory facts
         relevant_history = self.get_relevant_history(user_id, query)
-        logger.info(f'relevant_history={relevant_history}')
+        #logger.info(f'relevant_history={relevant_history}')
 
         # 2. Normalize into a single iterable regardless of mem0's response shape
         if isinstance(relevant_history, dict):
@@ -180,7 +181,7 @@ class NutritionBot:
         else:
             context_header = "No prior user preferences or background profiles recorded."
 
-        logger.info(f"Context Compiled Successfully:\n{context_header}")
+        #logger.info(f"Context Compiled Successfully:\n{context_header}")
 
         # 4. Structured input separates memory profile from the core question
         structured_input = f"""
@@ -191,7 +192,7 @@ class NutritionBot:
         {query}
         """.strip()
 
-        logger.info('DEBUG: Executing agent invocation with structured input.')
+        #logger.info('DEBUG: Executing agent invocation with structured input.')
 
         response = self.agent_executor.invoke({"input": structured_input})
 

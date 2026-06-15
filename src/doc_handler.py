@@ -16,7 +16,7 @@ from zipfile import ZipFile
 
 # Vendor Libraries
 # LangChain Imports
-from langchain_classic.chains.query_constructor.schema import AttributeInfo
+#from langchain_classic.chains.query_constructor.schema import AttributeInfo
 from langchain_core.documents import Document  # Document data structures
 from llama_parse import LlamaParse  # Document parsing library
 
@@ -41,7 +41,6 @@ from src.config import (
 class DocHandler():
     def __init__(self, llama_parser: LlamaParse, skip_parse: bool = False):
         self.documents = []
-        self.document_content_description = "Text Semantic Chunks for " + DOCUMENT_FILE + " published by the Global Nutritional Health Organization"
         self.folder_path = DOCUMENT_DIR
         self.page_texts, self.tables = {}, {}
 
@@ -331,7 +330,7 @@ class DocHandler():
                 print(f'{I_FLAG} Source archive file {DOCUMENT_ZIP} does not exist!')
                 return False
 
-            # FIXED: Using ZipFile directly to match your top-level import
+            # Using ZipFile directly to match your top-level import
             with ZipFile(DOCUMENT_ZIP, 'r') as zip_handle:
                 # 1. Search the zip manifest array for any entry ending with our filename
                 archive_target_key = None

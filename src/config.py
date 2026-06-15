@@ -6,6 +6,7 @@
 
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # --- DEFINE CONFIGURATIONS AND CONSTANTS --- #
@@ -58,6 +59,7 @@ AGENT_WORKFLOW_IMAGE = "outputs/graph_workflow.png"
 
 # Define document directory paths and chunk sizes
 # Batch sizes (per batch) for processing documents and text chunks
+DEFAULT_COLL_NAME = 'nutritional'
 DOCUMENT_CHUNK_BATCH_SIZE = 100
 DOCUMENT_CHUNK_TEXT_BATCH_SIZE = 50
 DOCUMENT_DIR = "data/nutritional-medical-reference"
@@ -67,12 +69,12 @@ DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
 
 CHROMA_SERVER_NO_TELEMETRY = "true"
 CHROMA_TELEMETRY_DISABLED = "1"
-RATE_LIMIT_TIME = 8 #random.randint(3, 7) # was, 1,3. Increased for free tier Groq API
+RATE_LIMIT_TIME = 8
+RATE_LIMIT_RESP_CODE = "429"
 SEMANTIC_THRESH_LIMIT = 95  # Strict percentile boundary for high-precision chunks
 SLEEP_TIME_INC = 0.20 # was 0.15. Increased for more aggressive backoff
 VECTOR_RESULT_CNT = 5       # Max context depth matching AGENT_RETRIEVAL_LIMIT
 VECTORS_DIR= "db"
-
 
 # --- Prompt variables ---
 PROMPT_INSTR = """
@@ -81,6 +83,46 @@ PROMPT_INSTR = """
     *Do NOT mention or output anything before or after the list, including commentary, markdown blocks, or extra punctuation.*
     If the content cannot answer any question(s), your output MUST be the empty Python list: [].
     """.strip()
+
+PROMPT_QUESTION_GENERATOR = """
+            You are an AI {AI_ROLE} specialized in generating precise, clinically relevant questions for information retrieval.
+            Your task is to analyze the provided TEXT CHUNK and generate a list of exactly three hypothetical questions for which the chunk contains the complete answer.
+            
+            **QUESTION STYLE REQUIREMENTS:**
+            1. Questions must be factual and directly address **diagnostic criteria, treatment dosages, clinical findings, or defining concepts** mentioned in the TEXT CHUNK.
+            2. Phrasing must be natural and sound like a question a {AI_ROLE} would actually ask.
+            
+            TEXT CHUNK:
+            {docs}
+            
+            {PROMPT_INSTR}
+            """.strip()
+
+PROMPT_TABLE_QUESTION_GENERATOR = """
+        [SYSTEM INSTRUCTION]
+        You are an AI {AI_ROLE} specialized in generating precise, clinically relevant questions for information retrieval.
+        Your task is to analyze the provided CONTEXT and TABLE DATA, and generate a list of three hypothetical questions that are directly answerable by the data.
+
+        [RULES]
+        1. Focus questions strictly on the **numeric data, specific values, formulas, or definitive lists** found in the table.
+        2. Use the **adjacent text (if provided)** to establish the clinical context for the questions.
+        3. If no adjacent text is provided, generate questions based on the table data alone.
+        4. **DO NOT** include any preamble, conversational text, or explanation in your response.
+        5. **OUTPUT ONLY THE JSON OBJECT.**
+
+        [FULL CONTEXT]
+        ---TEXT ADJACENT TO TABLE---
+        {docs}
+
+        --- TABLE DATA (Structured for Analysis) ---
+        {tables}
+
+        [OUTPUT FORMAT]
+        Generate a JSON object containing a list of questions under the key "questions".
+        The list must contain **a minimum of 1 and a maximum of 3** questions.
+
+        {PROMPT_INSTR}
+        """.strip()
 
 # Used for searching the document for pairing subject for building an effective RAG system.
 # This query asks a specific question about vitamin deficiencies and memory impairment.

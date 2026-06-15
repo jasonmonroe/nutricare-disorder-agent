@@ -44,8 +44,6 @@ class ChromaModel:
         os.environ["CHROMA_SERVER_NO_TELEMETRY"] = CHROMA_SERVER_NO_TELEMETRY
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
-
-        # 👑 LOCK PATH HERE: This client dictates exactly where data lands on disk
         # Ensures everything stays tightly isolated inside your db directory
         self.chromadb_client = chromadb.PersistentClient(path=os.path.abspath(VECTORS_DIR))
 
@@ -116,7 +114,6 @@ class ChromaModel:
 
     def _get_vector_storage(self) -> Chroma:
         """Instantiates the generalized primary target layout collection."""
-        # 👑 @todo FIX: Removed persist_directory to respect the master path defined in self.chromadb_client.
         return Chroma(
             client=self.chromadb_client,
             embedding_function=self.embedding_model,
@@ -162,14 +159,11 @@ class ChromaModel:
         )
 
     def _get_structured_hyp_retriever(self) -> SelfQueryRetriever:
+
         return SelfQueryRetriever.from_llm(
             llm=self.llm,
             vectorstore=self.vector_storage,
-            # Update description to guide the LLM on query string preservation
             document_contents = "Hypothetical Questions for " + DOCUMENT_FILEPATH + " published by the Global Nutritional Health Organization",
-            #document_contents="A collection of full, explicitly detailed synthetic medical questions. "
-            ##                  "When generating the search query parameter, you MUST pass the user's full conversational question "
-            #                  "verbatim. Do not compress, truncate, or extract keyword noun phrases.",
             metadata_field_info = [
                 AttributeInfo(
                     name="original_content",

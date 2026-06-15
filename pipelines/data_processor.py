@@ -7,7 +7,7 @@ import random
 # +-------------------------+
 # |     DATA PROCESSING     |
 # +-------------------------+
-#
+
 # Source: https://www.merckmanuals.com/professional/nutritional-disorders/nutrition-general-considerations/overview-of-nutrition
 # Source: https://www.merckmanuals.com/home/disorders-of-nutrition/overview-of-nutrition/overview-of-nutrition
 
@@ -22,10 +22,9 @@ from src.config import (
     DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
     DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_DIR,
-    I_RUNNING, I_INFO, I_FLAG
+    I_RUNNING, I_INFO, I_FLAG, VECTORS_DIR, PROMPT_TABLE_QUESTION_GENERATOR, PROMPT_QUESTION_GENERATOR
 )
 from src.doc_handler import DocHandler
-from src.eda import show_histogram
 
 
 def run(dataset: dict) -> None:
@@ -48,25 +47,26 @@ def run(dataset: dict) -> None:
     nest_asyncio.apply()
 
     existing = chroma_db.get_semantic_count()
-    if existing > 0:
-        print(f"✅ Semantic collection already has {existing} documents — skipping ingestion.")
-        doc_handle = DocHandler(llama.parser, skip_parse=True)
-        document_chunks = []
-    else:
-        # === Document Ingestion & Processing ===
+    #if existing > 0 and not dataset['force_rebuild']:
+    print(f"✅ Semantic collection already has {existing} documents — skipping ingestion.")
+    #    doc_handle = DocHandler(llama.parser, skip_parse=True)
+    #    document_chunks = []
+    #else:
 
-        # Load Documents handle
-        doc_handle = DocHandler(llama.parser)
-        doc_handle.show_tables()
+    print('\n# --- Document Ingestion & Processing --- #')
 
-        # Create vector storage for nutritional information
-        # === Vectorization & Storage === #
-        semantic_chunks = chroma_db.get_semantic_chunks(doc_handle.folder_path)
-        document_chunks = doc_handle.get_semantic_chunks(semantic_chunks)
-        chroma_db.add_semantic_documents(document_chunks)
+    # Load Documents handle
+    doc_handle = DocHandler(llama.parser)
+    doc_handle.show_tables()
 
-        # Show Histogram @todo - uncomment when ready for prod
-        #show_histogram(document_chunks)
+    # Create vector storage for nutritional information
+    # === Vectorization & Storage === #
+    semantic_chunks = chroma_db.get_semantic_chunks(doc_handle.folder_path)
+    document_chunks = doc_handle.get_semantic_chunks(semantic_chunks)
+    chroma_db.add_semantic_documents(document_chunks)
+
+    # Show Histogram @todo - uncomment when ready for prod
+    #show_histogram(document_chunks)
 
     # Perform similarity search in the vectorstore
     doc_handle.documents = chroma_db.get_documents()
@@ -75,16 +75,15 @@ def run(dataset: dict) -> None:
     # Use structured receiver when quering all/random questions
     chroma_db.query_questions(is_hyp=False, pluck=random.choice([True, True, False]))
 
-    # Get hypothetical questions and add them to the vector storage
-    document_content_desc =  DOCUMENT_DIR + ' published by the Global Nutritional Health Organization'
-
+    # Get hypothetical questions and add them to the vector storage.
     # Create a merged dataset for questions.
     chroma_dataset = chroma_db.export()
     questions_dataset = {
         'batch_size': DOCUMENT_CHUNK_BATCH_SIZE,
         'collection_name': 'hypothetical_questions',
         'doc_handle': doc_handle,
-        'document_content_description': 'Hypothetical Questions for ' + document_content_desc,
+        'prompt': PROMPT_QUESTION_GENERATOR,
+        'title': 'Hypothetical Questions'
     }
     
     dataset = {**chroma_dataset, **questions_dataset}
@@ -92,22 +91,25 @@ def run(dataset: dict) -> None:
 
     existing_questions = questions.get_semantic_count()
     print(f'{I_INFO} Existing Questions: {existing_questions}')
-    if existing_questions > 0:
-        print(f"✅ Hypothetical questions collection already has {existing_questions} documents — skipping question generation.")
-    elif document_chunks is not None:
-        hypothetical_questions_doc = questions.get_hypothetical_questions(document_chunks)
-        questions.add_semantic_documents(hypothetical_questions_doc)
-        doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name.title())
-        chroma_db.add_vector_documents(hypothetical_questions_doc)
-    else:
-        print(f"{I_FLAG} Cannot generate hypothetical questions: document chunks unavailable.")
+
+
+    #if existing_questions > 0 and not dataset['force_rebuild']:
+    #    print(f"✅ Hypothetical questions collection already has {existing_questions} documents — skipping question generation.")
+    #elif document_chunks is not None:
+    hypothetical_questions_doc = questions.get_hypothetical_questions(document_chunks)
+    questions.add_semantic_documents(hypothetical_questions_doc)
+    doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name.title())
+    chroma_db.add_vector_documents(hypothetical_questions_doc)
+    #else:
+    #    print(f"{I_FLAG} Cannot generate hypothetical questions: document chunks unavailable.")
 
     # Get table hypothetical questions and add them to the vector storage
     table_questions_dataset = {
         'batch_size': DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
         'collection_name': 'table_hypothetical_questions',
         'doc_handle': doc_handle,
-        'document_content_description': 'Hypothetical Table Questions for ' + document_content_desc,
+        'prompt': PROMPT_TABLE_QUESTION_GENERATOR,
+        'title': 'Hypothetical Table Questions'
     }
 
     dataset = {**chroma_dataset, **table_questions_dataset}
@@ -115,16 +117,16 @@ def run(dataset: dict) -> None:
 
     existing_table_questions = table_questions.get_semantic_count()
     print(f'{I_INFO} Existing Table Questions: {existing_table_questions}')
-    if existing_table_questions > 0:
-        print(f"✅ Hypothetical table questions collection already has {existing_table_questions} documents — skipping question generation.")
-    else:
-        table_hypothetical_questions_doc = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
-        table_questions.add_semantic_documents(table_hypothetical_questions_doc)
-        doc_handle.show_sample(table_hypothetical_questions_doc, table_questions.collection_name.title())
-        chroma_db.add_vector_documents(table_hypothetical_questions_doc)
+    #if existing_table_questions > 0 and:
+    #    print(f"✅ Hypothetical table questions collection already has {existing_table_questions} documents — skipping question generation.")
+    #else:
+    table_hypothetical_questions_doc = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
+    table_questions.add_semantic_documents(table_hypothetical_questions_doc)
+    doc_handle.show_sample(table_hypothetical_questions_doc, table_questions.collection_name.title())
+    chroma_db.add_vector_documents(table_hypothetical_questions_doc)
 
     # --- Backup documents to Google Drive --- #
-  
+    # backup_docs()
     # --- Backup documents to Google Drive --- #
 
     # Sample a random user query using hypothetical retriever
@@ -132,3 +134,32 @@ def run(dataset: dict) -> None:
     chroma_db.query_questions(is_hyp=True, pluck=random.choice([True, True, False]))
 
     print(f'\n# --- {I_RUNNING} Completed data processor pipeline {I_RUNNING} --- #')
+
+
+def backup_docs():
+    import os 
+    import shutil
+    
+    # Define source and destination paths for vector storage
+    source_path = VECTORS_DIR  # Complete the code to define the path to your vectorstore directory
+    destination_path = 'backup/' + VECTORS_DIR  # Complete the code to define the destination path in your Drive
+    
+    # Copy the directory to Google Drive
+    try:
+        shutil.copytree(source_path, destination_path)
+        print(f"Successfully copied '{source_path}' to '{destination_path}'")
+    
+    except FileExistsError:
+        print(f"Directory '{destination_path}' already exists. Skipping copy.")
+    
+    except Exception as e:
+        print(f"Error copying directory: {e}")
+    
+    # Verify if the directory was copied successfully
+    if os.path.exists(destination_path):
+        print(f"{source_path} directory exists in your Google Drive.")  # Complete the code to confirm the directory name
+    
+    else:
+        print(f"{source_path} directory was not copied to your source path.")  # Complete the code to confirm the directory name
+        os.makedirs(destination_path, exist_ok=True)
+        print(f"Making the directory {destination_path} now...")

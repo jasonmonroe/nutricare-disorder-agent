@@ -2,7 +2,6 @@
 
 # Python Libraries
 import time
-import random
 
 # Vendor Libraries
 
@@ -10,7 +9,14 @@ import random
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
 
-from src.config import AI_ROLE, I_INFO, PROMPT_INSTR, AGENT_EMPTY_RESP, I_QUES, RATE_LIMIT_TIME, I_WARNING
+from src.config import (
+    AGENT_EMPTY_RESP,
+    AI_ROLE,
+    I_INFO,
+    I_QUES,
+    I_WARNING,
+    PROMPT_INSTR
+)
 from src.utils import handle_rate_limit_error, show_timer
 
 
@@ -18,34 +24,16 @@ class QuestionGenerator(ChromaModel):
     def __init__(self, dataset: dict):
         self.batch_size = 0
         self.doc_handle = None
+        self.prompt = ''
+        self.title = ''
 
         super().__init__(dataset)
 
-        self.prompt = self._prompt().strip()
-        self.title = 'Hypothetical Questions'
-
-    @staticmethod
-    def _prompt() -> str:
-        return """
-            You are an AI {AI_ROLE} specialized in generating precise, clinically relevant questions for information retrieval.
-            Your task is to analyze the provided TEXT CHUNK and generate a list of exactly three hypothetical questions for which the chunk contains the complete answer.
-            
-            **QUESTION STYLE REQUIREMENTS:**
-            1. Questions must be factual and directly address **diagnostic criteria, treatment dosages, clinical findings, or defining concepts** mentioned in the TEXT CHUNK.
-            2. Phrasing must be natural and sound like a question a {AI_ROLE} would actually ask.
-            
-            TEXT CHUNK:
-            {docs}
-            
-            {PROMPT_INSTR}
-            """
-
     def get_hypothetical_questions(self, semantic_chunks) -> list:
-        print(f'\n# --- {I_QUES} Getting Hypothetical Questions {I_QUES} --- #')
+        print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
 
         start_time = time.time()
         hypothetical_questions = []
-        hypothetical_questions_prompt = self._prompt().strip()
 
         # Track total items for progress logging
         total_chunks = len(semantic_chunks)
@@ -62,7 +50,7 @@ class QuestionGenerator(ChromaModel):
                 current_sleep_time = self.get_new_sleep_time()
 
                 try:
-                    formatted_response = hypothetical_questions_prompt.format(
+                    formatted_response = self.prompt.format(
                         AI_ROLE=AI_ROLE,
                         PROMPT_INSTR=PROMPT_INSTR,
                         docs=document.page_content
@@ -106,4 +94,5 @@ class QuestionGenerator(ChromaModel):
             print(f"📊 Batch completed. Total progress: {processed_count}/{total_chunks} chunks written.")
 
         show_timer(start_time)
+
         return hypothetical_questions

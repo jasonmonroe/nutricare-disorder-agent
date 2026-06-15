@@ -51,21 +51,14 @@ __date__ = "2024-11-16"
 __version__ = "1.0.0"
 
 
-#import sys
-#import langchain_core.language_models
-
-#if not hasattr(langchain_core.language_models, 'ModelProfile'):
-#    class DummyModelProfile:
-#        pass
-#    setattr(langchain_core.language_models, 'ModelProfile', DummyModelProfile)
-#    sys.modules['langchain_core.language_models'] = langchain_core.language_models
-
 # Global compilation configurations
 global workflow_app
 
+# Python Libraries
 import os
+import sys
 from dotenv import load_dotenv
-#from sqlalchemy.sql import false
+
 
 # Force load_dotenv to overwrite any existing terminal environmental variables
 load_dotenv(override=True)
@@ -77,19 +70,15 @@ OPENAI_API_BASE_ENV = os.environ.get("OPENAI_API_BASE")
 if not OPENAI_API_BASE_ENV:
     print("\n[CRITICAL ERROR] 'OPENAI_API_BASE' is missing from your .env file.")
     print("Please check your configuration files before running the pipeline.\n")
-    import sys
     sys.exit(1)
 
 # Explicitly re-bind it to guarantee LangChain background workers capture it
 os.environ["OPENAI_API_BASE"] = OPENAI_API_BASE_ENV
+
 # --- OpenAI Base URL Settings --- #
-
-
-import sys
 if sys.version_info >= (3, 13):
     print("CRITICAL: This project requires Python 3.11 or 3.12. Python 3.13+ is not yet supported.")
     sys.exit(1)
-
 
 
 import warnings
@@ -109,21 +98,9 @@ from pipelines.data_processor import run as run_data_retrieval_pipeline
 from pipelines.huggingface import Huggingface 
 from pipelines.streamlit_app import StreamLitApp
 
-from src.config import I_INFO, I_TIMER, I_WARNING
+from src.config import I_TIMER, I_WARNING
 from src.doc_handler import DocHandler
 from src.utils import get_run_id, show_title_banner, start_timer, show_timer
-
-
-def run_huggingface_deployment_pipeline():
-    # Load Huggingface
-    hf = Huggingface()
-    hf.deploy()
-
-
-def run_streamlit_pipeline(llama_obj: LlamaModel):
-    # Note: agents must be built and started before you can run this!
-    streamlit = StreamLitApp(llama_obj)
-    streamlit.run()
 
 
 def _parse_args(command_line_args: list[str]) -> dict:
@@ -141,19 +118,31 @@ def _parse_args(command_line_args: list[str]) -> dict:
     return {arg.strip('--'): (arg in command_line_args) for arg in args_list}
 
 
+def run_huggingface_deployment_pipeline():
+    # Load Huggingface
+    hf = Huggingface()
+    hf.deploy()
+
+
+def run_streamlit_pipeline(llama_obj: LlamaModel):
+    # Note: agents must be built and started before you can run this!
+    streamlit = StreamLitApp(llama_obj)
+    streamlit.run()
+
+
 # Ensure your entry block checks against '__main__', not 'main'
 if __name__ == '__main__':
-    logger = logging.getLogger(__name__)
+
+    start_time = start_timer()
     run_id = get_run_id()
     print(f'\n===== {I_TIMER} START RUN ID: {run_id} {I_TIMER} =====\n')
-    start_time = start_timer()
+
+    show_title_banner()
 
     args = _parse_args(sys.argv[1:])
     log = args.get('log', False)
 
-    show_title_banner()
-
-
+    logger = logging.getLogger(__name__)
     if log:
         logging.basicConfig(level=logging.INFO) #DEBUG
 
@@ -163,7 +152,6 @@ if __name__ == '__main__':
         DocHandler.wipe_db_dir()
         force_rebuild = True
 
-        
     # --- Load all models --- #
     openai_model = OpenAIModel()
 

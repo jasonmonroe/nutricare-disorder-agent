@@ -94,7 +94,22 @@ class LlamaModel:
 
             # type: groq.types.chat.chat_completion.ChatCompletion
 
-            result = llama_response.choices[0].message.content.strip()
+            result = ''
+            if llama_response:
+                resp = llama_response
+                if resp.choices:
+                    choices = resp.choices
+                    if choices:
+                        choice = choices[0]
+                        if choice:
+                            message = choice.message
+                            if message:
+                                content = message.content
+                                if content:
+                                    result = content.strip()
+
+
+            #result = llama_response.choices[0].message.content.strip()
 
             if self._log:
                 print('\nDEBUG --- LLAMA RESPONSE --- ')

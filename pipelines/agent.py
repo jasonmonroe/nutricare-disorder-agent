@@ -16,10 +16,12 @@ from src.config import (
     I_SMILING,
     I_STAR,
     I_THINKING,
+    I_WARNING,
     I_WATCH,
-    LLAMA_SAFE, I_WARNING
+    LLAMA_SAFE,
 )
-from src.utils import show_ai_agent_banner, show_datetime
+from src.utils import show_ai_agent_banner, show_datetime, start_timer, get_time
+
 
 def build(dataset: dict):
     print(f'\n# --- {I_RUNNING} Start Building agent pipeline {I_RUNNING} --- #')
@@ -35,6 +37,7 @@ def build(dataset: dict):
 
     print(f'\n# --- {I_RUNNING} Completed agent pipeline {I_RUNNING} --- #')
     return workflow_app
+
 
 def start(dataset: dict) -> None:
     print(f'\n# --- {I_RUNNING} Starting agent pipeline {I_RUNNING} --- #')
@@ -62,13 +65,13 @@ def start(dataset: dict) -> None:
 
     nest_asyncio.apply()
 
-    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever, workflow_app)
+    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever, workflow_app, dataset['log'])
     chatbot = NutritionBot(llm_chatbot, tools=[rag_tool])
     chatbot.agent_executor.verbose = show_logs
     chatbot.start_session()
 
     # Get user ID for tracking conversation sessions
-    user_id = input(f"{I_THINKING} Agent: Tell me, what is your name? _ ").strip()
+    user_id = input(f"\n{I_THINKING} Agent: Tell me, what is your name? _ ").strip()
     if not user_id:
         user_id = "User"
 
@@ -105,7 +108,7 @@ def start(dataset: dict) -> None:
         else:
             print(f"\n{I_SAD} Agent: I apologize, but I cannot process that input as it may be inappropriate.")
 
-        print(f"[{I_WATCH} Answered in {round(time.time() - q_start, 2)}s]\n")
+        print(f"[{I_WATCH} Answered in {get_time(q_start)}]\n")
 
     # --- Outside of loop --- #
-    print(f'{I_WATCH} Session Duration: {chatbot.get_session_duration(time.time())}')
+    print(f'{I_WATCH} Session Duration: {chatbot.get_session_duration(start_timer())}')

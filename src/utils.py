@@ -33,8 +33,10 @@ from src.config import (
     OPENAI_MODEL,
     SECS_IN_MIN,
     VECTORS_DIR,
-    LLAMA_MODEL
+    LLAMA_MODEL, RATE_LIMIT_RESP_CODE
 )
+
+# --- HELPER FUNCTIONS --- #
 
 def get_run_id() -> str:
     """ Generates a unique ID for the current run. """
@@ -47,7 +49,8 @@ def start_timer() -> float:
     """
     return time.time()
 
-def get_time(start_time_float: float, end_time_float: float=None) -> str:
+
+def get_time(start_time_float: float, end_time_float: float | None = None) -> str:
     
     if end_time_float is None:
         end_time_float = time.time()
@@ -60,8 +63,10 @@ def get_time(start_time_float: float, end_time_float: float=None) -> str:
     ms = fractional_seconds * MSEC
     return f"{int(minutes)}m {int(seconds)}s {int(ms)}ms"
 
+
 def show_timer(start_time_int: float) -> None:
     print(f"⌚ Run Time: {get_time(start_time_int)}")
+
 
 def show_banner(title: str, section: str = '') -> None:
     """Prints a stylized banner for console readability."""
@@ -79,15 +84,17 @@ def show_banner(title: str, section: str = '') -> None:
 
     print('')
 
+
 def show_title_banner() -> None:
     print('+-------------------------------------+')
     print('|                                     |')
     print(f'|      {APP_TITLE}       |')
     print('|                                     |')
     print('+-------------------------------------+')
-    print(f'|          {I_BOT} An AI Agent          |')
+    print(f'|            {I_BOT} An AI Agent           |')
     print('+-------------------------------------+')
-    print(f'\n{I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE}')
+    print(f'\n{I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE}\n')
+
 
 def show_ai_agent_banner() -> None:
     print('\n+--------------------------------------------------------------+')
@@ -102,7 +109,8 @@ def show_ai_agent_banner() -> None:
     print(f'| Type "{", ".join(AGENT_EXIT_CMDS)}" to end the conversation.              |')
     print('+--------------------------------------------------------------+\n')
 
-def set_os_environ():
+
+def set_os_environ() -> None:
     # --- Environment Keys ---
     # Note: This line is for WRITING (or modifying) a variable within the Python process's environment.
     # Set the cleaned value back into the environment for libraries like LangChain to find
@@ -118,14 +126,14 @@ def set_os_environ():
     os.environ["CHROMA_TELEMETRY_DISABLED"] = CHROMA_TELEMETRY_DISABLED
     # --- Environment Keys ---
 
-# --- HELPER FUNCTIONS --- #
+
 def show_datetime() -> str:
     now_utc = datetime.now(UTC)
 
     return now_utc.strftime("%b %d %Y %I:%M:%S %p %Z")
 
 
-def handle_rate_limit_error(e, subject: str, current_sleep_time: int, i: int) -> tuple[int, bool]:
+def handle_rate_limit_error(e, subject: str, current_sleep_time: int | float, i: int) -> tuple[int | float, bool]:
     """
     Checks for a Rate Limit Error (429), calculates a new sleep time, and returns the new sleep time and a flag
     indicating the hit.
@@ -140,7 +148,7 @@ def handle_rate_limit_error(e, subject: str, current_sleep_time: int, i: int) ->
     new_sleep_time = current_sleep_time
     error_msg = str(e)
 
-    if "429" in error_msg or "rate_limit_exceeded" in error_msg.lower():
+    if RATE_LIMIT_RESP_CODE in error_msg or "rate_limit_exceeded" in error_msg.lower():
         rate_limit_hit = True
         new_sleep_time = min(current_sleep_time * 2, SECS_IN_MIN)  # double it, cap at 60s
         print(f"{I_FLAG} Rate limit hit. Backing off from {current_sleep_time}s → {new_sleep_time}s...")
@@ -148,6 +156,7 @@ def handle_rate_limit_error(e, subject: str, current_sleep_time: int, i: int) ->
         print(f"{I_FLAG} {i}) Non-RateLimit Exception for {subject}: {error_msg}")
 
     return new_sleep_time, rate_limit_hit
+
 
 def is_jupyter() -> bool:
     """
@@ -174,6 +183,7 @@ def is_jupyter() -> bool:
             
     except NameError:
         return False
+
 
 def format_dir(path: str) -> str:
     """

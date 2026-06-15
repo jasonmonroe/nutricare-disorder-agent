@@ -16,11 +16,11 @@ from models.agentic_rag_tool import AgenticRagTool
 from src.config import AI_ROLE
 
 
-def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, workflow_app) -> StructuredTool:
+def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, workflow_app, log) -> StructuredTool:
     """Create an agentic RAG tool with llm and retriever bound to the closure."""
 
     @tool
-    def agentic_rag(query: str):
+    def agentic_rag(query: str, log:bool=False):
         """
         Runs the RAG-based agent with conversation history for context-aware responses.
 
@@ -29,6 +29,7 @@ def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, work
 
         Returns:
             Dict[str, Any]: The updated state with the generated response and conversation history.
+            :param log:
         """
         inputs = {
             "query": query,
@@ -53,7 +54,7 @@ def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, work
             return active_app.invoke(inputs)
 
         # Fallback: If workflow_app was passed in as None, compile it inline
-        agentic_rag_tool = AgenticRagTool(llm, retriever)
+        agentic_rag_tool = AgenticRagTool(llm, retriever, log)
         active_app = agentic_rag_tool.compile()
         
         return active_app.invoke(inputs)
