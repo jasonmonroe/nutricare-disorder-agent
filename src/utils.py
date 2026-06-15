@@ -85,7 +85,7 @@ def show_title_banner() -> None:
     print(f'|      {APP_TITLE}       |')
     print('|                                     |')
     print('+-------------------------------------+')
-    print(f'|          {I_BOT} An AI Agent     |')
+    print(f'|          {I_BOT} An AI Agent          |')
     print('+-------------------------------------+')
     print(f'\n{I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE}')
 
@@ -99,7 +99,7 @@ def show_ai_agent_banner() -> None:
     print('| here to assist with your health-related questions.           |')
     print('|                                                              |')
     print('+--------------------------------------------------------------+')
-    print(f'| Type "{", ".join(AGENT_EXIT_CMDS)}" to end the conversation.                         |')
+    print(f'| Type "{", ".join(AGENT_EXIT_CMDS)}" to end the conversation.              |')
     print('+--------------------------------------------------------------+\n')
 
 def set_os_environ():
@@ -166,7 +166,7 @@ def is_jupyter() -> bool:
         # 'ZMQInteractiveShell' corresponds to Jupyter Notebooks / JupyterLab
         if shell == 'ZMQInteractiveShell':
             return True
-        # 'TerminalInteractiveShell' corresponds to the basic ipython terminal terminal command
+        # 'TerminalInteractiveShell' corresponds to the basic ipython terminal command
         elif shell == 'TerminalInteractiveShell':
             return False
         else:
@@ -175,7 +175,12 @@ def is_jupyter() -> bool:
     except NameError:
         return False
 
-# Format persist directory
 def format_dir(path: str) -> str:
+    """
+    Format persist directory.
+
+    :param path:
+    :return:
+    """
     print(f'format_dir(./{VECTORS_DIR}/{path}_db)\n')
     return f"./{VECTORS_DIR}/{path}_db"

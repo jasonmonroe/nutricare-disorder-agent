@@ -22,7 +22,7 @@ from src.config import (
     DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
     DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_DIR,
-    I_RUNNING
+    I_RUNNING, I_INFO, I_FLAG
 )
 from src.doc_handler import DocHandler
 from src.eda import show_histogram
@@ -73,7 +73,7 @@ def run(dataset: dict) -> None:
     doc_handle.show_documents()
 
     # Use structured receiver when quering all/random questions
-    chroma_db.query_questions(is_hyp=False, pluck=random.choice([True, False]))
+    chroma_db.query_questions(is_hyp=False, pluck=random.choice([True, True, False]))
 
     # Get hypothetical questions and add them to the vector storage
     document_content_desc =  DOCUMENT_DIR + ' published by the Global Nutritional Health Organization'
@@ -91,6 +91,7 @@ def run(dataset: dict) -> None:
     questions = QuestionGenerator(dataset)
 
     existing_questions = questions.get_semantic_count()
+    print(f'{I_INFO} Existing Questions: {existing_questions}')
     if existing_questions > 0:
         print(f"✅ Hypothetical questions collection already has {existing_questions} documents — skipping question generation.")
     elif document_chunks is not None:
@@ -99,7 +100,7 @@ def run(dataset: dict) -> None:
         doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name.title())
         chroma_db.add_vector_documents(hypothetical_questions_doc)
     else:
-        print("Cannot generate hypothetical questions: document chunks unavailable.")
+        print(f"{I_FLAG} Cannot generate hypothetical questions: document chunks unavailable.")
 
     # Get table hypothetical questions and add them to the vector storage
     table_questions_dataset = {
@@ -113,6 +114,7 @@ def run(dataset: dict) -> None:
     table_questions = TableQuestionGenerator(dataset)
 
     existing_table_questions = table_questions.get_semantic_count()
+    print(f'{I_INFO} Existing Table Questions: {existing_table_questions}')
     if existing_table_questions > 0:
         print(f"✅ Hypothetical table questions collection already has {existing_table_questions} documents — skipping question generation.")
     else:
@@ -127,6 +129,6 @@ def run(dataset: dict) -> None:
 
     # Sample a random user query using hypothetical retriever
     # Note: To randomly pluck a question set pluck param to True
-    chroma_db.query_questions(is_hyp=True, pluck=random.choice([True, False]))
+    chroma_db.query_questions(is_hyp=True, pluck=random.choice([True, True, False]))
 
     print(f'\n# --- {I_RUNNING} Completed data processor pipeline {I_RUNNING} --- #')

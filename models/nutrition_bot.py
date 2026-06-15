@@ -120,6 +120,12 @@ class NutritionBot:
             metadata=metadata
         )
 
+        #self.memory_client.add(
+        #    conversation,
+        #    user_id=user_id,  # This prevents the 'At least one entity ID is required' error
+        #    metadata=metadata
+        #)
+
     def get_relevant_history(self, user_id: str, query: str) -> dict[str, Any]:
         """
         Retrieve past interactions relevant to the current query.
@@ -208,7 +214,7 @@ class NutritionBot:
 
         # Define the logic for exiting the loop' [if the user types in exit]
         if input_str.lower() in AGENT_EXIT_CMDS:
-            print(f"\n{I_SURPRISED} Agent: Goodbye! Feel free to return if you have more questions.")
+            print(f"\n{I_SURPRISED} Agent: Goodbye! Feel free to return if you have more questions.\n")
             print(f"# --- Session End: {I_CLOCK} {show_datetime()} --- #")
             return 'break'
 

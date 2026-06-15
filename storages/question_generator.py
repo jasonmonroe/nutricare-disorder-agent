@@ -74,7 +74,7 @@ class QuestionGenerator(ChromaModel):
                     questions = AGENT_EMPTY_RESP
                     # Single call to cleanly parse the exception payload
                     current_sleep_time, rate_limit_hit = handle_rate_limit_error(
-                        e, self.collection_name, current_sleep_time, i
+                        e, self.collection_name, int(current_sleep_time), i
                     )
 
                 if rate_limit_hit:
@@ -94,8 +94,8 @@ class QuestionGenerator(ChromaModel):
                     )
 
                 # --- ⏳ PER-REQUEST THROTTLING ⏳ ---
-                # We cool down immediately AFTER the execution inside the loop,
-                # rather than dumping a massive burst and sleeping at the end of the batch.
+                # We cool down immediately AFTER the execution inside the loop, rather than dumping a massive burst and
+                # sleeping at the end of the batch.
                 print(f"Chunk {i+1}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
                 time.sleep(current_sleep_time)
 

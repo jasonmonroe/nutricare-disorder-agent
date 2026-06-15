@@ -51,7 +51,8 @@ class LlamaModel:
         Settings.llm = llm
         Settings.embedding = embedding_model
 
-    def _get_parser(self) -> LlamaParse:
+    @staticmethod
+    def _get_parser() -> LlamaParse:
         """
         Initialize LlamaParse with desired settings
         :return: LLamaParse
@@ -91,15 +92,13 @@ class LlamaModel:
             # Return the filtered input
             print(f'llama_response type = {type(llama_response)}')
 
+            # type: groq.types.chat.chat_completion.ChatCompletion
+
             result = llama_response.choices[0].message.content.strip()
-
-            print(f'result type = {type(result)}')
-
 
             if self._log:
                 print('\nDEBUG --- LLAMA RESPONSE --- ')
                 print(f'llama_response = {llama_response}')
-                # 👑 FIX: The attribute is plural 'choices', not 'choice'
                 print(f'llama_response.choices = {llama_response.choices}')
                 print(f'llama_response.choices[0].message = {llama_response.choices[0].message}')
                 print(f'llama_response.choices[0].message.content = {llama_response.choices[0].message.content}')
@@ -108,17 +107,6 @@ class LlamaModel:
                 print(result)
                 print(f"# --- {I_PEN}  Close Guard result {I_PEN} --- #\n")
 
-            """"
-            # apply guard
-            if "unsafe" in result:
-                if any(code.strip() in LLAMA_UNSAFE_CODES for code in result.replace("unsafe ", "").strip().split(",")):
-                    return "BYPASS_SAFE"
-                else:
-                    return "UNSAFE"
-            else:
-                return "SAFE"
-            """
-
             return self._apply_guard(result)
 
         except Exception as e:
@@ -126,7 +114,7 @@ class LlamaModel:
             return ""
 
     @staticmethod
-    def _apply_guard(self, result: str) -> str:
+    def _apply_guard(result: str) -> str:
         # Added type hint for clarity
         if "unsafe" in result:
             if any(code.strip() in LLAMA_UNSAFE_CODES for code in result.replace("unsafe ", "").strip().split(",")):

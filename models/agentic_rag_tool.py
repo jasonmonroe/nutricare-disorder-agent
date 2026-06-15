@@ -147,14 +147,13 @@ class AgenticRagTool:
         """
 
         if query_feedback:
-            print("# --- Using feedback to refine query --- #")
+            print("--- Using feedback to refine query --- ")
 
-            system_message += f"""
-
+            system_message += """
             You have already generated a query that was not precise enough. Use the following SUGGESTIONS to create a NEW, improved query.
-
+    
             SUGGESTIONS:
-            {query_feedback}
+            {feedback}
             """
 
         # Create the final prompt template
@@ -168,8 +167,9 @@ class AgenticRagTool:
         # Invoke the chain
         expanded_query = chain.invoke({
             "query": original_query,
-            # Note: Feedback is injected via the system_message,
             "AI_ROLE": state['AI_ROLE'],
+            # 👑 LangChain now handles the raw stringified JSON safely here without Python f-string collisions!
+            "feedback": query_feedback if query_feedback else ""
         })
 
         state['expanded_query'] = expanded_query

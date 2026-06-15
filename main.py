@@ -145,7 +145,7 @@ def _parse_args(command_line_args: list[str]) -> dict:
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
     run_id = get_run_id()
-    print(f'\n-----> {I_TIMER} START RUN ID: {run_id} {I_TIMER} <-----\n')
+    print(f'\n===== {I_TIMER} START RUN ID: {run_id} {I_TIMER} =====\n')
     start_time = start_timer()
 
     args = _parse_args(sys.argv[1:])
@@ -156,8 +156,6 @@ if __name__ == '__main__':
 
     if log:
         logging.basicConfig(level=logging.INFO) #DEBUG
-    else:
-        logging.basicConfig(level=logging.INFO)
 
     # Wipe documents directory before Chroma is created.
     force_rebuild = False
@@ -206,4 +204,4 @@ if __name__ == '__main__':
 
     show_timer(start_time)
 
-    print(f'\n-----> {I_TIMER} END RUN ID: {run_id} {I_TIMER} <-----\n')
+    print(f'\n===== {I_TIMER} END RUN ID: {run_id} {I_TIMER} =====\n')

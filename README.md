@@ -216,7 +216,7 @@ For more solutions, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 | First Setup | 30-45 min | Includes model download |
 | Document Processing | 20-30 min | 200+ page PDF with throttling |
 | Query Response Time | 5-10 sec | Including retrieval and generation |
-| Vector Store Size | ~2GB | Persisted in `./db/` |
+| Vector Store Size | ~2GB | Persisted in `./db3/` |
 | API Rate Limit | 30 req/min | Free tier Groq |
 
 ---

@@ -17,7 +17,7 @@ from src.config import (
     I_STAR,
     I_THINKING,
     I_WATCH,
-    LLAMA_SAFE
+    LLAMA_SAFE, I_WARNING
 )
 from src.utils import show_ai_agent_banner, show_datetime
 
@@ -46,14 +46,16 @@ def start(dataset: dict) -> None:
     llama = dataset.get('llama', None)
     workflow_app = dataset.get('workflow_app', None)
 
-    # ✅ FIXED: Safe guard block evaluation order prevents unhandled NoneType errors
-    if chroma_db is None or openai_model is None or llama is None or workflow_app is None:
+    # Safe-guard block evaluation order prevents unhandled NoneType errors
+    if chroma_db is None or openai_model is None or llama is None:
         print(f"{I_CROSSMARK} Core dependencies didn't load properly. Exiting system!!! {I_CROSSMARK}")
         sys.exit(0)
 
     if chroma_db.get_document_count() == 0:
         print(f"{I_CROSSMARK} No documents found in the vector store. Please run with --data first! {I_CROSSMARK}")
-        raise RuntimeError("Vector database is completely empty!")
+        raise RuntimeError("Vector database is completely empty!\n")
+
+    # --- Run --- #
 
     llm = openai_model.llm
     llm_chatbot = openai_model.llm_chatbot
@@ -73,9 +75,8 @@ def start(dataset: dict) -> None:
     print(f"\n# --- Session Start: {I_CLOCK} {show_datetime()} --- #\n")
 
     while True:
-        # ✅ FIXED: Evaluate session expiration using true wall-clock time BEFORE prompting for input
         if chatbot.has_session_exp():
-            print('Session has expired.  Exiting chat.')
+            print(f'{I_WARNING} Session has expired.  Exiting chat.')
             break
 
         print(f"{I_SMILING} Agent: How can I help you?\n")
@@ -106,4 +107,5 @@ def start(dataset: dict) -> None:
 
         print(f"[{I_WATCH} Answered in {round(time.time() - q_start, 2)}s]\n")
 
+    # --- Outside of loop --- #
     print(f'{I_WATCH} Session Duration: {chatbot.get_session_duration(time.time())}')

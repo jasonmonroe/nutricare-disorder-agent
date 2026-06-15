@@ -4,6 +4,8 @@
 import logging
 import os
 import random
+import time
+
 import chromadb
 
 # Vector Libraries
@@ -81,7 +83,7 @@ class ChromaModel:
         if self.llm is None and 'openai_model' in dataset:
             openai_model = dataset['openai_model']
             self.llm = openai_model.llm
-            #print(f'\nself.llm = {self.llm}')
+
 
     @staticmethod
     def queries() -> list:
@@ -106,7 +108,6 @@ class ChromaModel:
 
     def _get_semantic_storage(self) -> Chroma:
         """Instantiates the isolated semantic database research partition."""
-        # 👑 FIX: Removed persist_directory to prevent duplicate folder creation in root.
         return Chroma(
             client=self.chromadb_client,
             embedding_function=self.embedding_model,
@@ -144,14 +145,11 @@ class ChromaModel:
                 ),
                 AttributeInfo(
                     name="page",
-                    description="The explicit page number within the parsed medical document (0-indexed)",
+                    # description="The explicit page number within the parsed medical document (0-indexed)",
+                    description="The page number in the PDF document, starting from 0. Use integers for comparisons.",
                     type="integer",
                 ),
-                #AttributeInfo(
-                #    name="filename",
-                #    description=f"The bare filename of the medical reference document (e.g., '{DOCUMENT_FILE}')",
-                #    type="string",
-                #),
+
                 AttributeInfo(
                     name="page_content",
                     description="raw text of (sectional) document",
@@ -168,7 +166,7 @@ class ChromaModel:
             llm=self.llm,
             vectorstore=self.vector_storage,
             # Update description to guide the LLM on query string preservation
-            document_content_description = "Hypothetical Questions for " + DOCUMENT_FILEPATH + " published by the Global Nutritional Health Organization",
+            document_contents = "Hypothetical Questions for " + DOCUMENT_FILEPATH + " published by the Global Nutritional Health Organization",
             #document_contents="A collection of full, explicitly detailed synthetic medical questions. "
             ##                  "When generating the search query parameter, you MUST pass the user's full conversational question "
             #                  "verbatim. Do not compress, truncate, or extract keyword noun phrases.",
@@ -260,13 +258,14 @@ class ChromaModel:
         print('--- Hypothetical Retriever ---' if is_hyp else '--- Retriever ---')
 
         queries_to_run = [random.choice(self.queries())] if pluck else self.queries()
+        print(f'Number of queries to run: {len(queries_to_run)}')
         results_count = []
 
-        for question in queries_to_run:
+        for i, question in enumerate(queries_to_run):
             try:
                 ques_semantic_chunks_retrieved = retriever.invoke(question)
-                print(f"{I_INFO} Number of Semantic Chunks Retrieved: {len(ques_semantic_chunks_retrieved)}")
-                print(f"Question: {question}{I_QUES}")
+                print(f"\n{I_INFO} Number of Semantic Chunks Retrieved: {len(ques_semantic_chunks_retrieved)}")
+                print(f"{i}) Question: {question}{I_QUES}")
                 print(f"{I_INFO} Retrieved Documents: {ques_semantic_chunks_retrieved}")
                 results_count.append(len(ques_semantic_chunks_retrieved))
 
@@ -276,6 +275,7 @@ class ChromaModel:
                 results_count.append(0)
 
             print("---\n")
+            time.sleep(2)
 
         total = len(queries_to_run)
         successful = sum(1 for c in results_count if c > 0)
