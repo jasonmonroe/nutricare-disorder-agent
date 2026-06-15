@@ -49,7 +49,7 @@ def start(dataset: dict) -> None:
     llama = dataset.get('llama', None)
     workflow_app = dataset.get('workflow_app', None)
 
-    # Safe-guard block evaluation order prevents unhandled NoneType errors
+    # Safeguard block evaluation order prevents unhandled NoneType errors
     if chroma_db is None or openai_model is None or llama is None:
         print(f"{I_CROSSMARK} Core dependencies didn't load properly. Exiting system!!! {I_CROSSMARK}")
         sys.exit(0)

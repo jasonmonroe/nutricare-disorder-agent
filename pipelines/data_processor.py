@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import random
-
 # pipelines/data_processor.py
 
 # +-------------------------+
@@ -11,18 +9,25 @@ import random
 # Source: https://www.merckmanuals.com/professional/nutritional-disorders/nutrition-general-considerations/overview-of-nutrition
 # Source: https://www.merckmanuals.com/home/disorders-of-nutrition/overview-of-nutrition/overview-of-nutrition
 
+# Python Libraries
 import nest_asyncio
+import random
 import warnings
 
 # Local Libraries
+from src.eda import show_histogram
+
 from storages.question_generator import QuestionGenerator
 from storages.table_question_generator import TableQuestionGenerator
 
 from src.config import (
     DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
     DOCUMENT_CHUNK_BATCH_SIZE,
-    DOCUMENT_DIR,
-    I_RUNNING, I_INFO, I_FLAG, VECTORS_DIR, PROMPT_TABLE_QUESTION_GENERATOR, PROMPT_QUESTION_GENERATOR
+    I_RUNNING,
+    I_INFO,
+    VECTORS_DIR,
+    PROMPT_TABLE_QUESTION_GENERATOR,
+    PROMPT_QUESTION_GENERATOR
 )
 from src.doc_handler import DocHandler
 
@@ -60,13 +65,12 @@ def run(dataset: dict) -> None:
     doc_handle.show_tables()
 
     # Create vector storage for nutritional information
-    # === Vectorization & Storage === #
     semantic_chunks = chroma_db.get_semantic_chunks(doc_handle.folder_path)
     document_chunks = doc_handle.get_semantic_chunks(semantic_chunks)
     chroma_db.add_semantic_documents(document_chunks)
 
-    # Show Histogram @todo - uncomment when ready for prod
-    #show_histogram(document_chunks)
+    # Show Histogram
+    show_histogram(document_chunks)
 
     # Perform similarity search in the vectorstore
     doc_handle.documents = chroma_db.get_documents()
@@ -91,7 +95,6 @@ def run(dataset: dict) -> None:
 
     existing_questions = questions.get_semantic_count()
     print(f'{I_INFO} Existing Questions: {existing_questions}')
-
 
     #if existing_questions > 0 and not dataset['force_rebuild']:
     #    print(f"✅ Hypothetical questions collection already has {existing_questions} documents — skipping question generation.")

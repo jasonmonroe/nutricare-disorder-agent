@@ -11,10 +11,6 @@ from llama_index.core import Settings
 from llama_parse import LlamaParse  # Document parsing library
 from llama_parse.utils import ResultType
 
-from openai.types.chat import ChatCompletion, ChatCompletionChunk
-from openai.types.chat.chat_completion_chunk import Choice as ChunkChoice
-from typing import Iterator
-
 # Local Libraries
 from src.config import (
     GROQ_API_KEY,
@@ -90,37 +86,15 @@ class LlamaModel:
             )
 
             # Return the filtered input
-            print(f'llama_response type = {type(llama_response)}')
-
-            # type: groq.types.chat.chat_completion.ChatCompletion
-
-            result = ''
-            if llama_response:
-                resp = llama_response
-                if resp.choices:
-                    choices = resp.choices
-                    if choices:
-                        choice = choices[0]
-                        if choice:
-                            message = choice.message
-                            if message:
-                                content = message.content
-                                if content:
-                                    result = content.strip()
-
-
-            #result = llama_response.choices[0].message.content.strip()
+            result = llama_response.choices[0].message.content.strip()
 
             if self._log:
                 print('\nDEBUG --- LLAMA RESPONSE --- ')
-                print(f'llama_response = {llama_response}')
-                print(f'llama_response.choices = {llama_response.choices}')
-                print(f'llama_response.choices[0].message = {llama_response.choices[0].message}')
-                print(f'llama_response.choices[0].message.content = {llama_response.choices[0].message.content}')
-                print('DEBUG --- LLAMA RESPONSE ---\n')
+                print(f'{llama_response}')
                 print(f"\n# --- {I_PEN}  Open Guard result {I_PEN} --- #")
                 print(result)
                 print(f"# --- {I_PEN}  Close Guard result {I_PEN} --- #\n")
+                print('DEBUG --- LLAMA RESPONSE ---\n')
 
             return self._apply_guard(result)
 

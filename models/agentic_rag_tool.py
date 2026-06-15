@@ -258,7 +258,8 @@ class AgenticRagTool:
 
         state['response'] = response
 
-        print("intermediate response: ", response)
+        if self._log:
+            print("intermediate response: ", response)
 
         return state
 
