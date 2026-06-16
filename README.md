@@ -4,6 +4,9 @@ An advanced **Retrieval-Augmented Generation (RAG)** chatbot that provides evide
 
 **Portfolio Project** | AI Agent Specialization
 
+Sources: [Professional Version](https://www.merckmanuals.com/professional/nutritional-disorders/nutrition-general-considerations/overview-of-nutrition)
+Sources: [Consumer Version](https://www.merckmanuals.com/home/disorders-of-nutrition/overview-of-nutrition/overview-of-nutrition)
+
 ---
 
 ## ✨ Features
@@ -37,7 +40,7 @@ Final Response
 ```
 
 ### Technology Stack
-- **LLM**: Groq API (llama-3-70b-8192) - free tier
+- **LLM**: Groq API (llama-3.3-70b-versatile) - free tier
 - **Embeddings**: HuggingFace (nomic-ai/nomic-embed-text-v1.5) - local processing
 - **Vector DB**: ChromaDB - persistent storage
 - **Workflow**: LangGraph - agentic orchestration
@@ -74,16 +77,28 @@ cp env.example .env
 
 ```bash
 # 1. Test configuration (30 seconds)
-python main.py --mock --build
-
-# 2. Process documents (15-30 minutes)
-python main.py --data
-
-# 3. Build agent workflow (1 minute)
 python main.py --build
 
-# 4. Run the Streamlit app
+# 2A. Process documents (15-30 minutes)
+python main.py --data
+
+# 2B. Process documents with a fresh db/ (15-30 minutes)
+python main.py --data --refresh
+
+# 3. Build agent workflow (optional) (1 minute)
+python main.py --build
+
+# 4A.  Run AI agent in Python (terminal)
+python main.py --start
+
+# 4B. Run the Streamlit app
 streamlit run pipelines/streamlit_app.py
+
+# 5. Deploy to Huggingface.co
+python main.py --deploy
+
+# Options: Show extensive logging in output.
+python main.py --log
 ```
 
 For detailed setup, see [QUICKSTART.md](QUICKSTART.md)
@@ -102,21 +117,35 @@ For detailed setup, see [QUICKSTART.md](QUICKSTART.md)
 ---
 
 ## 🔑 Key Configuration
+### Hugging Face User Access Token
+[Huggingface Documentation](https://huggingface.co/docs/huggingface_hub/package_reference/authentication)
+
+### Mem0 Memory Platform Key
+[Mem0 Documentation](https://docs.mem0.ai/api-reference)
 
 ```bash
-# API Endpoints (Groq OpenAI-compatible)
-OPENAI_API_BASE=https://api.groq.com/openai/v1
-OPENAI_API_KEY=gsk_xxxxxxxxxxxxxxx
+# Huggingface.co
+HF_REPO_ID=************/******************
+HF_TOKEN=hf_******************
 
-# LLM Model (latest Groq model)
-OPENAI_MODEL=llama-3-70b-8192
-
-# Embeddings (local HuggingFace, no rate limits)
-OPENAI_EMBEDDING_MODEL=nomic-ai/nomic-embed-text-v1.5
 
 # Safety Filter
-LLAMA_KEY=llx_xxxxxxxxxxxxxxx
-LLAMA_MODEL=mixtral-8x7b-32768
+LLAMA_KEY=llx_******************
+LLAMA_MODEL=llama-3.3-70b-versatile
+
+# --- Mem0 Memory Platform Key --- #
+MEM0_API_KEY=m0-*************************
+
+# API Endpoints (Groq OpenAI-compatible)
+OPENAI_API_BASE=https://api.groq.com/openai/v1
+OPENAI_API_KEY=gsk_******************
+
+# LLM Model (latest Groq model)
+OPENAI_MODEL=llama-3.1-8b-instant
+
+# Embeddings (local HuggingFace, no rate limits)
+OPENAI_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
 ```
 
 See [env.example](env.example) for complete template.
@@ -126,11 +155,17 @@ See [env.example](env.example) for complete template.
 ## 📊 Project Structure
 
 ```
+
 nutricare-disorder-agent/
 ├── main.py                          # Application entry point & CLI parameter parser
 ├── requirements.txt                 # Pinned python framework dependencies
 ├── .env                             # Environment configuration (git-ignored)
+├── .env.example                     # Example Environment configuration
+├── .venv                            # Virtual Python Environment
 │
+├── outputs/                         # Files outputted (workflow graphs)
+│   ├── log.txt                      # Output of a dry run
+│ 
 ├── models/                          # Core Intelligence & Class Wrappers
 │   ├── openai.py                    # LLM orchestration & HuggingFace embedding configuration
 │   ├── chroma.py                    # Vector store setups and collection initialization
@@ -148,14 +183,15 @@ nutricare-disorder-agent/
 │   └── table_question_generator.py  # Matrix/Table structure question extraction
 │
 ├── src/                             # Core System Utilities
-│   ├── config.py                    # Dynamic environment parser and variable mapper
+│   ├── constants.py                     # Dynamic environment parser and variable mapper
 │   ├── doc_handler.py               # File system paths & raw PDF data IO helpers
 │   ├── eda.py                       # Exploratory analysis checking text densities
 │   └── utils.py                     # Global helper variables and formatting utilities
 │
 └── data/
-    └── nutritional-medical-reference/
-        └── nutritional-disorders.pdf    # Source clinical data corpus 
+│   └── nutritional-medical-reference/
+│       └── nutritional-disorders.pdf    # Source clinical data corpus
+└── db/                                  # Semantic/Vector storages
 ```
 
 ---

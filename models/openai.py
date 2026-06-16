@@ -8,7 +8,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # Local Libraries
-from src.config import (
+from src.constants import (
     AGENT_EMPTY_RESP,
     I_FLAG,
     I_WARNING,

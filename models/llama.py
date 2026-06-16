@@ -12,7 +12,7 @@ from llama_parse import LlamaParse  # Document parsing library
 from llama_parse.utils import ResultType
 
 # Local Libraries
-from src.config import (
+from src.constants import (
     GROQ_API_KEY,
     I_CROSSMARK,
     I_PEN,

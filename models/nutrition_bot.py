@@ -16,7 +16,7 @@ from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
 from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
 
 # Local Libraries
-from src.config import (
+from src.constants import (
     AGENT_EXIT_CMDS,
     AGENT_RETRIEVAL_LIMIT,
     I_CLOCK,
@@ -30,10 +30,11 @@ from src.utils import get_time, start_timer, show_datetime
 
 class NutritionBot:
     def __init__(self, llm_chatbot, tools: list):
-        """
+        f"""
          Initialize the NutritionBot class, setting up memory, the LLM client, tools, and the agent executor.
 
         :param llm_chatbot:
+        :param tools
         """
 
         self._session_starts_at = None
@@ -58,6 +59,8 @@ class NutritionBot:
                           Keep track of ongoing issues and follow-ups to ensure continuity in support.
                           Your primary goal is to help customers make informed nutrition decisions that align with their health conditions and personal preferences.
         """.strip()
+
+        
 
         # Build the prompt template for the agent
         prompt = CoreChatPromptTemplate.from_messages([
@@ -154,13 +157,11 @@ class NutritionBot:
         :return:
         """
 
-        #logger = logging.getLogger(__name__)
-
-        # 1. Retrieve relevant past memory facts
+        # Retrieve relevant past memory facts
         relevant_history = self.get_relevant_history(user_id, query)
-        #logger.info(f'relevant_history={relevant_history}')
 
-        # 2. Normalize into a single iterable regardless of mem0's response shape
+
+        # Normalize into a single iterable regardless of mem0's response shape
         if isinstance(relevant_history, dict):
             memories_list = relevant_history.get("results", [])
         elif isinstance(relevant_history, list):
@@ -180,8 +181,6 @@ class NutritionBot:
             context_header = f"Known user background profiles and preferences:\n{context_string}"
         else:
             context_header = "No prior user preferences or background profiles recorded."
-
-        #logger.info(f"Context Compiled Successfully:\n{context_header}")
 
         # 4. Structured input separates memory profile from the core question
         structured_input = f"""

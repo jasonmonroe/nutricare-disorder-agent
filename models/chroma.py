@@ -17,10 +17,11 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_community.query_constructors.chroma import ChromaTranslator
 
-from src.config import (
+from src.constants import (
     CHROMA_SERVER_NO_TELEMETRY,
     DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_FILE,
+    I_DOCUMENT,
     I_INFO,
     I_QUES,
     RATE_LIMIT_TIME,
@@ -47,12 +48,14 @@ class ChromaModel:
         # Ensures everything stays tightly isolated inside your db directory
         self.chromadb_client = chromadb.PersistentClient(path=os.path.abspath(VECTORS_DIR))
 
+        self.batch_size = 0
         self.collection_name = ''
         self.document_content_description = ''
         self.embedding_model = None 
         self.llm = None
         self.metadata_info = {}
         self.force_rebuild = False
+        self.title = ''
 
         # Set incoming pipeline dictionary variables
         self._set_attrs(dataset)
@@ -76,6 +79,7 @@ class ChromaModel:
         for key, value in dataset.items():
             if hasattr(self, key):
                 #print(f'DEBUG: key={key}, value={value}')
+                
                 setattr(self, key, value)
 
         if self.llm is None and 'openai_model' in dataset:
@@ -200,7 +204,7 @@ class ChromaModel:
         return semantic_chunks
 
     def add_semantic_documents(self, semantic_chunks: list) -> None:
-        batch_size = DOCUMENT_CHUNK_BATCH_SIZE
+        batch_size = DOCUMENT_CHUNK_BATCH_SIZE #100
         for i in range(0, len(semantic_chunks), batch_size):
             self.semantic_storage.add_documents(semantic_chunks[i: i + batch_size])
 
@@ -249,7 +253,7 @@ class ChromaModel:
         """
 
         retriever = self.structured_hyp_retriever if is_hyp else self.structured_retriever
-        print('--- Hypothetical Retriever ---' if is_hyp else '--- Retriever ---')
+        print('\n# --- Hypothetical Retriever --- #' if is_hyp else '\n# --- Retriever --- #')
 
         queries_to_run = [random.choice(self.queries())] if pluck else self.queries()
         print(f'Number of queries to run: {len(queries_to_run)}')
@@ -259,8 +263,8 @@ class ChromaModel:
             try:
                 ques_semantic_chunks_retrieved = retriever.invoke(question)
                 print(f"\n{I_INFO} Number of Semantic Chunks Retrieved: {len(ques_semantic_chunks_retrieved)}")
-                print(f"{i}) Question: {question}{I_QUES}")
-                print(f"{I_INFO} Retrieved Documents: {ques_semantic_chunks_retrieved}")
+                print(f"{i+1}) {I_QUES}Question: {question}")
+                print(f"{I_DOCUMENT} Retrieved Documents:\n{ques_semantic_chunks_retrieved}")
                 results_count.append(len(ques_semantic_chunks_retrieved))
 
             except Exception as e:

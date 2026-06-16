@@ -21,7 +21,7 @@ from langchain_core.documents import Document  # Document data structures
 from llama_parse import LlamaParse  # Document parsing library
 
 # Local Libraries
-from src.config import (
+from src.constants import (
     DOCUMENT_DIR, 
     DOCUMENT_FILE, 
     DOCUMENT_FILEPATH,

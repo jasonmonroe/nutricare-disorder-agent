@@ -5,7 +5,7 @@
 # +---------------------+
 
 from huggingface_hub import HfApi
-from src.config import HF_TOKEN, DOCUMENT_ZIP, HF_REPO_ID
+from src.constants import HF_TOKEN, DOCUMENT_ZIP, HF_REPO_ID
 
 """
 Section 3: Getting Your App Live on Hugging Face Docker Spaces

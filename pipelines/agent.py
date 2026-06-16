@@ -8,7 +8,7 @@ from models.agentic_rag_tool import AgenticRagTool
 from models.nutrition_bot import NutritionBot
 from tools.agentic_rag import make_agentic_rag_tool
 
-from src.config import (
+from src.constants import (
     I_CLOCK,
     I_CROSSMARK,
     I_RUNNING,

@@ -13,7 +13,7 @@ from langgraph.graph.state import CompiledStateGraph
 
 # Local Libraries
 from models.agentic_rag_tool import AgenticRagTool
-from src.config import AI_ROLE
+from src.constants import AI_ROLE
 
 
 def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, workflow_app, log) -> StructuredTool:

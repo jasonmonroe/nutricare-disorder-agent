@@ -9,7 +9,7 @@ import time
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
 
-from src.config import (
+from src.constants import (
     AGENT_EMPTY_RESP,
     AI_ROLE,
     I_INFO,

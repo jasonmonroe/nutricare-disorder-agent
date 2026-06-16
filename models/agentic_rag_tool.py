@@ -20,7 +20,7 @@ from langgraph.graph import StateGraph, END, START  # State graph for managing s
 
 # Local Libraries
 from models.agentic_state import AgentState
-from src.config import (
+from src.constants import (
     AGENT_EVAL_THRESHOLD,
     AGENT_WORKFLOW_IMAGE,
     I_HANDSHAKE, 

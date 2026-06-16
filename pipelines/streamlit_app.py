@@ -11,7 +11,7 @@ from models.agentic_rag_tool import AgenticRagTool
 from models.nutrition_bot import NutritionBot
 from models.openai import OpenAIModel
 
-from src.config import (
+from src.constants import (
     AGENT_EXIT_CMDS,
     AI_TITLE,
     APP_TITLE,

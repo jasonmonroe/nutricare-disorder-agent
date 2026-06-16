@@ -12,7 +12,7 @@ import sys
 import time
 
 # Local Libraries
-from src.config import (
+from src.constants import (
     AI_ROLE,
     APP_TITLE,
     AGENT_EXIT_CMDS,

@@ -9,7 +9,7 @@ import time
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
 
-from src.config import (
+from src.constants import (
     AI_ROLE,
     AGENT_EMPTY_RESP,
     I_QUES,
@@ -20,7 +20,7 @@ from src.utils import handle_rate_limit_error, show_timer, start_timer
 
 class TableQuestionGenerator(ChromaModel):
     def __init__(self, dataset: dict):
-        self.batch_size = 0
+        #self.batch_size = 0
         self.doc_handle = None
         self.prompt = ''
         self.title = ''
@@ -92,4 +92,5 @@ class TableQuestionGenerator(ChromaModel):
                 break
 
         show_timer(start_time)
+        
         return table_hypothetical_questions
