@@ -26,6 +26,7 @@ from src.constants import (
     DOCUMENT_FILE, 
     DOCUMENT_FILEPATH,
     DOCUMENT_ZIP,
+    I_BOOK,
     I_BROOM,
     I_CHECKMARK,
     I_DB,
@@ -126,12 +127,14 @@ class DocHandler():
     def show_documents(self) -> None:
         """Utility visualization logger looping structural collection layers."""
         
-        print(f'\n# --- {I_DOCUMENT} Showing Documents {I_DOCUMENT} --- #')
-        for i in self.documents:
-            print("Source:", i.metadata.get('source', 'Unknown'))
-            print("Page:", i.metadata.get('page', 'Unknown'), "\n")
-            print("Page Content:", i.page_content)
-            print("---\n")
+        print(f'\n# --- {I_BOOK} Showing {len(self.documents)} Documents {I_BOOK} --- #')
+
+        for i, doc in enumerate(self.documents):
+            print(f'\n----- {I_DOCUMENT} Document: {i+1} -----')
+            print("Source:", doc.metadata.get('source', 'Unknown'))
+            print("Page:", doc.metadata.get('page', 'Unknown'))
+            print("Page Content:", doc.page_content)
+            print(f'+---- {I_DOCUMENT} Document: {i+1} ----+')
 
     def _parse(self, llama_parser: LlamaParse) -> list:
         """

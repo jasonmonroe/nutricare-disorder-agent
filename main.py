@@ -59,7 +59,6 @@ import os
 import sys
 from dotenv import load_dotenv
 
-
 # Force load_dotenv to overwrite any existing terminal environmental variables
 load_dotenv(override=True)
 
@@ -97,7 +96,7 @@ from pipelines.data_processor import run as run_data_retrieval_pipeline
 from pipelines.huggingface import Huggingface 
 from pipelines.streamlit_app import StreamLitApp
 
-from src.constants import ARG_PARAMS, I_CROSSMARK, I_TIMER, I_WARNING
+from src.constants import ARG_PARAMS, I_BOT, I_CROSSMARK, I_SKULL, I_TIMER, I_WARNING
 from src.doc_handler import DocHandler
 from src.utils import get_run_id, show_title_banner, start_timer, show_timer
 
@@ -127,25 +126,14 @@ def run_streamlit_pipeline(llama_obj: LlamaModel):
     streamlit.run()
 
 
-
 def _check_models():
     # Safeguard block evaluation order prevents unhandled NoneType errors
     if chroma_db is None or openai_model is None or llama is None:
         print(f"{I_CROSSMARK} Core dependencies didn't load properly. Exiting system!!! {I_CROSSMARK}")
+        print(f'{I_SKULL}')
         sys.exit(0)
 
-    
-# Ensure your entry block checks against '__main__', not 'main'
-if __name__ == '__main__':
-
-    start_time = start_timer()
-    run_id = get_run_id()
-    print(f'\n+----- {I_TIMER} START RUN ID: {run_id} {I_TIMER} -----+\n')
-
-    show_title_banner()
-
-    args = _parse_args(sys.argv[1:])
-
+def _set_logger(args):
     log = args.get('log', False)
     log_debug = args.get('log.debug', False)
 
@@ -154,8 +142,21 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.INFO) #DEBUG/INFO
     elif log_debug:
         logging.basicConfig(level=logging.DEBUG)
+    
+    return log
 
 
+    
+# Ensure your entry block checks against '__main__', not 'main'
+if __name__ == '__main__':
+
+    start_time = start_timer()
+    run_id = get_run_id()
+    print(f'\n==== {I_BOT} START RUN ID: {run_id} {I_BOT} ====\n')
+    show_title_banner()
+
+    args = _parse_args(sys.argv[1:])
+    log = _set_logger(args)
     force_rebuild = True if args.get('refresh') else False
 
     # --- Load all models --- #
@@ -171,10 +172,10 @@ if __name__ == '__main__':
 
     llama = LlamaModel(openai_model.llm, openai_model.embedding_model, log)
 
-    # --- Check models --- #
+    # --- Check Models --- #
+
     # Safeguard block evaluation order prevents unhandled NoneType errors
     _check_models()
-
 
     # Create pipeline dataset.
     dataset = {
@@ -184,10 +185,10 @@ if __name__ == '__main__':
         'log': log
     }
     
-    # Execute based on parsed flags
-
+    # --- Execute based on parsed flags --- #
+    
+    # Wipe documents directory before Chroma is created.
     if args.get('fresh'):
-        # Wipe documents directory before Chroma is created.
         DocHandler.wipe_db_dir()
 
     if args.get('data'):
@@ -201,8 +202,8 @@ if __name__ == '__main__':
 
         if chroma_db.get_document_count() == 0:
             print(f"{I_CROSSMARK} No documents found in the vector store. Please run with --data first! {I_CROSSMARK}")
-            raise RuntimeError("\nVector database is completely empty!\n")
-
+            raise RuntimeError("Vector database is completely empty!")
+             
         run_start_agent_pipeline(dataset)
 
     if args.get('deploy'):
@@ -213,4 +214,4 @@ if __name__ == '__main__':
 
     show_timer(start_time)
 
-    print(f'\n+----- {I_TIMER} END RUN ID: {run_id} {I_TIMER} -----+\n')
+    print(f'\n==== {I_BOT} END RUN ID: {run_id} {I_BOT} ====\n')

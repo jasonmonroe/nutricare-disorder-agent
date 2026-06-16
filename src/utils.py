@@ -22,6 +22,7 @@ from src.constants import (
     I_BOT,
     I_FLAG,
     I_HANDSHAKE,
+    I_TIMER,
     LLAMA_KEY,
     RUN_MAX_ID,
     MEM0_API_KEY,
@@ -65,7 +66,7 @@ def get_time(start_time_float: float, end_time_float: float | None = None) -> st
 
 
 def show_timer(start_time_int: float) -> None:
-    print(f"⌚ Run Time: {get_time(start_time_int)}")
+    print(f"{I_TIMER} Run Time: {get_time(start_time_int)}")
 
 
 def show_banner(title: str, section: str = '') -> None:

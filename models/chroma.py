@@ -22,8 +22,10 @@ from src.constants import (
     DOCUMENT_CHUNK_BATCH_SIZE,
     DOCUMENT_FILE,
     I_DOCUMENT,
+    I_GEAR,
     I_INFO,
     I_QUES,
+    I_WARNING,
     RATE_LIMIT_TIME,
     SEMANTIC_THRESH_LIMIT,
     SIMILARITY_SEARCH_QUERY,
@@ -52,9 +54,10 @@ class ChromaModel:
         self.collection_name = ''
         self.document_content_description = ''
         self.embedding_model = None 
+        self.force_rebuild = False
         self.llm = None
         self.metadata_info = {}
-        self.force_rebuild = False
+       
         self.title = ''
 
         # Set incoming pipeline dictionary variables
@@ -97,7 +100,6 @@ class ChromaModel:
             "On page 35, please explain the correlation between Vitamin B12 levels and tissue deficiency.",
             "What are the laboratory and clinical standards for diagnosing Vitamin D deficiency in adults?",
         ]
-
 
     def get_retriever(self) -> VectorStoreRetriever:
         """Initializes vector retriever using the unified client runtime pool."""
@@ -224,6 +226,7 @@ class ChromaModel:
         try:
             return self.vector_storage._collection.count()
         except Exception:
+            print('Exception!')
             return 0
 
     def get_semantic_count(self) -> int:
@@ -253,7 +256,7 @@ class ChromaModel:
         """
 
         retriever = self.structured_hyp_retriever if is_hyp else self.structured_retriever
-        print('\n# --- Hypothetical Retriever --- #' if is_hyp else '\n# --- Retriever --- #')
+        print(f'\n# --- {I_GEAR} Hypothetical Retriever {I_GEAR} --- #' if is_hyp else f'\n# --- {I_GEAR} Retriever {I_GEAR} --- #')
 
         queries_to_run = [random.choice(self.queries())] if pluck else self.queries()
         print(f'Number of queries to run: {len(queries_to_run)}')
@@ -262,17 +265,25 @@ class ChromaModel:
         for i, question in enumerate(queries_to_run):
             try:
                 ques_semantic_chunks_retrieved = retriever.invoke(question)
-                print(f"\n{I_INFO} Number of Semantic Chunks Retrieved: {len(ques_semantic_chunks_retrieved)}")
-                print(f"{i+1}) {I_QUES}Question: {question}")
-                print(f"{I_DOCUMENT} Retrieved Documents:\n{ques_semantic_chunks_retrieved}")
-                results_count.append(len(ques_semantic_chunks_retrieved))
+                retrieved_count = len(ques_semantic_chunks_retrieved)
+                print(f"\n----- {I_QUES}Question #{i+1} {I_QUES} -----")
+                print(question)
+                print(f"\n{I_INFO} Number of Semantic Chunks Retrieved: {retrieved_count}")
+                
+                # Display empty retrieval
+                if retrieved_count == 0:
+                    print(f'{I_WARNING}  Nothing was retrieved! {I_WARNING}')
+                else:
+                    print(f"{I_DOCUMENT} Retrieved Documents:\n{ques_semantic_chunks_retrieved}")
+                
+                results_count.append(retrieved_count)
 
             except Exception as e:
                 print(f"⚠️ Skipping query due to parser error: {question}.")
                 print(f"\tReason: {e}")
                 results_count.append(0)
 
-            print("---\n")
+            print(f"+---- Question #{i+1} ----+\n")
             time.sleep(2)
 
         total = len(queries_to_run)

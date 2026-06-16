@@ -121,8 +121,9 @@ class AgenticRagTool:
         Returns:
             Dict: The updated state with the expanded query.
         """
-
-        print("\n# --- expand_query --- #")
+        
+        if self._log:
+            print("\n# --- expand_query --- #")
 
         original_query = state['query']
         query_feedback = state.get('query_feedback') # Gets feedback if present
@@ -275,7 +276,8 @@ class AgenticRagTool:
             Dict: The updated state with the groundedness score.
         """
 
-        print("\n# --- check_groundedness --- #")
+        if self._log:
+            print("\n# --- check_groundedness --- #")
 
         system_message = """You are a meticulous AI {AI_ROLE} Quality Analyst and fact-checker. Your sole task is to evaluate how well a given response is supported by a provided context.
         Calculate a score from 0.0 to 1.0 that represents the fraction of claims in the response that are directly and verifiably supported by the context.
@@ -320,7 +322,8 @@ class AgenticRagTool:
             Dict: The updated state with the precision score.
         """
 
-        print("\n# --- check_precision --- #")
+        if self._log:
+            print("\n# --- check_precision --- #")
 
         system_message = """
         As an AI {AI_ROLE} evaluate whether the response precisely addresses the user's query.
@@ -366,7 +369,8 @@ class AgenticRagTool:
             Dict: The updated state with response refinement suggestions.
         """
 
-        print("\n# --- refine_response --- #")
+        if self._log:
+            print("\n# --- refine_response --- #")
 
         system_message = """
         You are an AI {AI_ROLE} Quality Analyst and Critic. Your sole task is to provide constructive feedback on a given response based on the user's original query.
@@ -413,7 +417,8 @@ class AgenticRagTool:
             Dict: The updated state with JSON-formatted query refinement suggestions.
         """
 
-        print("\n# --- refine_query --- #")
+        if self._log:
+            print("\n# --- refine_query --- #")
 
         # Define a Pydantic model that matches the desired JSON structure.
         # This is the correct way to provide a schema to JsonOutputParser.
@@ -482,8 +487,9 @@ class AgenticRagTool:
         """
         """Decides if groundedness is enough or needs improvement."""
 
-        print("--- should_continue_groundedness ---")
-        print("groundedness loop count: ", state['groundedness_loop_count'])
+        if self._log:
+            print("--- should_continue_groundedness ---")
+            print("groundedness loop count: ", state['groundedness_loop_count'])
 
         if state["groundedness_score"] >= AGENT_EVAL_THRESHOLD:  # Threshold for groundedness
             print(f"{I_HANDSHAKE} Moving to precision...")
@@ -494,7 +500,8 @@ class AgenticRagTool:
             if self.has_max_iterations_reached(state, "groundedness_loop_count"):
                 return "max_iterations_reached"
             else:
-                print(f"# --- {I_WARNING} Groundedness Score Threshold Not met. Refining Response --- #")
+                if self._log:
+                    print(f"# --- {I_WARNING} Groundedness Score Threshold Not met. Refining Response --- #")
 
                 return "refine_response"
 
@@ -509,8 +516,9 @@ class AgenticRagTool:
         """
         """Decides if precision is enough or needs improvement."""
 
-        print("# --- should_continue_precision --- #")
-        print("precision loop count: ", state['precision_loop_count'])
+        if self._log:
+            print("# --- should_continue_precision --- #")
+            print("precision loop count: ", state['precision_loop_count'])
 
         if state["precision_score"] >= AGENT_EVAL_THRESHOLD:  # Threshold for precision
             return "pass"  # Complete the workflow
@@ -519,7 +527,8 @@ class AgenticRagTool:
             if self.has_max_iterations_reached(state, "precision_loop_count"):  # Maximum allowed loops
                 return "max_iterations_reached"
             else:
-                print(f"# --- {I_WARNING} Precision Score Threshold not met. Refining Query --- #")
+                if self._log:
+                    print(f"# --- {I_WARNING} Precision Score Threshold not met. Refining Query --- #")
 
                 return "refine_query"  # Refine the query
 
@@ -550,4 +559,4 @@ class AgenticRagTool:
             
         except Exception as e:
             print(f"❌ Failed to generate graph image: {str(e)}")
-            print("Ensure you have graphviz or pygraphviz/pyppeteer installed if required by your LangGraph version.")
+            print("Ensure you have graphviz or pygraphviz/pyppeteer installed if required by your LangGraph version.\n")

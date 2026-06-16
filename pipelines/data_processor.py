@@ -29,6 +29,7 @@ from src.constants import (
     DOCUMENT_CHUNK_BATCH_SIZE,
     I_CHECKMARK,
     I_DIR,
+    I_DISK,
     I_FLAG,
     I_RUNNING,
     I_INFO,
@@ -80,7 +81,7 @@ def run(dataset: dict) -> None:
 
 
     # Show Histogram
-    show_histogram(document_chunks)
+    # @todo - show_histogram(document_chunks)
 
     # Perform similarity search in the vectorstore
     doc_handle.documents = chroma_db.get_documents()
@@ -106,12 +107,12 @@ def run(dataset: dict) -> None:
     questions = QuestionGenerator(dataset)
 
     existing_questions = questions.get_semantic_count()
-    print(f'{I_INFO} Existing Questions: {existing_questions}')
+    print(f'{I_INFO}  Existing Questions: {existing_questions}')
 
     if existing_questions > 0 and not data_refresh:
         print(f"✅ Hypothetical questions collection already has {existing_questions} documents — skipping question generation.")
     elif document_chunks is not None or data_refresh:
-        print(f"\nGenerating new {questions_dataset.get('title')}.")
+        print(f"\nGenerating new {questions_dataset.get('title')}...")
 
         hypothetical_questions_doc = questions.get_hypothetical_questions(document_chunks)
         questions.add_semantic_documents(hypothetical_questions_doc)
@@ -135,13 +136,13 @@ def run(dataset: dict) -> None:
     table_questions = TableQuestionGenerator(dataset)
 
     existing_table_questions = table_questions.get_semantic_count()
-    print(f'{I_INFO} Existing Table Questions: {existing_table_questions}')
+    print(f'{I_INFO}  Existing Table Questions: {existing_table_questions}')
     
     if existing_table_questions > 0 and not data_refresh:
         print(f"✅ Hypothetical table questions collection already has {existing_table_questions} documents — skipping question generation.")
     else:
     
-        print(f"\nGenerating new {table_questions_dataset.get('title')}.")
+        print(f"\nGenerating new {table_questions_dataset.get('title')}...")
 
         table_hypothetical_questions_doc = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
         table_questions.add_semantic_documents(table_hypothetical_questions_doc)
@@ -170,7 +171,7 @@ def backup_docs():
     # Copy the directory to Google Drive
     try:
         shutil.copytree(source_path, destination_path)
-        print(f"{I_CHECKMARK} Successfully copied '{source_path}' to '{destination_path}'")
+        print(f"{I_CHECKMARK} {I_DISK} Successfully copied '{source_path}' to '{destination_path}'")
     
     except FileExistsError:
         print(f"Directory '{destination_path}' already exists. Skipping copy.")
@@ -180,7 +181,7 @@ def backup_docs():
     
     # Verify if the directory was copied successfully
     if os.path.exists(destination_path):
-        print(f"{source_path} directory exists on your hard drive.")  # Complete the code to confirm the directory name
+        print(f"{I_DISK} {source_path} directory exists on your hard drive.")  # Complete the code to confirm the directory name
     
     else:
         print(f"{source_path} directory was not copied to your source path.")  # Complete the code to confirm the directory name
