@@ -1,4 +1,4 @@
-# src/model-config.py
+# src/model_config.py
 
 # Python Libraries
 import sys
