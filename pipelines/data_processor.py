@@ -13,29 +13,21 @@ import warnings
 
 # Local Libraries
 from src.eda import show_histogram
-
-from src.utils import is_jupyter, premium_model_tier
+from src.utils import is_jupyter
 from storages.question_generator import QuestionGenerator
 from storages.table_question_generator import TableQuestionGenerator
 
 from src.constants import (
-  
-    DOCUMENT_CHUNK_BATCH_SIZE,
     I_CHECKMARK,
     I_DIR,
     I_DISK,
     I_FLAG,
     I_RUNNING,
-    I_INFO,
-    CHROMA_VECTORS_DIR,
-    PROMPT_QUESTION_GENERATOR_PREMIUM,
-    PROMPT_TABLE_QUESTION_GENERATOR,
-    PROMPT_QUESTION_GENERATOR,
-    PROMPT_TABLE_QUESTION_GENERATOR_PREMIUM
+    I_INFO
 )
 
 from src.doc_handler import DocHandler
-from src.model_config import config, ModelConfig
+from src.model_config import config
 
 def run(dataset: dict) -> None:
     """
@@ -95,17 +87,7 @@ def run(dataset: dict) -> None:
     # Use structured receiver when quering all/random questions
     chroma_db.query_questions(is_hyp=False, pluck=random.choice([True, True, True, False]))
     chroma_dataset = chroma_db.export()
-
-    """
-    return {
-            'collection_name': self.collection_name,
-            #'document_content_description': self.document_content_description,
-            'embedding_model': self.embedding_model,
-            'force_rebuild': self.force_rebuild,
-            'llm': self.llm,
-            #'metadata_info': self.metadata_info,
-        }
-    """
+    
 
     # --- Hypothetical Questions --- #
 

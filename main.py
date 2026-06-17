@@ -100,12 +100,10 @@ from src.constants import (
     ARG_PARAMS, 
     DEFAULT_COLL_NAME, 
     I_BOT, 
-    I_CROSSMARK, 
-    I_SKULL, 
     I_WARNING
 )
 
-from src.model_config import config, ModelConfig
+from src.model_config import ModelConfig
 
 from src.doc_handler import DocHandler
 from src.utils import get_run_id, show_title_banner, start_timer, show_timer
@@ -167,6 +165,7 @@ def _set_logger(args):
         
     elif log_debug:
         logging.basicConfig(level=logging.DEBUG)
+        print(f'DEBUG: args={args}')
 
     if not log_debug:
         warnings.filterwarnings('ignore', category=DeprecationWarning, module='pydantic')
@@ -183,7 +182,7 @@ if __name__ == '__main__':
     show_title_banner()
 
     args = _parse_args(sys.argv[1:])
-    print(f'DEBUG:args={args}')
+    
     log, log_debug = _set_logger(args)
     refresh = True if args.get('refresh') else False
 

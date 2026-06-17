@@ -21,6 +21,7 @@ from src.constants import (
     HF_TOKEN,
     I_BOT,
     I_FLAG,
+    I_GEAR,
     I_HANDSHAKE,
     I_TIMER,
     LLAMA_KEY,
@@ -88,12 +89,13 @@ def show_banner(title: str, section: str = '') -> None:
 
 
 def show_models():
-    print('+-------------------------------------+')
-    print('| MODELS')
-    print(f'| LLAMA_MODEL: {LLAMA_MODEL}')
-    print(f'| OPENAI_EMBEDDING_MODEL: {OPENAI_EMBEDDING_MODEL}')
-    print(f'| OPENAI_MODEL: {OPENAI_MODEL}')
-    print('+-------------------------------------+')
+    print('+----------------------------------------------------------------+')
+    print(f'| {I_GEAR}  MODELS                                                      |')
+    print('+----------------------------------------------------------------+')
+    print(f'| LLAMA_MODEL: {LLAMA_MODEL}                           |')
+    print(f'| OPENAI_EMBEDDING_MODEL: {OPENAI_EMBEDDING_MODEL} |')
+    print(f'| OPENAI_MODEL: {OPENAI_MODEL}                             |')
+    print('+----------------------------------------------------------------+')
 
 
 def show_title_banner() -> None:
