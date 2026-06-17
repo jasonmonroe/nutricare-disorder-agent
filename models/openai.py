@@ -52,7 +52,8 @@ class OpenAIModel:
 
         return HuggingFaceEmbeddings(
             model_name=OPENAI_EMBEDDING_MODEL,
-            model_kwargs={'device': device}
+            model_kwargs={'device': device},
+            encode_kwargs={'local_files_only': True}
         )
 
     def _load_llm(self) -> ChatOpenAI:

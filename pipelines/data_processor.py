@@ -57,12 +57,6 @@ def run(dataset: dict) -> None:
     data_refresh = dataset.get('refresh')
     print(f'{I_INFO}  Refresh flag is {data_refresh}.')
 
-    # @todo - delete lines 60-64 when done testing
-    if not data_refresh:
-        print('Data refresh flag is false!')
-        import sys
-        sys.exit(1)
-
     # Apply the nested async loop to allow async code execution in the notebook.
     nest_asyncio.apply()
 
@@ -82,7 +76,7 @@ def run(dataset: dict) -> None:
         # Create vector storage for nutritional information
         semantic_chunks = chroma_db.get_semantic_chunks(doc_handle.folder_path)
         document_chunks = doc_handle.get_semantic_chunks(semantic_chunks)
-        chroma_db.add_semantic_documents(document_chunks) # @todo - erroring here!
+        chroma_db.add_semantic_documents(document_chunks)
 
     # Show Histogram
     # @todo - show_histogram(document_chunks)

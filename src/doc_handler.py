@@ -34,6 +34,7 @@ from src.constants import (
     I_DISK,
     I_DOCUMENT,
     I_FLAG,
+    I_PEN,
     I_WARNING,
     CHROMA_VECTORS_DIR,
     SLEEP_TIME_SEC,
@@ -291,14 +292,15 @@ class DocHandler():
         Aggressively purges only the target database directory (db/)
         to force a true factory reset of ChromaDB states.
         """
-    
+        dir_perm = 0o755
         target_db_dir = os.path.abspath(CHROMA_VECTORS_DIR)
 
         print(f"\n# --- {I_BROOM} Wiping Database Directory: {target_db_dir} {I_BROOM} --- #")
 
         if not os.path.exists(target_db_dir):
-            print(f'{I_WARNING} Directory {target_db_dir} does not exist. Creating a fresh instance now...')
+            print(f'{I_WARNING} Directory {target_db_dir} does not exist. \n{I_DIR} Creating a fresh instance now...')
             os.makedirs(target_db_dir, exist_ok=True)
+            os.chmod(target_db_dir, dir_perm)
             return
 
         # Loop through the children of db/ specifically, leaving data/ completely alone
@@ -314,10 +316,9 @@ class DocHandler():
                 print(f"{I_FLAG} Failed to wipe element path target {file_path}. Exception: {e}")
 
         if next(os.scandir(target_db_dir), None) is None:
-            dir_perm = 0o755
             os.chmod(target_db_dir, dir_perm)
             print(f"{I_DIR} Database directory `{CHROMA_VECTORS_DIR}` is completely empty and reset!")
-            print(f'{I_DIR} {CHROMA_VECTORS_DIR} privileges are set to {dir_perm}.\n')
+            print(f'{I_PEN} {CHROMA_VECTORS_DIR} privileges are set to {dir_perm}.\n')
 
     @staticmethod
     def _unzip() -> bool:

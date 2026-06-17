@@ -295,9 +295,3 @@ class ChromaModel:
         total = len(queries_to_run)
         successful = sum(1 for c in results_count if c > 0)
         print(f"Retriever Quality: {successful}/{total} queries returned results ({successful/total*100:.0f}%)")
-
-    @staticmethod
-    # @todo - should this be moved to config.py?
-    def get_new_sleep_time() -> float:
-        # Used in child classes.
-        return RATE_LIMIT_TIME + random.uniform(2.0, 7.0)

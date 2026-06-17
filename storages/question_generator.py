@@ -12,25 +12,19 @@ from models.openai import OpenAIModel
 from src.constants import (
     AGENT_EMPTY_RESP,
     AI_ROLE,
+    I_DB,
     I_INFO,
+    I_PEN,
     I_QUES,
     I_WARNING,
     PROMPT_INSTR
 )
-from src.utils import handle_rate_limit_error, show_timer
+from src.utils import get_new_sleep_time, handle_rate_limit_error, show_timer
 from storages.data_generator import DataGenerator
 
 
 class QuestionGenerator(DataGenerator):
     def __init__(self, dataset: dict, chroma_db: ChromaModel):
-        #self.batch_size = 0
-        #self.chroma_db = chroma_db
-        #self.doc_handle = None
-        #self.llm = None
-        #self.prompt = ''
-        #self.title = ''
-
-        # Update parent model with dataset
         super().__init__(dataset, chroma_db)
         
     def get_hypothetical_questions(self, semantic_chunks) -> list:
@@ -41,7 +35,7 @@ class QuestionGenerator(DataGenerator):
 
         # Track total items for progress logging
         total_chunks = len(semantic_chunks)
-        print(f'{I_INFO} Processing {total_chunks} chunks using batch size {self.batch_size}.\n')
+        print(f'{I_INFO}  Processing {total_chunks} chunks using batch size {self.batch_size}.\n')
 
         for batch_start in range(0, total_chunks, self.batch_size):
             batch = semantic_chunks[batch_start: batch_start + self.batch_size]
@@ -51,7 +45,7 @@ class QuestionGenerator(DataGenerator):
                 rate_limit_hit = False
                 
                 # Dynamic per-request jittered sleep to keep the API gateway happy
-                current_sleep_time = self.get_new_sleep_time()
+                current_sleep_time = get_new_sleep_time()
 
                 try:
                     formatted_response = self.prompt.format(
@@ -88,14 +82,14 @@ class QuestionGenerator(DataGenerator):
                 # --- ⏳ PER-REQUEST THROTTLING ⏳ ---
                 # We cool down immediately AFTER the execution inside the loop, rather than dumping a massive burst and
                 # sleeping at the end of the batch.
-                print(f"Chunk {i+1}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
+                print(f"{I_PEN}  Chunk {i+1}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
                 time.sleep(current_sleep_time)
 
             hypothetical_questions.extend(batched_hypothetical_questions)
 
             # Optional: Keep a high-level batch update log
             processed_count = min(batch_start + self.batch_size, total_chunks)
-            print(f"📊 Batch completed. Total progress: {processed_count}/{total_chunks} chunks written.")
+            print(f"{I_DB} Batch completed. Total progress: {processed_count}/{total_chunks} chunks written.")
 
         show_timer(start_time)
 

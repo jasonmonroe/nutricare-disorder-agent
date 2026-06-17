@@ -12,25 +12,16 @@ from models.openai import OpenAIModel
 from src.constants import (
     AI_ROLE,
     AGENT_EMPTY_RESP,
+    I_PEN,
     I_QUES,
     PROMPT_INSTR
 )
-from src.utils import handle_rate_limit_error, show_timer, start_timer
+from src.utils import get_new_sleep_time, handle_rate_limit_error, show_timer, start_timer
 from storages.data_generator import DataGenerator
 
 
 class TableQuestionGenerator(DataGenerator):
     def __init__(self, dataset: dict, chroma_db: ChromaModel):
-        #self.batch_size = 0
-        #self.chroma_db = chroma_db
-        #self.doc_handle = None
-        #self.llm = None
-        #self.prompt = ''
-        #self.title = ''
-
-        #self._set_attrs(dataset)
-        
-        # Update parent model with dataset
         super().__init__(dataset, chroma_db)
 
     def get_hypothetical_questions(self, page_texts, tables):
@@ -49,7 +40,7 @@ class TableQuestionGenerator(DataGenerator):
                 table_in_page = tables[document][page_number]
 
                 # Compute independent jitter per nested loop run
-                current_sleep_time = self.get_new_sleep_time()
+                current_sleep_time = get_new_sleep_time()
 
                 try:
                     page_content_text = page_texts.get(document, {}).get(page_number, "")
@@ -88,7 +79,7 @@ class TableQuestionGenerator(DataGenerator):
                     )
 
                 processed_count += 1
-                print(f"📝 Table {processed_count} (Doc: {doc_index}, Page: {page_number}) parsed. Throttling {current_sleep_time:.2f}s...")
+                print(f"{I_PEN} Table {processed_count} (Doc: {doc_index}, Page: {page_number}) parsed. Throttling {current_sleep_time:.2f}s...")
                 
                 # --- ⏳ PER-TABLE THROTTLING ⏳ ---
                 # Forces execution tracking to sleep gracefully right after invoking the gateway

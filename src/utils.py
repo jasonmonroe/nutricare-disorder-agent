@@ -24,6 +24,7 @@ from src.constants import (
     I_HANDSHAKE,
     I_TIMER,
     LLAMA_KEY,
+    RATE_LIMIT_TIME,
     RUN_MAX_ID,
     MEM0_API_KEY,
     RUN_MIN_ID,
@@ -86,6 +87,15 @@ def show_banner(title: str, section: str = '') -> None:
     print('')
 
 
+def show_models():
+    print('+-------------------------------------+')
+    print('| MODELS')
+    print(f'| LLAMA_MODEL = {LLAMA_MODEL}')
+    print(f'| OPENAI_EMBEDDING_MODEL = {OPENAI_EMBEDDING_MODEL}')
+    print(f'| OPENAI_MODEL = {OPENAI_MODEL}')
+    print('+-------------------------------------+')
+
+
 def show_title_banner() -> None:
     print('+-------------------------------------+')
     print('|                                     |')
@@ -95,6 +105,8 @@ def show_title_banner() -> None:
     print(f'|            {I_BOT} An AI Agent           |')
     print('+-------------------------------------+')
     print(f'\n{I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE}\n')
+
+    show_models()
 
 
 def show_ai_agent_banner() -> None:
@@ -184,6 +196,11 @@ def is_jupyter() -> bool:
             
     except NameError:
         return False
+
+
+def get_new_sleep_time() -> float:
+        # Used in child classes.
+        return RATE_LIMIT_TIME + random.uniform(2.0, 7.0)
 
 
 def format_dir(path: str) -> str:
