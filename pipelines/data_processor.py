@@ -14,6 +14,7 @@ import warnings
 # Local Libraries
 from src.eda import show_histogram
 
+from src.utils import premium_model_tier
 from storages.question_generator import QuestionGenerator
 from storages.table_question_generator import TableQuestionGenerator
 
@@ -27,8 +28,10 @@ from src.constants import (
     I_RUNNING,
     I_INFO,
     CHROMA_VECTORS_DIR,
+    PROMPT_QUESTION_GENERATOR_PREMIUM,
     PROMPT_TABLE_QUESTION_GENERATOR,
-    PROMPT_QUESTION_GENERATOR
+    PROMPT_QUESTION_GENERATOR,
+    PROMPT_TABLE_QUESTION_GENERATOR_PREMIUM
 )
 from src.doc_handler import DocHandler
 
@@ -108,7 +111,7 @@ def run(dataset: dict) -> None:
         'batch_size': DOCUMENT_CHUNK_TEXT_BATCH_SIZE, #DOCUMENT_CHUNK_BATCH_SIZE,
         'collection_name': 'hypothetical_questions',
         'doc_handle': doc_handle,
-        'prompt': PROMPT_QUESTION_GENERATOR,
+        'prompt': PROMPT_QUESTION_GENERATOR_PREMIUM if premium_model_tier() else PROMPT_QUESTION_GENERATOR,
         'title': 'Hypothetical Questions'
     }
     
@@ -138,7 +141,7 @@ def run(dataset: dict) -> None:
         #'batch_size': DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
         'collection_name': 'table_hypothetical_questions',
         'doc_handle': doc_handle,
-        'prompt': PROMPT_TABLE_QUESTION_GENERATOR,
+        'prompt': PROMPT_TABLE_QUESTION_GENERATOR_PREMIUM if premium_model_tier() else PROMPT_TABLE_QUESTION_GENERATOR,
         'title': 'Hypothetical Table Questions'
     }
 

@@ -203,6 +203,11 @@ def get_new_sleep_time() -> float:
         return RATE_LIMIT_TIME + random.uniform(2.0, 7.0)
 
 
+def premium_model_tier() -> bool:
+    # Are we using free tier models are expensive ones
+    return LLAMA_MODEL == 'meta-llama/llama-guard-4-12b' and OPENAI_EMBEDDING_MODEL == 'text-embedding-3-small' and OPENAI_MODEL == 'gpt-4o-mini':
+
+
 def format_dir(path: str) -> str:
     """
     Format persist directory.
