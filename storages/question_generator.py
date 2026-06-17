@@ -18,17 +18,21 @@ from src.constants import (
     PROMPT_INSTR
 )
 from src.utils import handle_rate_limit_error, show_timer
+from storages.data_generator import DataGenerator
 
 
-class QuestionGenerator(ChromaModel):
-    def __init__(self, dataset: dict):
-        self.batch_size = 0
-        self.doc_handle = None
-        self.prompt = ''
-        self.title = ''
+class QuestionGenerator(DataGenerator):
+    def __init__(self, dataset: dict, chroma_db: ChromaModel):
+        #self.batch_size = 0
+        #self.chroma_db = chroma_db
+        #self.doc_handle = None
+        #self.llm = None
+        #self.prompt = ''
+        #self.title = ''
 
-        super().__init__(dataset)
-
+        # Update parent model with dataset
+        super().__init__(dataset, chroma_db)
+        
     def get_hypothetical_questions(self, semantic_chunks) -> list:
         print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
 

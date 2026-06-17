@@ -6,13 +6,6 @@ from __future__ import annotations
 # |     DATA PROCESSING     |
 # +-------------------------+
 
-# Professional Version:
-# https://www.merckmanuals.com/professional/nutritional-disorders/nutrition-general-considerations/overview-of-nutrition
-
-# Consumer Version:
-# https://www.merckmanuals.com/home/disorders-of-nutrition/overview-of-nutrition/overview-of-nutrition
-
-
 # Python Libraries
 import nest_asyncio
 import random
@@ -33,7 +26,7 @@ from src.constants import (
     I_FLAG,
     I_RUNNING,
     I_INFO,
-    VECTORS_DIR,
+    CHROMA_VECTORS_DIR,
     PROMPT_TABLE_QUESTION_GENERATOR,
     PROMPT_QUESTION_GENERATOR
 )
@@ -44,6 +37,12 @@ def run(dataset: dict) -> None:
     """
     Run the data retrieval pipeline.
     Section 1: Comprehensive Data Parsing and Preparation for Efficient Nutritional Information Retrieval
+    
+    # Professional Version:
+    # https://www.merckmanuals.com/professional/nutritional-disorders/nutrition-general-considerations/overview-of-nutrition
+
+    # Consumer Version:
+    # https://www.merckmanuals.com/home/disorders-of-nutrition/overview-of-nutrition/overview-of-nutrition
 
     :param dataset:
     :return:
@@ -55,15 +54,21 @@ def run(dataset: dict) -> None:
     # Pluck all the datasets needed to run this
     llama = dataset.get('llama')
     chroma_db = dataset.get('chroma_db')
-    data_refresh = dataset.get('refresh', False)
+    data_refresh = dataset.get('refresh')
     print(f'{I_INFO}  Refresh flag is {data_refresh}.')
+
+    # @todo - delete lines 60-64 when done testing
+    if not data_refresh:
+        print('Data refresh flag is false!')
+        import sys
+        sys.exit(1)
 
     # Apply the nested async loop to allow async code execution in the notebook.
     nest_asyncio.apply()
 
-    existing = chroma_db.get_semantic_count()
-    if existing > 0 and not data_refresh:
-        print(f"✅ Semantic collection already has {existing} documents — skipping ingestion.")
+    semantic_count = chroma_db.get_semantic_count()
+    if semantic_count > 0 and not data_refresh:
+        print(f"✅ Semantic collection already has {semantic_count} documents — skipping ingestion.")
 
         doc_handle = DocHandler(llama.parser, skip_parse=True)
         document_chunks = []
@@ -77,8 +82,7 @@ def run(dataset: dict) -> None:
         # Create vector storage for nutritional information
         semantic_chunks = chroma_db.get_semantic_chunks(doc_handle.folder_path)
         document_chunks = doc_handle.get_semantic_chunks(semantic_chunks)
-        chroma_db.add_semantic_documents(document_chunks)
-
+        chroma_db.add_semantic_documents(document_chunks) # @todo - erroring here!
 
     # Show Histogram
     # @todo - show_histogram(document_chunks)
@@ -90,6 +94,17 @@ def run(dataset: dict) -> None:
     # Use structured receiver when quering all/random questions
     chroma_db.query_questions(is_hyp=False, pluck=random.choice([True, True, True, False]))
     chroma_dataset = chroma_db.export()
+
+    """
+    return {
+            'collection_name': self.collection_name,
+            #'document_content_description': self.document_content_description,
+            'embedding_model': self.embedding_model,
+            'force_rebuild': self.force_rebuild,
+            'llm': self.llm,
+            #'metadata_info': self.metadata_info,
+        }
+    """
 
     # --- Hypothetical Questions --- #
 
@@ -104,13 +119,14 @@ def run(dataset: dict) -> None:
     }
     
     dataset = {**chroma_dataset, **questions_dataset}
-    questions = QuestionGenerator(dataset)
+    print(f'new dataset for questions:{dataset}')
+    questions = QuestionGenerator(dataset, chroma_db)
 
-    existing_questions = questions.get_semantic_count()
-    print(f'{I_INFO}  Existing Questions: {existing_questions}')
+    semantic_count_questions = questions.get_semantic_count()
+    print(f'{I_INFO}  Existing Questions: {semantic_count_questions}')
 
-    if existing_questions > 0 and not data_refresh:
-        print(f"✅ Hypothetical questions collection already has {existing_questions} documents — skipping question generation.")
+    if semantic_count_questions > 0 and not data_refresh:
+        print(f"✅ Hypothetical questions collection already has {semantic_count_questions} documents — skipping question generation.")
     elif document_chunks is not None or data_refresh:
         print(f"\nGenerating new {questions_dataset.get('title')}...")
 
@@ -133,13 +149,14 @@ def run(dataset: dict) -> None:
     }
 
     dataset = {**chroma_dataset, **table_questions_dataset}
-    table_questions = TableQuestionGenerator(dataset)
+    print(f'new dataset for table questions:{dataset}')
+    table_questions = TableQuestionGenerator(dataset, chroma_db)
 
-    existing_table_questions = table_questions.get_semantic_count()
-    print(f'{I_INFO}  Existing Table Questions: {existing_table_questions}')
+    semantic_count_table_questions = table_questions.get_semantic_count()
+    print(f'{I_INFO}  Existing Table Questions: {semantic_count_table_questions}')
     
-    if existing_table_questions > 0 and not data_refresh:
-        print(f"✅ Hypothetical table questions collection already has {existing_table_questions} documents — skipping question generation.")
+    if semantic_count_table_questions > 0 and not data_refresh:
+        print(f"✅ Hypothetical table questions collection already has {semantic_count_table_questions} documents — skipping question generation.")
     else:
     
         print(f"\nGenerating new {table_questions_dataset.get('title')}...")
@@ -165,8 +182,8 @@ def backup_docs():
     import shutil
     
     # Define source and destination paths for vector storage
-    source_path = VECTORS_DIR  # Complete the code to define the path to your vectorstore directory
-    destination_path = 'backup_' + VECTORS_DIR  # Complete the code to define the destination path in your Drive
+    source_path = CHROMA_VECTORS_DIR  # Complete the code to define the path to your vectorstore directory
+    destination_path = 'backup_' + CHROMA_VECTORS_DIR  # Complete the code to define the destination path in your Drive
     
     # Copy the directory to Google Drive
     try:

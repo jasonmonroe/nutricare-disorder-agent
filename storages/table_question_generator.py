@@ -16,17 +16,23 @@ from src.constants import (
     PROMPT_INSTR
 )
 from src.utils import handle_rate_limit_error, show_timer, start_timer
+from storages.data_generator import DataGenerator
 
 
-class TableQuestionGenerator(ChromaModel):
-    def __init__(self, dataset: dict):
+class TableQuestionGenerator(DataGenerator):
+    def __init__(self, dataset: dict, chroma_db: ChromaModel):
         #self.batch_size = 0
-        self.doc_handle = None
-        self.prompt = ''
-        self.title = ''
+        #self.chroma_db = chroma_db
+        #self.doc_handle = None
+        #self.llm = None
+        #self.prompt = ''
+        #self.title = ''
+
+        #self._set_attrs(dataset)
         
-        super().__init__(dataset)
-  
+        # Update parent model with dataset
+        super().__init__(dataset, chroma_db)
+
     def get_hypothetical_questions(self, page_texts, tables):
         print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
         

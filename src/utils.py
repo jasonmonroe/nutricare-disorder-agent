@@ -33,7 +33,7 @@ from src.constants import (
     OPENAI_EMBEDDING_MODEL,
     OPENAI_MODEL,
     SECS_IN_MIN,
-    VECTORS_DIR,
+    CHROMA_VECTORS_DIR,
     LLAMA_MODEL, RATE_LIMIT_RESP_CODE
 )
 
@@ -193,5 +193,5 @@ def format_dir(path: str) -> str:
     :param path:
     :return:
     """
-    print(f'format_dir(./{VECTORS_DIR}/{path}_db)\n')
-    return f"./{VECTORS_DIR}/{path}_db"
+    print(f'format_dir(./{CHROMA_VECTORS_DIR}/{path}_db)\n')
+    return f"./{CHROMA_VECTORS_DIR}/{path}_db"

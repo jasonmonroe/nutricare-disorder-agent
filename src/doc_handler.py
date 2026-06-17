@@ -35,7 +35,8 @@ from src.constants import (
     I_DOCUMENT,
     I_FLAG,
     I_WARNING,
-    VECTORS_DIR,
+    CHROMA_VECTORS_DIR,
+    SLEEP_TIME_SEC,
 )
 
 
@@ -290,8 +291,8 @@ class DocHandler():
         Aggressively purges only the target database directory (db/)
         to force a true factory reset of ChromaDB states.
         """
-        # 👑 FORCE TARGET HARD-CODED LITERALLY TO PREVENT CONFIG MISMATCHES
-        target_db_dir = os.path.abspath(VECTORS_DIR)
+    
+        target_db_dir = os.path.abspath(CHROMA_VECTORS_DIR)
 
         print(f"\n# --- {I_BROOM} Wiping Database Directory: {target_db_dir} {I_BROOM} --- #")
 
@@ -313,7 +314,10 @@ class DocHandler():
                 print(f"{I_FLAG} Failed to wipe element path target {file_path}. Exception: {e}")
 
         if next(os.scandir(target_db_dir), None) is None:
-            print(f"{I_DIR} Database directory `{VECTORS_DIR}` is completely empty and reset!\n")
+            dir_perm = 0o755
+            os.chmod(target_db_dir, dir_perm)
+            print(f"{I_DIR} Database directory `{CHROMA_VECTORS_DIR}` is completely empty and reset!")
+            print(f'{I_DIR} {CHROMA_VECTORS_DIR} privileges are set to {dir_perm}.\n')
 
     @staticmethod
     def _unzip() -> bool:
@@ -354,7 +358,7 @@ class DocHandler():
                     with open(DOCUMENT_FILEPATH, 'wb') as dest_file:
                         dest_file.write(source_stream.read())
                 
-                sleep(1)
+                sleep(SLEEP_TIME_SEC)
 
         # --- Check if file was successfully unzipped! --- #
         # Final logic boundary check utilizing your new path constant

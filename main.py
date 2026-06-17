@@ -96,7 +96,7 @@ from pipelines.data_processor import run as run_data_retrieval_pipeline
 from pipelines.huggingface import Huggingface 
 from pipelines.streamlit_app import StreamLitApp
 
-from src.constants import ARG_PARAMS, I_BOT, I_CROSSMARK, I_SKULL, I_TIMER, I_WARNING
+from src.constants import ARG_PARAMS, DEFAULT_COLL_NAME, I_BOT, I_CROSSMARK, I_SKULL, I_TIMER, I_WARNING
 from src.doc_handler import DocHandler
 from src.utils import get_run_id, show_title_banner, start_timer, show_timer
 
@@ -133,6 +133,20 @@ def _check_models():
         print(f'{I_SKULL}')
         sys.exit(0)
 
+
+def _check_chroma_db():
+    semantic_count = chroma_db.get_semantic_count()
+    vector_count = chroma_db.get_document_count()
+
+    if semantic_count == 0 and vector_count == 0:
+        print(f"{I_CROSSMARK} Out of sync! Both vector partitions are completely empty. Please run with --data first! {I_CROSSMARK}")
+        raise RuntimeError("Vector database contains zero records across all internal collections.")
+
+    if chroma_db.get_document_count() == 0:
+        print(f"{I_CROSSMARK} No documents found in the vector storage. Please run with --data first! {I_CROSSMARK}")
+        raise RuntimeError("Vector database is completely empty!")
+
+
 def _set_logger(args):
     log = args.get('log', False)
     log_debug = args.get('log.debug', False)
@@ -146,8 +160,6 @@ def _set_logger(args):
     return log
 
 
-    
-# Ensure your entry block checks against '__main__', not 'main'
 if __name__ == '__main__':
 
     start_time = start_timer()
@@ -156,8 +168,13 @@ if __name__ == '__main__':
     show_title_banner()
 
     args = _parse_args(sys.argv[1:])
+    print(f'DEBUG:args={args}')
     log = _set_logger(args)
-    force_rebuild = True if args.get('refresh') else False
+    refresh = True if args.get('refresh') else False
+
+    # Wipe documents directory before Chroma is created.
+    if refresh:
+        DocHandler.wipe_db_dir()
 
     # --- Load all models --- #
     openai_model = OpenAIModel()
@@ -166,8 +183,9 @@ if __name__ == '__main__':
     chroma_db = ChromaModel({
         'llm': openai_model.llm,
         'embedding_model': openai_model.embedding_model,
-        'collection_name': 'nutritional',
-        'force_rebuild': force_rebuild
+        'collection_name': DEFAULT_COLL_NAME,
+        'force_rebuild': refresh
+        
     })
 
     llama = LlamaModel(openai_model.llm, openai_model.embedding_model, log)
@@ -182,14 +200,13 @@ if __name__ == '__main__':
         'chroma_db': chroma_db,
         'llama': llama,
         'openai_model': openai_model,
-        'log': log
+        'log': log,
+        'refresh': refresh
     }
     
     # --- Execute based on parsed flags --- #
     
-    # Wipe documents directory before Chroma is created.
-    if args.get('fresh'):
-        DocHandler.wipe_db_dir()
+    
 
     if args.get('data'):
         run_data_retrieval_pipeline(dataset)
@@ -199,11 +216,7 @@ if __name__ == '__main__':
         dataset['workflow_app'] = workflow_app
 
     if args.get('start'):
-
-        if chroma_db.get_document_count() == 0:
-            print(f"{I_CROSSMARK} No documents found in the vector store. Please run with --data first! {I_CROSSMARK}")
-            raise RuntimeError("Vector database is completely empty!")
-             
+        _check_chroma_db()
         run_start_agent_pipeline(dataset)
 
     if args.get('deploy'):
