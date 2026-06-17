@@ -14,12 +14,12 @@ import warnings
 # Local Libraries
 from src.eda import show_histogram
 
-from src.utils import premium_model_tier
+from src.utils import is_jupyter, premium_model_tier
 from storages.question_generator import QuestionGenerator
 from storages.table_question_generator import TableQuestionGenerator
 
 from src.constants import (
-    DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
+  
     DOCUMENT_CHUNK_BATCH_SIZE,
     I_CHECKMARK,
     I_DIR,
@@ -33,8 +33,9 @@ from src.constants import (
     PROMPT_QUESTION_GENERATOR,
     PROMPT_TABLE_QUESTION_GENERATOR_PREMIUM
 )
-from src.doc_handler import DocHandler
 
+from src.doc_handler import DocHandler
+from src.model_config import config, ModelConfig
 
 def run(dataset: dict) -> None:
     """
@@ -50,7 +51,9 @@ def run(dataset: dict) -> None:
     :param dataset:
     :return:
     """
-    warnings.filterwarnings('ignore', category=DeprecationWarning)
+
+    if not dataset.get('log_debug'):
+        warnings.filterwarnings('ignore', category=DeprecationWarning)
 
     print(f'\n# --- {I_RUNNING} Running data processor pipeline {I_RUNNING} --- #')
 
@@ -61,7 +64,8 @@ def run(dataset: dict) -> None:
     print(f'{I_INFO}  Refresh flag is {data_refresh}.')
 
     # Apply the nested async loop to allow async code execution in the notebook.
-    nest_asyncio.apply()
+    if is_jupyter():
+        nest_asyncio.apply()
 
     semantic_count = chroma_db.get_semantic_count()
     if semantic_count > 0 and not data_refresh:
@@ -108,10 +112,10 @@ def run(dataset: dict) -> None:
     # Get hypothetical questions and add them to the vector storage.
     # Create a merged dataset for questions.
     questions_dataset = {
-        'batch_size': DOCUMENT_CHUNK_TEXT_BATCH_SIZE, #DOCUMENT_CHUNK_BATCH_SIZE,
+        'batch_size': config.DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
         'collection_name': 'hypothetical_questions',
         'doc_handle': doc_handle,
-        'prompt': PROMPT_QUESTION_GENERATOR_PREMIUM if premium_model_tier() else PROMPT_QUESTION_GENERATOR,
+        'prompt': config.PROMPT_QUESTION_GENERATOR,
         'title': 'Hypothetical Questions'
     }
     
@@ -138,10 +142,9 @@ def run(dataset: dict) -> None:
 
     # Get table hypothetical questions and add them to the vector storage
     table_questions_dataset = {
-        #'batch_size': DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
         'collection_name': 'table_hypothetical_questions',
         'doc_handle': doc_handle,
-        'prompt': PROMPT_TABLE_QUESTION_GENERATOR_PREMIUM if premium_model_tier() else PROMPT_TABLE_QUESTION_GENERATOR,
+        'prompt': config.PROMPT_TABLE_QUESTION_GENERATOR,
         'title': 'Hypothetical Table Questions'
     }
 
@@ -168,7 +171,7 @@ def run(dataset: dict) -> None:
     # --- Backup documents to Google Drive --- #
 
     # Sample a random user query using hypothetical retriever
-    # Note: To randomly pluck a question set pluck param to True
+    # ℹ️ Note: To randomly pluck a question set pluck param to True
     chroma_db.query_questions(is_hyp=True, pluck=random.choice([True, True, True, False]))
 
     print(f'\n# --- {I_RUNNING} Completed data processor pipeline {I_RUNNING} --- #')
@@ -179,8 +182,8 @@ def backup_docs():
     import shutil
     
     # Define source and destination paths for vector storage
-    source_path = CHROMA_VECTORS_DIR  # Complete the code to define the path to your vectorstore directory
-    destination_path = 'backup_' + CHROMA_VECTORS_DIR  # Complete the code to define the destination path in your Drive
+    source_path = config.CHROMA_VECTORS_DIR  # Complete the code to define the path to your vectorstore directory
+    destination_path = 'backup_' + config.CHROMA_VECTORS_DIR  # Complete the code to define the destination path in your Drive
     
     # Copy the directory to Google Drive
     try:

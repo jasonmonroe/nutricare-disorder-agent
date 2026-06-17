@@ -9,32 +9,25 @@ import time
 import chromadb
 
 # Vector Libraries
-from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_chroma import Chroma
-from langchain_classic.chains.query_constructor.schema import AttributeInfo
 from langchain_classic.retrievers.self_query.base import SelfQueryRetriever
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain_experimental.text_splitter import SemanticChunker
 from langchain_community.query_constructors.chroma import ChromaTranslator
+from langchain_core.vectorstores import VectorStoreRetriever
+from langchain_experimental.text_splitter import SemanticChunker
 
 from src.constants import (
     CHROMA_SERVER_NO_TELEMETRY,
     CHROMA_VECTOR_RESULT_CNT,
-    CHROMA_VECTORS_DIR,
-    DOCUMENT_CHUNK_BATCH_SIZE,
-    DOCUMENT_FILE,
-    DOCUMENT_FILEPATH,
     I_DOCUMENT,
     I_GEAR,
     I_INFO,
+    I_PEN,
     I_QUES,
     I_WARNING,
-    RATE_LIMIT_TIME,
-    SEMANTIC_THRESH_LIMIT,
     SIMILARITY_SEARCH_QUERY,
-    SLEEP_TIME_SEC, 
 )
-from src.utils import format_dir
+from src.model_config import config, ModelConfig
 
 
 class ChromaModel:
@@ -47,15 +40,13 @@ class ChromaModel:
 
         # Force telemetry down
         os.environ["CHROMA_SERVER_NO_TELEMETRY"] = CHROMA_SERVER_NO_TELEMETRY
-         
         logging.getLogger('chromadb.telemetry').setLevel(logging.CRITICAL)
 
         # Ensures everything stays tightly isolated inside your db directory
-        self.chromadb_client = chromadb.PersistentClient(path=os.path.abspath(CHROMA_VECTORS_DIR))
+        self.chromadb_client = chromadb.PersistentClient(path=os.path.abspath(config.CHROMA_VECTORS_DIR))
 
         #self.batch_size = 0 # remove
         self.collection_name = ''
-        #self.document_content_description = '' # remove
         self.embedding_model = None 
         self.force_rebuild = False
         self.llm = None
@@ -70,8 +61,6 @@ class ChromaModel:
         self.vector_storage = self._get_vector_storage()
         self.retriever = self.get_retriever()
         self.semantic_text_splitter = self._get_semantic_text_splitter()
-        #self.structured_retriever = self._get_structured_retriever()
-        #self.structured_hyp_retriever = self._get_structured_hyp_retriever()
 
     def _set_attrs(self, dataset: dict) -> None:
         """
@@ -83,24 +72,15 @@ class ChromaModel:
 
         for key, value in dataset.items():
             if hasattr(self, key):
-                #print(f'DEBUG: key={key}, value={value}')
                 setattr(self, key, value)
 
         if self.llm is None and 'openai_model' in dataset:
             openai_model = dataset['openai_model']
             self.llm = openai_model.llm
 
-
     @staticmethod
     def queries() -> list:
-        return [
-            "What is the recommended dosage for treating scurvy?",
-            "What is the definition of Vitamin C, based only on content from pages 1 through 14?",
-            f"Describe the clinical signs of nutritional deficiency documented in {DOCUMENT_FILEPATH}.",
-            "What type of nutritional support is needed for patients to increase lean body mass?",
-            "On page 35, please explain the correlation between Vitamin B12 levels and tissue deficiency.",
-            "What are the laboratory and clinical standards for diagnosing Vitamin D deficiency in adults?",
-        ]
+        return config.RETRIEVER_QUERIES
 
     def get_retriever(self) -> VectorStoreRetriever:
         """Initializes vector retriever using the unified client runtime pool."""
@@ -133,36 +113,19 @@ class ChromaModel:
         return SemanticChunker(
             self.embedding_model,
             breakpoint_threshold_type='percentile',
-            breakpoint_threshold_amount=SEMANTIC_THRESH_LIMIT
+            breakpoint_threshold_amount=config.SEMANTIC_THRESH_LIMIT
         )
 
     def _get_structured_retriever(self) -> SelfQueryRetriever:
+
         return SelfQueryRetriever.from_llm(
             llm=self.llm,
             vectorstore=self.semantic_storage,
-            document_contents="Text Semantic Chunks for " + DOCUMENT_FILE + " published by the Global Nutritional Health Organization",
-            metadata_field_info=[
-                AttributeInfo(
-                    name="source",
-                    description=f"The file path or name of the medical reference document (e.g., '{DOCUMENT_FILE}')",
-                    type="string",
-                ),
-                AttributeInfo(
-                    name="page",
-                    # description="The explicit page number within the parsed medical document (0-indexed)",
-                    description="The page number in the PDF document, starting from 0. Use integers for comparisons.",
-                    type="integer",
-                ),
-
-                AttributeInfo(
-                    name="page_content",
-                    description="raw text of (sectional) document",
-                    type="string"
-                )
-            ],
+            document_contents=config.RETRIEVER_DOCUMENT_CONTENT,
+            metadata_field_info=config.RETRIEVER_DOCUMENT_METADATA_FIELDS,
             structured_query_translator=ChromaTranslator(),
             verbose=True,
-            use_original_query=True,
+            use_original_query=ModelConfig.is_premium()
         )
 
     def _get_structured_hyp_retriever(self) -> SelfQueryRetriever:
@@ -170,32 +133,11 @@ class ChromaModel:
         return SelfQueryRetriever.from_llm(
             llm=self.llm,
             vectorstore=self.vector_storage,
-            document_contents="Hypothetical Questions for " + DOCUMENT_FILEPATH + " published by the Global Nutritional Health Organization",
-            metadata_field_info=[
-                AttributeInfo(
-                    name="original_content",
-                    description="Original text extracted from documents",
-                    type="string"
-                ),
-                AttributeInfo(
-                    name="source",
-                    description="File path of document",
-                    type="string"
-                ),
-                AttributeInfo(
-                    name="page",
-                    description="Page number of document",
-                    type="integer"
-                ),
-                AttributeInfo(
-                    name="type",
-                    description="Datatype of attribute `original_content`",
-                    type="string"
-                )
-            ],
+            document_contents=config.RETRIEVER_HYPER_DOCUMENT_CONTENT,
+            metadata_field_info=config.RETRIEVER_HYPER_DOCUMENT_METADATA_FIELDS,
             structured_query_translator=ChromaTranslator(),
             verbose=True,
-            use_original_query=True
+            use_original_query=ModelConfig.is_premium()
         )
 
     def get_semantic_chunks(self, folder_path: str) -> list:
@@ -215,13 +157,13 @@ class ChromaModel:
 
     def add_semantic_documents(self, semantic_chunks: list) -> None:
         print('# --- Adding semantic documents --- #')
-        batch_size = DOCUMENT_CHUNK_BATCH_SIZE #100
+        batch_size = config.DOCUMENT_CHUNK_BATCH_SIZE 
         for i in range(0, len(semantic_chunks), batch_size):
             self.semantic_storage.add_documents(semantic_chunks[i: i + batch_size])
 
     def add_vector_documents(self, documents: list) -> None:
         print('# --- Adding vector documents --- #')
-        batch_size = DOCUMENT_CHUNK_BATCH_SIZE
+        batch_size = config.DOCUMENT_CHUNK_BATCH_SIZE
         for i in range(0, len(documents), batch_size):
             self.vector_storage.add_documents(documents[i : i + batch_size])
 
@@ -238,21 +180,17 @@ class ChromaModel:
         except Exception:
             return 0
 
-    
-
     def export(self) -> dict:
         """Exports attributes to be injected into child or dependent pipeline classes."""
 
         return {
             'collection_name': self.collection_name,
-            #'document_content_description': self.document_content_description,
             'embedding_model': self.embedding_model,
             'force_rebuild': self.force_rebuild,
             'llm': self.llm,
-            #'metadata_info': self.metadata_info,
         }
 
-    def query_questions(self, is_hyp: bool = False, pluck: bool = False) -> None:
+    def query_questions(self, is_hyp: bool=False, pluck: bool=False) -> None:
         """
         Query questions using either structured hypothetical retriever or structured retriever.
 
@@ -272,6 +210,7 @@ class ChromaModel:
             try:
                 ques_semantic_chunks_retrieved = retriever.invoke(question)
                 retrieved_count = len(ques_semantic_chunks_retrieved)
+
                 print(f"\n----- {I_QUES}Question #{i+1} {I_QUES} -----")
                 print(question)
                 print(f"\n{I_INFO} Number of Semantic Chunks Retrieved: {retrieved_count}")
@@ -290,8 +229,8 @@ class ChromaModel:
                 results_count.append(0)
 
             print(f"+---- Question #{i+1} ----+\n")
-            time.sleep(SLEEP_TIME_SEC)
+            time.sleep(config.SLEEP_TIME_SEC)
 
         total = len(queries_to_run)
         successful = sum(1 for c in results_count if c > 0)
-        print(f"Retriever Quality: {successful}/{total} queries returned results ({successful/total*100:.0f}%)")
+        print(f"{I_PEN} Retriever Quality: {successful}/{total} queries returned results ({successful/total*100:.0f}%)")

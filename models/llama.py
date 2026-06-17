@@ -6,9 +6,9 @@
 
 # Vendor Libraries
 from groq import Groq
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from llama_index.core import Settings
-from llama_parse import LlamaParse  # Document parsing library
+from llama_parse import LlamaParse  
 from llama_parse.utils import ResultType
 
 # Local Libraries
@@ -102,8 +102,7 @@ class LlamaModel:
             print(f"{I_CROSSMARK} Error with Llama Guard: {e}")
             return ""
 
-    @staticmethod
-    def _apply_guard(result: str) -> str:
+    def _apply_guard(self, result: str) -> str:
         # Added type hint for clarity
         if "unsafe" in result:
             if any(code.strip() in LLAMA_UNSAFE_CODES for code in result.replace("unsafe ", "").strip().split(",")):

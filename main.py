@@ -57,6 +57,9 @@ global workflow_app
 # Python Libraries
 import os
 import sys
+import warnings
+
+
 from dotenv import load_dotenv
 
 # Force load_dotenv to overwrite any existing terminal environmental variables
@@ -79,9 +82,6 @@ if sys.version_info >= (3, 13):
     print("CRITICAL: This project requires Python 3.11 or 3.12. Python 3.13+ is not yet supported.")
     sys.exit(1)
 
-import warnings
-warnings.filterwarnings('ignore', category=DeprecationWarning, module='pydantic')
-warnings.filterwarnings('ignore', category=DeprecationWarning, module='langchain')
 
 # Vendor Libraries
 import logging
@@ -96,7 +96,17 @@ from pipelines.data_processor import run as run_data_retrieval_pipeline
 from pipelines.huggingface import Huggingface 
 from pipelines.streamlit_app import StreamLitApp
 
-from src.constants import ARG_PARAMS, DEFAULT_COLL_NAME, I_BOT, I_CROSSMARK, I_SKULL, I_TIMER, I_WARNING
+from src.constants import (
+    ARG_PARAMS, 
+    DEFAULT_COLL_NAME, 
+    I_BOT, 
+    I_CROSSMARK, 
+    I_SKULL, 
+    I_WARNING
+)
+
+from src.model_config import config, ModelConfig
+
 from src.doc_handler import DocHandler
 from src.utils import get_run_id, show_title_banner, start_timer, show_timer
 
@@ -121,11 +131,11 @@ def run_huggingface_deployment_pipeline():
 
 
 def run_streamlit_pipeline(llama_obj: LlamaModel):
-    # Note: agents must be built and started before you can run this!
+    # ℹ️ Note: agents must be built and started before you can run this!
     streamlit = StreamLitApp(llama_obj)
     streamlit.run()
 
-
+"""
 def _check_models():
     # Safeguard block evaluation order prevents unhandled NoneType errors
     if chroma_db is None or openai_model is None or llama is None:
@@ -145,7 +155,7 @@ def _check_chroma_db():
     if chroma_db.get_document_count() == 0:
         print(f"{I_CROSSMARK} No documents found in the vector storage. Please run with --data first! {I_CROSSMARK}")
         raise RuntimeError("Vector database is completely empty!")
-
+"""
 
 def _set_logger(args):
     log = args.get('log', False)
@@ -154,10 +164,15 @@ def _set_logger(args):
     logger = logging.getLogger(__name__)
     if log:
         logging.basicConfig(level=logging.INFO) #DEBUG/INFO
+        
     elif log_debug:
         logging.basicConfig(level=logging.DEBUG)
+
+    if not log_debug:
+        warnings.filterwarnings('ignore', category=DeprecationWarning, module='pydantic')
+        warnings.filterwarnings('ignore', category=DeprecationWarning, module='langchain')
     
-    return log
+    return log, log_debug
 
 
 if __name__ == '__main__':
@@ -169,7 +184,7 @@ if __name__ == '__main__':
 
     args = _parse_args(sys.argv[1:])
     print(f'DEBUG:args={args}')
-    log = _set_logger(args)
+    log, log_debug = _set_logger(args)
     refresh = True if args.get('refresh') else False
 
     # Wipe documents directory before Chroma is created.
@@ -185,7 +200,6 @@ if __name__ == '__main__':
         'embedding_model': openai_model.embedding_model,
         'collection_name': DEFAULT_COLL_NAME,
         'force_rebuild': refresh
-        
     })
 
     llama = LlamaModel(openai_model.llm, openai_model.embedding_model, log)
@@ -193,7 +207,7 @@ if __name__ == '__main__':
     # --- Check Models --- #
 
     # Safeguard block evaluation order prevents unhandled NoneType errors
-    _check_models()
+    ModelConfig.check_models(chroma_db, openai_model, llama)
 
     # Create pipeline dataset.
     dataset = {
@@ -201,13 +215,12 @@ if __name__ == '__main__':
         'llama': llama,
         'openai_model': openai_model,
         'log': log,
+        'log_debug': log_debug,
         'refresh': refresh
     }
     
     # --- Execute based on parsed flags --- #
     
-    
-
     if args.get('data'):
         run_data_retrieval_pipeline(dataset)
 
@@ -216,7 +229,7 @@ if __name__ == '__main__':
         dataset['workflow_app'] = workflow_app
 
     if args.get('start'):
-        _check_chroma_db()
+        ModelConfig.check_chroma_db(chroma_db)
         run_start_agent_pipeline(dataset)
 
     if args.get('deploy'):

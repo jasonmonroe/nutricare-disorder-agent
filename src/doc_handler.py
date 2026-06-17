@@ -16,13 +16,13 @@ from zipfile import ZipFile
 
 # Vendor Libraries
 # LangChain Imports
-#from langchain_classic.chains.query_constructor.schema import AttributeInfo
 from langchain_core.documents import Document  # Document data structures
 from llama_parse import LlamaParse  # Document parsing library
 
 # Local Libraries
 from src.constants import (
-    DOCUMENT_DIR, 
+    DOCUMENT_DIR,
+    DOCUMENT_DIR_PERM, 
     DOCUMENT_FILE, 
     DOCUMENT_FILEPATH,
     DOCUMENT_ZIP,
@@ -35,11 +35,10 @@ from src.constants import (
     I_DOCUMENT,
     I_FLAG,
     I_PEN,
-    I_WARNING,
-    CHROMA_VECTORS_DIR,
-    SLEEP_TIME_SEC,
+    I_WARNING
 )
 
+from src.model_config import config
 
 class DocHandler():
     def __init__(self, llama_parser: LlamaParse, skip_parse: bool = False):
@@ -178,7 +177,7 @@ class DocHandler():
 
         for obj in json_objs:
             # Extract file identification name safely
-            file_path_str = obj.get("file_path", "unknown_source.pdf")
+            file_path_str = obj.get("file_path", "unknown-source.pdf")
             name = file_path_str.split("/")[-1]
 
             page_texts[name] = {}
@@ -235,7 +234,7 @@ class DocHandler():
 
                 except Exception as e:
                     # Graceful exception logging boundary handling
-                    flag_symbol = self.I_FLAG if hasattr(self, 'I_FLAG') else '[FLAG]'
+                    flag_symbol = I_FLAG if hasattr(self, 'I_FLAG') else '[FLAG]'
                     print(f"{flag_symbol} No table ref string. Error: {e}")
                     table_ref_string = None
 
@@ -292,15 +291,15 @@ class DocHandler():
         Aggressively purges only the target database directory (db/)
         to force a true factory reset of ChromaDB states.
         """
-        dir_perm = 0o755
-        target_db_dir = os.path.abspath(CHROMA_VECTORS_DIR)
+
+        target_db_dir = os.path.abspath(config.CHROMA_VECTORS_DIR)
 
         print(f"\n# --- {I_BROOM} Wiping Database Directory: {target_db_dir} {I_BROOM} --- #")
 
         if not os.path.exists(target_db_dir):
             print(f'{I_WARNING} Directory {target_db_dir} does not exist. \n{I_DIR} Creating a fresh instance now...')
             os.makedirs(target_db_dir, exist_ok=True)
-            os.chmod(target_db_dir, dir_perm)
+            os.chmod(target_db_dir, DOCUMENT_DIR_PERM)
             return
 
         # Loop through the children of db/ specifically, leaving data/ completely alone
@@ -316,9 +315,9 @@ class DocHandler():
                 print(f"{I_FLAG} Failed to wipe element path target {file_path}. Exception: {e}")
 
         if next(os.scandir(target_db_dir), None) is None:
-            os.chmod(target_db_dir, dir_perm)
-            print(f"{I_DIR} Database directory `{CHROMA_VECTORS_DIR}` is completely empty and reset!")
-            print(f'{I_PEN} {CHROMA_VECTORS_DIR} privileges are set to {dir_perm}.\n')
+            os.chmod(target_db_dir, DOCUMENT_DIR_PERM)
+            print(f"{I_DIR} Database directory `{config.CHROMA_VECTORS_DIR}` is completely empty and reset!")
+            print(f'{I_PEN} {config.CHROMA_VECTORS_DIR} privileges are set to {DOCUMENT_DIR_PERM}.\n')
 
     @staticmethod
     def _unzip() -> bool:
@@ -326,7 +325,7 @@ class DocHandler():
         
         Uses DOCUMENT_FILEPATH for local path verification, while inspecting the 
         internal zip manifest to safely handle folder-nested contents inside the archive.
-        Note: Full document is 4,114 pages and can be found here:
+        ℹ️ Note: Full document is 4,114 pages and can be found here:
         https://benhvienanhson.com/media/post_attachments/The_Merck_Manual_of_Diagnosis_and_Therapy_2011_-_19th_Edn........pdf
         """
         # If the file already exists at our new explicit path, skip extraction entirely
@@ -340,7 +339,7 @@ class DocHandler():
 
             # Using ZipFile directly to match your top-level import
             with ZipFile(DOCUMENT_ZIP, 'r') as zip_handle:
-                # 1. Search the zip manifest array for any entry ending with our filename
+                # Search the zip manifest array for any entry ending with our filename
                 archive_target_key = None
                 for member in zip_handle.namelist():
                     if member.endswith(DOCUMENT_FILE):
@@ -352,14 +351,15 @@ class DocHandler():
                     print(f'{I_FLAG} Could not find {DOCUMENT_FILE} anywhere inside the archive!')
                     return False
 
-                # 2. Ensure destination folder exists, read the zip stream, and write 
-                # it out directly to your new clean local path constant
+                # Ensure destination folder exists, read the zip stream, and write it out directly to your new clean local path constant.
                 os.makedirs(DOCUMENT_DIR, exist_ok=True)
+                os.chmod(DOCUMENT_DIR, DOCUMENT_DIR_PERM)
+
                 with zip_handle.open(archive_target_key) as source_stream:
                     with open(DOCUMENT_FILEPATH, 'wb') as dest_file:
                         dest_file.write(source_stream.read())
                 
-                sleep(SLEEP_TIME_SEC)
+                sleep(config.SLEEP_TIME_SEC)
 
         # --- Check if file was successfully unzipped! --- #
         # Final logic boundary check utilizing your new path constant
@@ -368,4 +368,5 @@ class DocHandler():
             return True
 
         print(f'{I_FLAG} {DOCUMENT_FILE} not unzipped!')
+
         return False

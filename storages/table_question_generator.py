@@ -3,21 +3,19 @@
 # Python Libraries
 import time
 
-# Vendor Libraries
-
 # Local Libraries
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
 
 from src.constants import (
-    AI_ROLE,
     AGENT_EMPTY_RESP,
+    AI_ROLE,
     I_INFO,
     I_PEN,
     I_QUES,
-    PROMPT_INSTR
 )
-from src.utils import get_new_sleep_time, handle_rate_limit_error, premium_model_tier, show_timer, start_timer
+from src.model_config import config, ModelConfig
+from src.utils import get_new_sleep_time, handle_rate_limit_error, show_timer, start_timer
 from storages.data_generator import DataGenerator
 
 
@@ -25,14 +23,15 @@ class TableQuestionGenerator(DataGenerator):
     def __init__(self, dataset: dict, chroma_db: ChromaModel):
         super().__init__(dataset, chroma_db)
 
-
     def get_hypothetical_questions(self, page_texts, tables):
 
         # Check tier status, if we're using the expensive models run this function instead and return
-        if premium_model_tier():
-            return self.get_hypothetical_questions_with_high_tier_models(page_texts, tables)
+        if ModelConfig.is_premium():
+            return self._with_premium_models(page_texts, tables)
+        else:
+            return self._with_free_models(page_texts, tables)
         
-        
+    def _with_free_models(self, page_texts: dict, tables: dict):
         # free tier version
         print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
         print(f'{I_INFO} USING FREE TIER MODELS')
@@ -45,7 +44,7 @@ class TableQuestionGenerator(DataGenerator):
         for doc_index, document in enumerate(tables, start=1):
             rate_limit_hit = False
             
-            # --- TIER 2: Gather and compact page-level tables ---
+            # --- Gather and compact page-level tables ---
             for page_number in tables[document]: 
                 table_in_page = tables[document][page_number]
                 page_content_text = page_texts.get(document, {}).get(page_number, "")
@@ -70,7 +69,7 @@ class TableQuestionGenerator(DataGenerator):
                         AI_ROLE=AI_ROLE,
                         docs=page_content_text,
                         tables=compacted_table_str,
-                        PROMPT_INSTR=PROMPT_INSTR,
+                        PROMPT_INSTR=config.PROMPT_INSTR,
                     )
 
                     response = self.llm.invoke(formatted_response)
@@ -88,7 +87,7 @@ class TableQuestionGenerator(DataGenerator):
                     print(f"⚠️ Terminating run for document '{document}' due to rate limits.")
                     break
 
-                # --- TIER 3: Write to your single open database trait ---
+                # --- Write to your single open database trait ---
                 if questions and questions != AGENT_EMPTY_RESP:
                     questions_metadata = {
                         'original_content': str(table_in_page), 
@@ -111,17 +110,10 @@ class TableQuestionGenerator(DataGenerator):
                 break
 
         show_timer(start_time)
+
         return table_hypothetical_questions
-
-
-
-    """
-    Use this method when the models are:
-        LLAMA_MODEL=meta-llama/llama-guard-4-12b
-        OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-        OPENAI_MODEL=gpt-4o-mini
-    """
-    def get_hypothetical_questions_with_high_tier_models(self, page_texts, tables):
+  
+    def _with_premium_models(self, page_texts: dict, tables: dict):
         print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
         
         start_time = start_timer()
@@ -146,7 +138,7 @@ class TableQuestionGenerator(DataGenerator):
                         AI_ROLE=AI_ROLE,
                         docs=page_content_text,
                         tables=table_in_page,
-                        PROMPT_INSTR=PROMPT_INSTR,
+                        PROMPT_INSTR=config.PROMPT_INSTR,
                     )
 
                     response = self.llm.invoke(formatted_response)
@@ -156,7 +148,10 @@ class TableQuestionGenerator(DataGenerator):
                     questions = AGENT_EMPTY_RESP
                     # Single execution point prevents log thrashing and double mutations
                     current_sleep_time, rate_limit_hit = handle_rate_limit_error(
-                        e, self.collection_name, current_sleep_time, page_number
+                        e, 
+                        self.collection_name, 
+                        current_sleep_time, 
+                        page_number
                     )
 
                 if rate_limit_hit:

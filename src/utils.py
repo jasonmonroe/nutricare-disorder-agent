@@ -13,9 +13,9 @@ import time
 
 # Local Libraries
 from src.constants import (
+    AGENT_EXIT_CMDS,
     AI_ROLE,
     APP_TITLE,
-    AGENT_EXIT_CMDS,
     CHROMA_TELEMETRY_DISABLED,
     GROQ_API_KEY,
     HF_TOKEN,
@@ -24,19 +24,19 @@ from src.constants import (
     I_HANDSHAKE,
     I_TIMER,
     LLAMA_KEY,
-    RATE_LIMIT_TIME,
-    RUN_MAX_ID,
+    LLAMA_MODEL,
     MEM0_API_KEY,
-    RUN_MIN_ID,
     MSEC,
     OPENAI_API_BASE,
     OPENAI_API_KEY,
     OPENAI_EMBEDDING_MODEL,
     OPENAI_MODEL,
-    SECS_IN_MIN,
-    CHROMA_VECTORS_DIR,
-    LLAMA_MODEL, RATE_LIMIT_RESP_CODE
+    RATE_LIMIT_RESP_CODE,
+    RUN_MAX_ID,
+    RUN_MIN_ID,
+    SECS_IN_MIN
 )
+from src.model_config import config
 
 # --- HELPER FUNCTIONS --- #
 
@@ -90,9 +90,9 @@ def show_banner(title: str, section: str = '') -> None:
 def show_models():
     print('+-------------------------------------+')
     print('| MODELS')
-    print(f'| LLAMA_MODEL = {LLAMA_MODEL}')
-    print(f'| OPENAI_EMBEDDING_MODEL = {OPENAI_EMBEDDING_MODEL}')
-    print(f'| OPENAI_MODEL = {OPENAI_MODEL}')
+    print(f'| LLAMA_MODEL: {LLAMA_MODEL}')
+    print(f'| OPENAI_EMBEDDING_MODEL: {OPENAI_EMBEDDING_MODEL}')
+    print(f'| OPENAI_MODEL: {OPENAI_MODEL}')
     print('+-------------------------------------+')
 
 
@@ -125,7 +125,7 @@ def show_ai_agent_banner() -> None:
 
 def set_os_environ() -> None:
     # --- Environment Keys ---
-    # Note: This line is for WRITING (or modifying) a variable within the Python process's environment.
+    # ℹ️ Note: This line is for WRITING (or modifying) a variable within the Python process's environment.
     # Set the cleaned value back into the environment for libraries like LangChain to find
     os.environ["HF_TOKEN"] = str(HF_TOKEN).strip()
     os.environ["GROQ_API_KEY"] = str(GROQ_API_KEY).strip()
@@ -176,13 +176,13 @@ def is_jupyter() -> bool:
     Detects if the code is currently running inside a Jupyter Notebook
     or a standard terminal Python script.
     """
-    # 1. Check if 'IPython' is even loaded in memory
+    # Check if 'IPython' is even loaded in memory
     if 'IPython' not in sys.modules:
         return False
         
     try:
         from IPython import get_ipython
-        # 2. Extract the name of the active shell class
+        # Extract the name of the active shell class
         shell = get_ipython().__class__.__name__
         
         # 'ZMQInteractiveShell' corresponds to Jupyter Notebooks / JupyterLab
@@ -199,13 +199,7 @@ def is_jupyter() -> bool:
 
 
 def get_new_sleep_time() -> float:
-        # Used in child classes.
-        return RATE_LIMIT_TIME + random.uniform(2.0, 7.0)
-
-
-def premium_model_tier() -> bool:
-    # Are we using free tier models are expensive ones
-    return LLAMA_MODEL == 'meta-llama/llama-guard-4-12b' and OPENAI_EMBEDDING_MODEL == 'text-embedding-3-small' and OPENAI_MODEL == 'gpt-4o-mini':
+    return config.RATE_LIMIT_TIME + random.uniform(2.0, 7.0)
 
 
 def format_dir(path: str) -> str:
@@ -215,5 +209,5 @@ def format_dir(path: str) -> str:
     :param path:
     :return:
     """
-    print(f'format_dir(./{CHROMA_VECTORS_DIR}/{path}_db)\n')
-    return f"./{CHROMA_VECTORS_DIR}/{path}_db"
+    print(f'format_dir(./{config.CHROMA_VECTORS_DIR}/{path}_db)\n')
+    return f"./{config.CHROMA_VECTORS_DIR}/{path}_db"

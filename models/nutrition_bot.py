@@ -160,7 +160,6 @@ class NutritionBot:
         # Retrieve relevant past memory facts
         relevant_history = self.get_relevant_history(user_id, query)
 
-
         # Normalize into a single iterable regardless of mem0's response shape
         if isinstance(relevant_history, dict):
             memories_list = relevant_history.get("results", [])
@@ -218,7 +217,7 @@ class NutritionBot:
             print(f"# --- Session End: {I_CLOCK} {show_datetime()} --- #")
             return 'break'
 
-        # Note: If user just enters blank, skip Llama and ask for another query.
+        # ℹ️ Note: If user just enters blank, skip Llama and ask for another query.
         elif len(input_str) == 0:
             print(f"{I_THUMBS_DOWN} Hey, you didn\'t say anything. Please ask a question.")
             return 'continue'

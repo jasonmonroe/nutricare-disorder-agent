@@ -20,11 +20,13 @@ from src.constants import (
     I_WATCH,
     LLAMA_SAFE,
 )
-from src.utils import show_ai_agent_banner, show_datetime, start_timer, get_time
+from src.model_config import ModelConfig
+from src.utils import is_jupyter, show_ai_agent_banner, show_datetime, start_timer, get_time
 
 
 def build(dataset: dict):
     print(f'\n# --- {I_RUNNING} Start Building agent pipeline {I_RUNNING} --- #')
+    
     chroma_db = dataset['chroma_db']
     openai_model = dataset['openai_model']
     llm = openai_model.llm
@@ -40,7 +42,12 @@ def build(dataset: dict):
 
 
 def start(dataset: dict) -> None:
+
     print(f'\n# --- {I_RUNNING} Starting agent pipeline {I_RUNNING} --- #')
+
+    if is_jupyter():
+        nest_asyncio.apply()
+    
     show_ai_agent_banner()
 
     show_logs = dataset.get('log', False)
@@ -49,23 +56,12 @@ def start(dataset: dict) -> None:
     llama = dataset.get('llama', None)
     workflow_app = dataset.get('workflow_app', None)
 
-    # Safeguard block evaluation order prevents unhandled NoneType errors
-    if chroma_db is None or openai_model is None or llama is None:
-        print(f"{I_CROSSMARK} Core dependencies didn't load properly. Exiting system!!! {I_CROSSMARK}")
-        sys.exit(0)
-
-    if chroma_db.get_document_count() == 0:
-        print(f"{I_CROSSMARK} No documents found in the vector store. Please run with --data first! {I_CROSSMARK}")
-        raise RuntimeError("Vector database is completely empty!\n")
-
     # --- Run --- #
 
     llm = openai_model.llm
     llm_chatbot = openai_model.llm_chatbot
 
-    nest_asyncio.apply()
-
-    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever, workflow_app, dataset['log'])
+    rag_tool = make_agentic_rag_tool(llm, chroma_db.retriever, workflow_app)
     chatbot = NutritionBot(llm_chatbot, tools=[rag_tool])
     chatbot.agent_executor.verbose = show_logs
     chatbot.start_session()

@@ -16,14 +16,17 @@ from models.agentic_rag_tool import AgenticRagTool
 from src.constants import AI_ROLE
 
 
-def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, workflow_app, log) -> StructuredTool:
-    """Create an agentic RAG tool with llm and retriever bound to the closure."""
+def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, workflow_app) -> StructuredTool:
+    """
+    Create an agentic RAG tool with llm and retriever bound to the closure.
+    """
 
     @tool
     def agentic_rag(query: str, log:bool=False):
         """
         Runs the RAG-based agent with conversation history for context-aware responses.
-
+        
+        @tool is a LangChain decorator. It transforms this function into a LangChain Structured Tool Object.
         Args:
             query (str): The current user query.
 
@@ -46,7 +49,6 @@ def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, work
             "AI_ROLE": AI_ROLE,
         }
 
-
         # Use a local reference variable to avoid the scoping trap
         active_app = workflow_app
         
@@ -59,5 +61,5 @@ def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, work
         
         return active_app.invoke(inputs)
 
-    # Returns here if --start is in args
+    # Returns the @tool function
     return agentic_rag

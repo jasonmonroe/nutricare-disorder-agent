@@ -13,10 +13,10 @@ from IPython.display import Image, display
 
 # Vendor Libraries
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
-
-# LangChain Imports
 from langchain_core.prompts import ChatPromptTemplate as CoreChatPromptTemplate
+from langchain_core.vectorstores import VectorStoreRetriever
 from langgraph.graph import StateGraph, END, START  # State graph for managing states in LangChain
+from langchain_openai import ChatOpenAI
 
 # Local Libraries
 from models.agentic_state import AgentState
@@ -33,7 +33,7 @@ from src.utils import is_jupyter
 
 
 class AgenticRagTool:
-    def __init__(self, llm, retriever, log: bool=False):
+    def __init__(self, llm: ChatOpenAI, retriever: VectorStoreRetriever, log: bool=False):
         self._log = log
         self.llm = llm
         self.retriever = retriever
@@ -145,7 +145,8 @@ class AgenticRagTool:
         """
 
         if query_feedback:
-            print("--- Using feedback to refine query --- ")
+            if self._log:
+                print("--- Using feedback to refine query --- ")
 
             system_message += """
             You have already generated a query that was not precise enough. Use the following SUGGESTIONS to create a NEW, improved query.
@@ -226,7 +227,9 @@ class AgenticRagTool:
         Returns:
             Dict: The updated state with the generated response.
         """
-        print("\n--- craft_response ---")
+
+        if self._log:
+            print("\n--- craft_response ---")
 
         system_message = """
         You are an expert AI {AI_ROLE}, specializing in **Nutritional Disorders**. Your sole task is to analyze the provided CONTEXT and synthesize a direct, comprehensive answer to the user's QUERY.
@@ -471,7 +474,7 @@ class AgenticRagTool:
     def has_max_iterations_reached(state: Dict, var: str) -> bool:
         """
         # Checks if the maximum number of iterations has been reached
-        # Note: This method must be before should_* methods.
+        # ℹ️ Note: This method must be before should_* methods.
         """
 
         return state[var] >= state["loop_max_iter"]
@@ -492,7 +495,8 @@ class AgenticRagTool:
             print("groundedness loop count: ", state['groundedness_loop_count'])
 
         if state["groundedness_score"] >= AGENT_EVAL_THRESHOLD:  # Threshold for groundedness
-            print(f"{I_HANDSHAKE} Moving to precision...")
+            if self._log:
+                print(f"{I_HANDSHAKE} Moving to precision...")
 
             return "check_precision"
 

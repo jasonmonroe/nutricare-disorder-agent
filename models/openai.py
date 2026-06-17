@@ -17,17 +17,20 @@ from src.constants import (
     OPENAI_EMBEDDING_MODEL,
     OPENAI_MODEL,
 )
+from src.model_config import ModelConfig
 
 class OpenAIModel:
     def __init__(self):
 
-        self.embedding_model = self._get_hf_embedding_model()
+        self.embedding_model = self._get_embedding_model() if ModelConfig.is_premium() else self._get_hf_embedding_model()
         self.llm = self._load_llm()
         self.llm_chatbot = self._load_llm_chatbot()
 
     def _get_embedding_model(self) -> OpenAIEmbeddings:
         """
-        Note: We're not using this at this time for this project on a free tier!
+        ℹ️ Note: This function is used for premium models.
+
+        We're not using this at this time for this project on a free tier!
         Get the embedding model. Was used with `text-embedding-3-small`
         Uses HuggingFaceEmbeddings for local processing
         which avoids rate limits and API quota issues.
@@ -43,22 +46,33 @@ class OpenAIModel:
         )
 
     def _get_hf_embedding_model(self) -> HuggingFaceEmbeddings:
-        # 👑 DYNAMIC DECOUPLING: Instantiate a local embedding layer
-        # that bypasses OpenAI / Groq network proxy formatting entirely
+    
+        """
+        Instantiate a local embedding layer that bypasses OpenAI / Groq network proxy formatting entirely
 
-        # Optimization: Use 'mps' for Mac GPU acceleration, fallback to 'cpu'
+        Optimization: Use 'mps' for Mac GPU acceleration, fallback to 'cpu'
+        model_kwargs: Arguments passed directly to the base underlying class constructor when downloading, initializing, or loading model files (e.g., target device, trust_remote_code, or file loading preferences like local_files_only).
+        encode_kwargs: Arguments passed to the model's forward execution pass during runtime when transforming a text string into an array matrix
+
+        ℹ️ Note: We're using this for the free tier models!
+        """
+
         import torch
         device = "mps" if torch.backends.mps.is_available() else "cpu"
 
         return HuggingFaceEmbeddings(
             model_name=OPENAI_EMBEDDING_MODEL,
-            model_kwargs={'device': device},
-            encode_kwargs={'local_files_only': True}
+            model_kwargs={
+                'device': device,
+                'local_files_only': True # Free tier model
+                },
+            encode_kwargs={
+                'normalize_embeddings': True  # (Optional: Example of a valid encoding argument)
+            }
         )
 
     def _load_llm(self) -> ChatOpenAI:
         # This initializes the Chat OpenAI model using the provided endpoint, API key, deployment name.
-        # Initialize the Chat OpenAI model
 
         return ChatOpenAI(
             openai_api_base=OPENAI_API_BASE, # Fill in the endpoint
@@ -71,7 +85,7 @@ class OpenAIModel:
         )
 
     def _load_llm_chatbot(self) -> ChatOpenAI:
-        # Note: This is for Nutrition Bot
+        # ℹ️ Note: This is for Nutrition Bot
         return ChatOpenAI(
             model=OPENAI_MODEL,
             openai_api_base=OPENAI_API_BASE,
