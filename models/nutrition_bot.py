@@ -1,3 +1,4 @@
+from __future__ import annotations
 # models/nutrition_bot.py
 
 # +-----------------------+

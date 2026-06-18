@@ -1,7 +1,5 @@
+from __future__ import annotations
 # models/openai.py
-
-# https://openai.com
-# Documentation: https://developers.openai.com/api/docs
 
 # Vendor Libraries
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -20,6 +18,9 @@ from src.constants import (
 from src.model_config import ModelConfig
 
 class OpenAIModel:
+    # https://openai.com
+    # Documentation: https://developers.openai.com/api/docs
+
     def __init__(self):
 
         self.embedding_model = self._get_embedding_model() if ModelConfig.is_premium() else self._get_hf_embedding_model()
@@ -28,12 +29,12 @@ class OpenAIModel:
 
     def _get_embedding_model(self) -> OpenAIEmbeddings:
         """
-        ℹ️ Note: This function is used for premium models.
-
         We're not using this at this time for this project on a free tier!
         Get the embedding model. Was used with `text-embedding-3-small`
         Uses HuggingFaceEmbeddings for local processing
         which avoids rate limits and API quota issues.
+
+        ℹ️ Note: This function is used for premium models.
         """
 
         # Fallback to OpenAI embeddings (if using actual OpenAI)

@@ -97,7 +97,7 @@ class QuestionGenerator(DataGenerator):
                 for idx, document in enumerate(batch, start=batch_start):
 
                     # Match the key back to the specific chunk index from the JSON payload
-                    questions_for_chunk = batch_questions_dict.get(str(idx))
+                    questions_for_chunk = batch_questions_dict.get(str(idx)) or batch_questions_dict.get(id)
                     
                     if questions_for_chunk:
                         questions_metadata = {
@@ -107,7 +107,7 @@ class QuestionGenerator(DataGenerator):
                             'page': document.metadata['page'],
                             'source': document.metadata['source'],
                         }
-
+                        
                         hypothetical_questions.append(
                             self.doc_handle.create(questions_for_chunk, questions_metadata)
                         )
@@ -133,6 +133,7 @@ class QuestionGenerator(DataGenerator):
 
         # Track total items for progress logging
         total_chunks = len(semantic_chunks)
+        
         print(f'{I_INFO}  Processing {total_chunks} chunks using batch size {self.batch_size}.\n')
 
         for batch_start in range(0, total_chunks, self.batch_size):
@@ -180,13 +181,11 @@ class QuestionGenerator(DataGenerator):
                     batched_hypothetical_questions.append(
                         self.doc_handle.create(questions, questions_metadata)
                     )
-                else:
-                    print("")
 
                 # --- ⏳ PER-REQUEST THROTTLING ⏳ ---
                 # We cool down immediately AFTER the execution inside the loop, rather than dumping a massive burst and
                 # sleeping at the end of the batch.
-                print(f"\t{I_PEN}  Chunk {i+1}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
+                print(f"\t{I_PEN}  Chunk {idx+1}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
                 time.sleep(current_sleep_time)
 
             hypothetical_questions.extend(batched_hypothetical_questions)

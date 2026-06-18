@@ -189,7 +189,9 @@ nutricare-disorder-agent/
 │   └── utils.py                     # Global helper variables and formatting utilities
 │
 └── data/
-│   └── nutritional-medical-reference/
+│   └── the-merk-manual/
+│       └── nutritional-disorders.pdf    # Source clinical data corpus
+│   └── the-merk-manual-of-dialogue-and-therapy.zip # Zip version of source file(s). 
 │       └── nutritional-disorders.pdf    # Source clinical data corpus
 └── db/                                  # Semantic/Vector storages
 ```

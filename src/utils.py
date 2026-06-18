@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 import os
 import random
 import sys
+import textwrap
 import time
 
 # Local Libraries
@@ -32,6 +33,7 @@ from src.constants import (
     OPENAI_API_KEY,
     OPENAI_EMBEDDING_MODEL,
     OPENAI_MODEL,
+    PEP8_LINE_LEN,
     RATE_LIMIT_RESP_CODE,
     RUN_MAX_ID,
     RUN_MIN_ID,
@@ -71,114 +73,108 @@ def show_timer(start_time_int: float) -> None:
     print(f"{I_TIMER} Run Time: {get_time(start_time_int)}")
 
 
-def show_banner(title: str, section: str = '') -> None:
-    """Prints a stylized banner for console readability."""
+def _make_top_btm_line() -> str:
+    open_close_len = 2 # open close of char `+` or `|`
+    max_line_len = PEP8_LINE_LEN - open_close_len
 
-    # PEP-8 Line length is 79
-    line_length = 79
-    # '+-----------------------------------------------------------------------------+'
-    padding = 4
-    strlen = len(title) + padding
-    line = '+-' + '-' * strlen + '-+'
-
-    print('')
-    print(line)
-    print('|  ' + title.upper() + '  |')
-    print(line)
-
-    if section:
-        print('| ' + section)
-
-    print('')
+    return '+' + ('-' * max_line_len) + '+'
 
 
-def show_banner2(title: str, sub_titles: str='', padding: int=4):
-    # Prints a stylized banner for console readability.
-    # PEP-8 line length is 79. We also want to center padding
-    line_len = 79
-    
-    max_title_len = line_len - (padding * 2) - 2 # open and close of `+`
-    padding_str = ' ' * padding
+def _create_title_banner(text: str, center_text: bool=True) -> None:
+    open_close_len = 4 # open close of char `+` or `|`
+    max_line_len = PEP8_LINE_LEN - open_close_len
 
-    # 79 - 2 (+) - 8( ) = 69
-    
-    line = '+' + ('-' * max_title_len) + '+'
-    print(f'DBG: new line len:{len(line)}')
+    # Trim off any chars after limit plus two spaces for blanks
+    text = text[0: max_line_len - open_close_len]
+    text_len = len(text)
+    padding_len = max_line_len - text_len    
+    #print(f'\nbefore padding_len = {padding_len}')
+   
+    if center_text:
+        #title_line = "|" + text.center(padding_len) + "|"
+        # If uneven padding add an extra length for the right side
+        extra_len = 0 if padding_len % 2 == 0 else 1
+        print(f'extra_len={extra_len}')
+        padding_len = padding_len // 2
+        title_line = "| " + (' ' * padding_len) + text + (' ' * (padding_len + extra_len)) + " |"
+        #print(f'DEBUG: 2 + {len((' ' * padding_len))} + {len(text)} + {len((' ' * (padding_len + extra_len)))} + 2')
+        #print(f'DEBUG: 2 + {padding_len} + {len(text)} + {padding_len + extra_len} + 2')
 
-    # Title
-    title_line = '|' + padding_str + () + padding_str +  '|'
+    else:
+        # Remove last two characters to account for open/close spacing
+        #text = text[0: max_line_len - 2]
+        #padding_len -= 2
+        title_line = "| " + text + (' ' * padding_len) + " |"
+        
+    top_btm_line = _make_top_btm_line()
+    #print(f'DEBUG max_line_len={max_line_len}, text len= {text_len}, Center text: {center_text}, after padding len: {padding_len}')
+    #print(f'len = {len(title_line)}, title_line = {title_line}')
 
-    # Sub Title
-
-    pass
-
-
-def show_model_banner(title: str, padding: int=4) -> None:
-    
-    padding = 5 # each half
-    padding_str = ' ' * padding
-    max_model_strlen = max(len(LLAMA_MODEL), len(OPENAI_EMBEDDING_MODEL), len(OPENAI_MODEL))
-    strlen = max_model_strlen + padding*2
-
-    # line is open `+` then dashes based on the string length, close `+`
-    line = '+' +  ('-' * strlen) + '+'
-
-    # title line is open `|` then padding then title then padding again, then close `|`
-    title_line = '|' + padding_str + (title) + padding_str + '|'
-
-    print('')
-    print(line) # top line
+    # Print title banner
+    print(top_btm_line)
     print(title_line)
-    print(line) # bottom line
-    print('')
-
-    # Show sub content
-    sub_line_1 = '| LLAMA_MODEL: '
-    sub_line_2 = '| OPENAI_EMBEDDING_MODEL: '
-    sub_line_3 = '|'
-    print(sub_line_1)
-    print(sub_line_2)
-    print(sub_line_3)
-    print(line)
-    print("\n")
+    print(top_btm_line)
 
 
-def show_models():
-    print('+----------------------------------------------------------------+')
-    print(f'| {I_GEAR}  ({config.VERSION}) MODELS                                                      |')
-    print('+----------------------------------------------------------------+')
-    print(f'| LLAMA_MODEL: {LLAMA_MODEL}                           |')
-    print(f'| OPENAI_EMBEDDING_MODEL: {OPENAI_EMBEDDING_MODEL} |')
-    print(f'| OPENAI_MODEL: {OPENAI_MODEL}                             |')
-    print('+----------------------------------------------------------------+')
+def _create_subtitle_banner(text: str | list, center_text: bool=False) -> None:
+    # Reconstructs the guard to safely catch wrong types OR empty values
+    if not isinstance(text, (str, list)) or not text:
+        print('return None')
+        return None
+        
+    open_close_len = 4 # open close of char `+` or `|` plus space
+    max_line_len = PEP8_LINE_LEN - open_close_len 
+    wrapped_lines = []
+
+    if isinstance(text, list):
+        wrapped_lines = text
+
+    elif isinstance(text, str):
+        import textwrap
+
+        wrapped_lines = textwrap.wrap(text, width=max_line_len)
+
+    # Now that the data is a list format it for display.
+    for line in wrapped_lines:
+        line_len = len(line)
+    
+        padding_len = max_line_len - line_len
+      
+        if center_text:    
+            extra_len = 0 if padding_len % 2 == 0 else 1
+            padding_len = padding_len // 2
+            padded_line = "| " + (' ' * padding_len) + line + (' ' * (padding_len + extra_len)) + " |"
+        else:
+            padded_line = "| " + line + (' ' * padding_len) + " |"
+  
+        print(padded_line)
+       
+    # Close the sub title 
+    if len(wrapped_lines) > 0:
+        print(_make_top_btm_line())
 
 
 def show_title_banner() -> None:
-    print('+-------------------------------------+')
-    print('|                                     |')
-    print(f'|      {APP_TITLE}       |')
-    print('|                                     |')
-    print('+-------------------------------------+')
-    print(f'|            {I_BOT} An AI Agent           |')
-    print('+-------------------------------------+')
+    _create_title_banner(APP_TITLE, f'{I_BOT} An AI Agent')
     print(f'\n{I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE}\n')
 
-    show_models()
-    show_banner('Model Version', config.VERSION)
 
+def show_model_banner() -> None:
+    title = f'⚙️ ({config.VERSION.upper()}) MODELS ⚙️'
+    subtitle = [f'LLAMA_MODEL: {LLAMA_MODEL}', f'OPENAI_EMBEDDING_MODEL: {OPENAI_EMBEDDING_MODEL}', f'OPENAI_MODEL: {OPENAI_MODEL}']
+    
+    _create_title_banner(title)
+    _create_subtitle_banner(subtitle)
+    
 
 def show_ai_agent_banner() -> None:
-    print('\n+--------------------------------------------------------------+')
-    print(f'|        {I_BOT} SMART NUTRITION DISORDER SPECIALIST BOT {I_BOT}         |')
-    print('+--------------------------------------------------------------+')
-    print('| Welcome! I\'m your dedicated AI Nutrition Agent.              |')
-    print('| Ask me anything about nutrition disorders, including their   |')
-    print('| symptoms,causes, treatments, or preventative measures. I am  |')
-    print('| here to assist with your health-related questions.           |')
-    print('|                                                              |')
-    print('+--------------------------------------------------------------+')
-    print(f'| Type "{", ".join(AGENT_EXIT_CMDS)}" to end the conversation.              |')
-    print('+--------------------------------------------------------------+\n')
+    title = f'{I_BOT} SMART NUTRITION DISORDER SPECIALIST BOT {I_BOT}'
+    subtitle = f'Welcome! I\'m your dedicated AI Nutrition Agent.\nAsk me anything about nutrition disorders, including their symptoms,\ncauses, treatments, or preventative measures. I am here to assist with your\nhealth-related questions.'
+ 
+    _create_title_banner(title)
+    _create_subtitle_banner(subtitle)
+
+    print(f'Type "{", ".join(AGENT_EXIT_CMDS)}" to end the conversation.\n')
 
 
 def set_os_environ() -> None:

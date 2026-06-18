@@ -138,7 +138,7 @@ RETRIEVER_HYPER_DOCUMENT_METADATA_FIELDS = [
         type="integer"
     ),
     AttributeInfo(
-        name="doc_type",  # 👈 Standardized 'name' and corrected from 'type' to match the database logic character-for-character
+        name="doc_type",
         description="The explicit data classification marker specifying if a chunk is 'hypothetical_questions' or 'table_hypothetical_questions'.",
         type="string"
     )

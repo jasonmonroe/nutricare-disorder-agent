@@ -12,7 +12,7 @@ class DataGenerator:
         self.doc_type = ''
         self.llm = None
         self.prompt = ''
-        self.title = ''
+        #self.title = ''
 
         self._set_attrs(dataset)
 

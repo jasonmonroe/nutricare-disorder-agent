@@ -118,7 +118,7 @@ class TableQuestionGenerator(DataGenerator):
         return table_hypothetical_questions
   
     def _with_premium_models(self, page_texts: dict, tables: dict):
-        print(f'\n# --- {I_QUES} Getting {self.doc_type.replace('_', ' ').title()} {I_QUES} --- #')
+        print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
         
         start_time = start_timer()
         table_hypothetical_questions = []

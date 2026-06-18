@@ -1,3 +1,4 @@
+from __future__ import annotations
 # models/agentic_rag_tool.py
 
 # +--------------------------+

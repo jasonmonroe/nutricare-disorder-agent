@@ -12,6 +12,7 @@ import random
 import warnings
 
 # Local Libraries
+from models.chroma import ChromaModel
 from src.eda import show_histogram
 from src.utils import is_jupyter
 from storages.question_generator import QuestionGenerator
@@ -41,6 +42,9 @@ def run(dataset: dict) -> None:
 
     # Consumer Version:
     # https://www.merckmanuals.com/home/disorders-of-nutrition/overview-of-nutrition/overview-of-nutrition
+    
+    Note: ❗ The Merck Manual of Diagnosis & Therapy, 19th Edition is a highly copyrighted commercial work owned by Merck & Co., Inc. 
+    Please do not make the full manual public or risk a DMCA takedown request.
 
     :param dataset:
     :return:
@@ -88,11 +92,25 @@ def run(dataset: dict) -> None:
 
     # Use structured receiver when quering all/random questions
     chroma_db.query_questions(is_hyp=False, pluck=random.choice([True, True, True, False]))
-    chroma_dataset = chroma_db.export()
-
-
+    
     # --- Hypothetical Questions --- #
+    _process_questions(doc_handle, chroma_db, document_chunks, data_refresh)
 
+    # --- Hypothetical Table Questions --- #
+    _process_table_questions(doc_handle, chroma_db, data_refresh)
+
+    # --- Backup documents to a third party storage system --- #
+    _backup_docs()
+    # --- Backup documents to a third party storage system --- #
+
+    # Sample a random user query using hypothetical retriever
+    # ℹ️ Note: To randomly pluck a question set pluck param to True
+    chroma_db.query_questions(is_hyp=True, pluck=random.choice([True, True, True, False]))
+
+    print(f'\n# --- {I_RUNNING} Completed data processor pipeline {I_RUNNING} --- #')
+
+
+def _process_questions(doc_handle: DocHandler, chroma_db: ChromaModel, document_chunks: list, data_refresh: bool):
     # Get hypothetical questions and add them to the vector storage.
     # Create a merged dataset for questions.
     questions_dataset = {
@@ -100,11 +118,11 @@ def run(dataset: dict) -> None:
         'doc_type': 'hypothetical_questions',
         'doc_handle': doc_handle,
         'prompt': config.PROMPT_QUESTION_GENERATOR,
-        #'title': 'Hypothetical Questions'
     }
     
+    chroma_dataset = chroma_db.export()
     dataset = {**chroma_dataset, **questions_dataset}
-    print(f'DEBUG: new dataset for questions:{dataset}')
+    #print(f'DEBUG: new dataset for questions:{dataset}')
     questions = QuestionGenerator(dataset, chroma_db)
 
     semantic_count_questions = questions.get_semantic_count()
@@ -122,19 +140,19 @@ def run(dataset: dict) -> None:
     else:
         print(f"{I_FLAG} Cannot generate hypothetical questions: document chunks unavailable.")
 
-    # --- Hypothetical Table Questions --- #
+
+def _process_table_questions(doc_handle: DocHandler, chroma_db: ChromaModel, data_refresh: bool):
+    chroma_dataset = chroma_db.export()
 
     # Get table hypothetical questions and add them to the vector storage
     table_questions_dataset = {
         'doc_type': 'table_hypothetical_questions',
         'doc_handle': doc_handle,
         'prompt': config.PROMPT_TABLE_QUESTION_GENERATOR,
-        #'title': 'Hypothetical Table Questions'
     }
 
     dataset = {**chroma_dataset, **table_questions_dataset}
-     
-    print(f'DEBUG: new dataset for table questions:{dataset}')
+    #print(f'DEBUG: new dataset for table questions:{dataset}')
     table_questions = TableQuestionGenerator(dataset, chroma_db)
 
     semantic_count_table_questions = table_questions.get_semantic_count()
@@ -143,39 +161,28 @@ def run(dataset: dict) -> None:
     if semantic_count_table_questions > 0 and not data_refresh:
         print(f"✅ Hypothetical table questions collection already has {semantic_count_table_questions} documents — skipping question generation.")
     else:
-    
         print(f"\nGenerating new {table_questions_dataset.get('title')}...")
 
         table_hypothetical_questions_doc = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
         table_questions.add_semantic_documents(table_hypothetical_questions_doc)
         doc_handle.show_sample(table_hypothetical_questions_doc, table_questions.collection_name.title())
         chroma_db.add_vector_documents(table_hypothetical_questions_doc)
-
-    # --- Backup documents to Google Drive --- #
-    _backup_docs()
-    # --- Backup documents to Google Drive --- #
-
-    # Sample a random user query using hypothetical retriever
-    # ℹ️ Note: To randomly pluck a question set pluck param to True
-    chroma_db.query_questions(is_hyp=True, pluck=random.choice([True, True, True, False]))
-
-    print(f'\n# --- {I_RUNNING} Completed data processor pipeline {I_RUNNING} --- #')
-
+    
 
 def _backup_docs():
     import os 
     import shutil
 
-    print(f'# --- {I_DISK} Backing up documents {I_DISK} --- #')
+    print(f'\n# --- {I_DISK} Backing up documents {I_DISK} --- #')
     
     # Define source and destination paths for vector storage
     source_path = config.CHROMA_VECTORS_DIR  # Complete the code to define the path to your vectorstore directory
-    destination_path = 'backup_' + config.CHROMA_VECTORS_DIR  # Complete the code to define the destination path in your Drive
+    destination_path = '_backups/' + config.CHROMA_VECTORS_DIR  # Complete the code to define the destination path in your Drive
     
     # Copy the directory to Google Drive
     try:
         shutil.copytree(source_path, destination_path)
-        print(f"{I_CHECKMARK} {I_DISK} Successfully copied '{source_path}' to '{destination_path}'")
+        print(f"{I_CHECKMARK} Successfully copied '{source_path}' to '{destination_path}'")
     
     except FileExistsError:
         print(f"Directory '{destination_path}' already exists. Skipping copy.")
@@ -185,7 +192,7 @@ def _backup_docs():
     
     # Verify if the directory was copied successfully
     if os.path.exists(destination_path):
-        print(f"{I_DISK} {source_path} directory exists on your hard drive.")  # Complete the code to confirm the directory name
+        print(f"{I_DIR} {source_path} directory exists on your hard drive.")  # Complete the code to confirm the directory name
     
     else:
         print(f"{source_path} directory was not copied to your source path.")  # Complete the code to confirm the directory name

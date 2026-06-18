@@ -1,3 +1,4 @@
+from __future__ import annotations
 # models/chroma.py
 
 # Python Libraries
@@ -23,6 +24,7 @@ from src.constants import (
     I_GEAR,
     I_INFO,
     I_PEN,
+    I_PLUS,
     I_QUES,
     I_WARNING,
     SIMILARITY_SEARCH_QUERY,
@@ -155,7 +157,6 @@ class ChromaModel:
 
     def get_semantic_chunks(self, filepath: str) -> list:
         semantic_chunks = []
-        #pdf_loader = PyPDFDirectoryLoader(folder_path)
         pdf_loader = PyPDFLoader(filepath)
         chunks = pdf_loader.load_and_split(self.semantic_text_splitter)
         semantic_chunks.extend(chunks)
@@ -170,19 +171,21 @@ class ChromaModel:
             return 0
 
     def add_semantic_documents(self, semantic_chunks: list) -> None:
-        
         batch_size = config.DOCUMENT_CHUNK_BATCH_SIZE 
-        print(f'# --- Adding semantic documents with a batch size of {batch_size}. --- #')
+        semantic_chunks_cnt = len(semantic_chunks)
 
-        for i in range(0, len(semantic_chunks), batch_size):
+        print(f'\n# --- {I_PLUS} Adding {semantic_chunks_cnt} semantic documents with a batch size of {batch_size} {I_PLUS}--- #')
+
+        for i in range(0, semantic_chunks_cnt, batch_size):
             self.semantic_storage.add_documents(semantic_chunks[i: i + batch_size])
 
     def add_vector_documents(self, documents: list) -> None:
-        
         batch_size = config.DOCUMENT_CHUNK_BATCH_SIZE
-        print(f'# --- Adding vector documents with a batch size of {batch_size}. --- #')
+        document_cnt = len(documents)
 
-        for i in range(0, len(documents), batch_size):
+        print(f'\n# --- {I_PLUS} Adding {document_cnt} vector documents with a batch size of {batch_size}. {I_PLUS} --- #')
+
+        for i in range(0, document_cnt, batch_size):
             self.vector_storage.add_documents(documents[i : i + batch_size])
 
     def get_documents(self) -> list:
@@ -239,9 +242,9 @@ class ChromaModel:
                     ques_semantic_chunks_retrieved = self.retriever.invoke(question)
                     retrieved_count = len(ques_semantic_chunks_retrieved)
 
-                    print(f"\n----- {I_QUES}Question #{i+1} {I_QUES} -----")
+                    print(f"\n----- {I_QUES} Question #{i+1} {I_QUES} -----")
                     print(question)
-                    print(f"\n{I_INFO} Number of Semantic Chunks Retrieved: {retrieved_count}")
+                    print(f"\n{I_INFO}  Number of Semantic Chunks Retrieved: {retrieved_count}")
 
                     if retrieved_count == 0:
                         print(f'{I_WARNING}  Again, nothing was retrieved across fallback storage layer indexes! {I_WARNING}')
@@ -250,6 +253,11 @@ class ChromaModel:
                         #print(f"{I_DOCUMENT} Fallback Retrieved Documents:\n{ques_semantic_chunks_retrieved}")
                     
                 #results_count.append(retrieved_count)
+                else:
+                    print(f"\n----- {I_QUES} Question #{i+1} {I_QUES} -----")
+                    print(question)
+                    print(f"\n{I_INFO}  Number of Semantic Chunks Retrieved: {retrieved_count}")
+
                         
                 #else:
                 print(f"{I_DOCUMENT} {fallback_str} Retrieved Documents:\n{ques_semantic_chunks_retrieved}")

@@ -102,11 +102,9 @@ from src.constants import (
     I_BOT, 
     I_WARNING
 )
-
-from src.model_config import ModelConfig
-
 from src.doc_handler import DocHandler
-from src.utils import get_run_id, show_title_banner, start_timer, show_timer
+from src.model_config import ModelConfig
+from src.utils import get_run_id, show_ai_agent_banner, show_model_banner, show_title_banner, start_timer, show_timer
 
 
 def _parse_args(command_line_args: list[str]) -> dict:
@@ -133,33 +131,12 @@ def run_streamlit_pipeline(llama_obj: LlamaModel):
     streamlit = StreamLitApp(llama_obj)
     streamlit.run()
 
-"""
-def _check_models():
-    # Safeguard block evaluation order prevents unhandled NoneType errors
-    if chroma_db is None or openai_model is None or llama is None:
-        print(f"{I_CROSSMARK} Core dependencies didn't load properly. Exiting system!!! {I_CROSSMARK}")
-        print(f'{I_SKULL}')
-        sys.exit(0)
-
-
-def _check_chroma_db():
-    semantic_count = chroma_db.get_semantic_count()
-    vector_count = chroma_db.get_document_count()
-
-    if semantic_count == 0 and vector_count == 0:
-        print(f"{I_CROSSMARK} Out of sync! Both vector partitions are completely empty. Please run with --data first! {I_CROSSMARK}")
-        raise RuntimeError("Vector database contains zero records across all internal collections.")
-
-    if chroma_db.get_document_count() == 0:
-        print(f"{I_CROSSMARK} No documents found in the vector storage. Please run with --data first! {I_CROSSMARK}")
-        raise RuntimeError("Vector database is completely empty!")
-"""
 
 def _set_logger(args):
     log = args.get('log', False)
     log_debug = args.get('log.debug', False)
-
     logger = logging.getLogger(__name__)
+
     if log:
         logging.basicConfig(level=logging.INFO) #DEBUG/INFO
         
@@ -175,6 +152,20 @@ def _set_logger(args):
 
 
 if __name__ == '__main__':
+    import random
+    rand_int = random.randint(0, 256)
+    print(f'rand_int = {rand_int}')
+    #rand_int = 192
+    text = 'Word' * rand_int
+
+    text = ['WordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWor', 'dWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWo', 'rdWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordW', 'ordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWord', 'WordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWor', 'dWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWo', 'rdWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordW', 'ordWordWordWordWordWordWordWordWordWordWord']
+
+    #text = "Serum folate reflects folate status unless intake has recently increased."
+    #create_title_banner(text, True)
+    #create_subtitle_banner(text, False)
+    #show_ai_agent_banner()
+    show_ai_agent_banner()
+    sys.exit(1)
 
     start_time = start_timer()
     run_id = get_run_id()

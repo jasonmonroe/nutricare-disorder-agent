@@ -1,3 +1,4 @@
+from __future__ import annotations
 # src/doc_handler.py
 
 # +----------------------+
@@ -71,15 +72,19 @@ class DocHandler():
         if "type" not in metadata:
             metadata["type"] = "Document"
 
+        # Check for duplicates before adding
         metadata["checksum"] = self._calc_checksum(metadata)
         metadata["doc_id"] = self._generate_document_id() 
 
         if "creationdate" not in metadata:
             file_info = os.stat(DOCUMENT_FILEPATH)
-            metadata["creationdate"] = file_info.st_birthtime
+            timestamp = getattr(file_info, "st_birthtime", file_info.st_mtime)
+            metadata["creationdate"] = datetime.fromtimestamp(timestamp).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
 
         # Get timestamp  of chunk
-        metadata["utc_datetime"] = datetime.now(UTC) 
+        metadata["utc_datetime"] = str(datetime.now(UTC))
 
         # Sort metadata but have the doc_id key at the top.
         metadata = {
@@ -128,11 +133,11 @@ class DocHandler():
         :return: None
         """
 
-        print(f'\n# --- {I_DOCUMENT} Show sample documents {I_DOCUMENT} --- #')
+        print(f'\n# --- {I_DOCUMENT} Show sample {samp_title} documents {I_DOCUMENT} --- #')
         
         doc_cnt = len(samp_docs)
         if doc_cnt == 0:
-            print(f"{I_WARNING} Checked baseline collection is empty.")
+            print(f"{I_WARNING} Checked baseline collection is empty. No sample to show.")
             return
 
         index = random.randint(0, doc_cnt - 1)

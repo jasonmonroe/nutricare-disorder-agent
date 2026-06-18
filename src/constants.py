@@ -70,6 +70,9 @@ ARG_PARAMS = [
     '--start'      # Starts AI agent in local environment
     ]
 
+# Define backup diretory if needed.  Usually your backup directory is outside the codebase.
+BACKUP_DIR = "backups/"
+
 # Define document directory paths and chunk sizes
 # Batch sizes (per batch) for processing documents and text chunks
 DEFAULT_COLL_NAME = 'nutritional'
@@ -124,6 +127,7 @@ SECS_IN_MIN = 60 # secs in min
 INACTIVE_SESSION_DUR = SECS_IN_MIN * 5 # 5  minutes 
 RUN_MIN_ID = 10000
 RUN_MAX_ID = 99999
+PEP8_LINE_LEN = 79 # PEP8 line length standards
 
 # Icons
 I_ANGRY = '😠'
