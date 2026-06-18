@@ -22,13 +22,18 @@ from storages.data_generator import DataGenerator
 
 
 class QuestionGenerator(DataGenerator):
+    """
+    Creates hypothetical questions with answers that a user may ask.  It is stored and then returned
+    quickly for a fast response instead of constantly quering for every possible question.
+    """
+
     def __init__(self, dataset: dict, chroma_db: ChromaModel):
         super().__init__(dataset, chroma_db)
         
     def get_hypothetical_questions(self, semantic_chunks) -> list:
 
         # Check tier status, if we're using the expensive models run this function instead and return
-        if ModelConfig.is_premium_model():
+        if ModelConfig.is_premium():
             return self._with_premium_models(semantic_chunks)
         else:
             return self._with_free_models(semantic_chunks)
@@ -36,7 +41,7 @@ class QuestionGenerator(DataGenerator):
     def _with_free_models(self, semantic_chunks):
         # --- Free tier version --- #
         print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
-        print(f'{I_INFO} USING FREE TIER MODELS')
+        print(f'{I_INFO}  USING FREE TIER MODELS')
 
         start_time = time.time()
         hypothetical_questions = []
@@ -78,7 +83,7 @@ class QuestionGenerator(DataGenerator):
                 batch_questions_dict = {}
                 current_sleep_time, rate_limit_hit = handle_rate_limit_error(
                     e,
-                    self.collection_name,
+                    self.doc_type,
                     int(current_sleep_time),
                     batch_start
                 )
@@ -92,14 +97,15 @@ class QuestionGenerator(DataGenerator):
                 for idx, document in enumerate(batch, start=batch_start):
 
                     # Match the key back to the specific chunk index from the JSON payload
-                    questions_for_chunk = batch_questions_dict.get(str(idx)) or batch_questions_dict.get(idx)
+                    questions_for_chunk = batch_questions_dict.get(str(idx))
                     
                     if questions_for_chunk:
                         questions_metadata = {
+                            'batch_no': batch_start, # @todo - debug
+                            'doc_type': self.doc_type,
                             'original_content': document.page_content,
-                            'source': document.metadata['source'],
                             'page': document.metadata['page'],
-                            'doc_type': self.collection_name,
+                            'source': document.metadata['source'],
                         }
 
                         hypothetical_questions.append(
@@ -109,7 +115,7 @@ class QuestionGenerator(DataGenerator):
             # --- ⏳ PER-BATCH THROTTLING ⏳ ---
             # Throttling happens exactly ONCE per batch block instead of once per chunk file!
             processed_count = min(batch_start + self.batch_size, total_chunks)
-            print(f"{I_PEN}  Batch progress: {processed_count}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
+            print(f"\t{I_PEN}  Batch progress: {processed_count}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
             time.sleep(current_sleep_time)
 
         show_timer(start_time)
@@ -133,7 +139,7 @@ class QuestionGenerator(DataGenerator):
             batch = semantic_chunks[batch_start: batch_start + self.batch_size]
             batched_hypothetical_questions = []
 
-            for i, document in enumerate(batch, start=batch_start):
+            for idx, document in enumerate(batch, start=batch_start):
                 rate_limit_hit = False
                 
                 # Dynamic per-request jittered sleep to keep the API gateway happy
@@ -146,35 +152,41 @@ class QuestionGenerator(DataGenerator):
                         docs=document.page_content
                     )
 
-                    questions = OpenAIModel.filter_response(self.llm.invoke(formatted_response), i)
+                    questions = OpenAIModel.filter_response(self.llm.invoke(formatted_response), idx)
 
                 except Exception as e:
                     questions = AGENT_EMPTY_RESP
                     # Single call to cleanly parse the exception payload
                     current_sleep_time, rate_limit_hit = handle_rate_limit_error(
-                        e, self.collection_name, int(current_sleep_time), i
+                        e, 
+                        self.doc_type, 
+                        int(current_sleep_time), 
+                        idx
                     )
 
                 if rate_limit_hit:
-                    print(f"{I_WARNING}️ Skipping chunk {i} due to rate limit threshold.\n")
+                    print(f"{I_WARNING}️ Skipping chunk {idx} due to rate limit threshold.\n")
                     continue
 
                 if questions and questions != AGENT_EMPTY_RESP:
                     questions_metadata = {
+                        'batch_no': batch_start, # @todo - debug
+                        'doc_type': self.doc_type,
                         'original_content': document.page_content,
-                        'source': document.metadata['source'],
                         'page': document.metadata['page'],
-                        'doc_type': self.collection_name,
+                        'source': document.metadata['source'],
                     }
 
                     batched_hypothetical_questions.append(
                         self.doc_handle.create(questions, questions_metadata)
                     )
+                else:
+                    print("")
 
                 # --- ⏳ PER-REQUEST THROTTLING ⏳ ---
                 # We cool down immediately AFTER the execution inside the loop, rather than dumping a massive burst and
                 # sleeping at the end of the batch.
-                print(f"{I_PEN}  Chunk {i+1}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
+                print(f"\t{I_PEN}  Chunk {i+1}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
                 time.sleep(current_sleep_time)
 
             hypothetical_questions.extend(batched_hypothetical_questions)

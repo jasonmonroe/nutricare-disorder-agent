@@ -18,6 +18,8 @@ from storages.question_generator import QuestionGenerator
 from storages.table_question_generator import TableQuestionGenerator
 
 from src.constants import (
+    DOCUMENT_DIR_PERM,
+    DOCUMENT_FILEPATH,
     I_CHECKMARK,
     I_DIR,
     I_DISK,
@@ -73,7 +75,7 @@ def run(dataset: dict) -> None:
         doc_handle.show_tables()
 
         # Create vector storage for nutritional information
-        semantic_chunks = chroma_db.get_semantic_chunks(doc_handle.folder_path)
+        semantic_chunks = chroma_db.get_semantic_chunks(DOCUMENT_FILEPATH)
         document_chunks = doc_handle.get_semantic_chunks(semantic_chunks)
         chroma_db.add_semantic_documents(document_chunks)
 
@@ -87,7 +89,7 @@ def run(dataset: dict) -> None:
     # Use structured receiver when quering all/random questions
     chroma_db.query_questions(is_hyp=False, pluck=random.choice([True, True, True, False]))
     chroma_dataset = chroma_db.export()
-    
+
 
     # --- Hypothetical Questions --- #
 
@@ -95,18 +97,18 @@ def run(dataset: dict) -> None:
     # Create a merged dataset for questions.
     questions_dataset = {
         'batch_size': config.DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
-        'collection_name': 'hypothetical_questions',
+        'doc_type': 'hypothetical_questions',
         'doc_handle': doc_handle,
         'prompt': config.PROMPT_QUESTION_GENERATOR,
-        'title': 'Hypothetical Questions'
+        #'title': 'Hypothetical Questions'
     }
     
     dataset = {**chroma_dataset, **questions_dataset}
-    print(f'new dataset for questions:{dataset}')
+    print(f'DEBUG: new dataset for questions:{dataset}')
     questions = QuestionGenerator(dataset, chroma_db)
 
     semantic_count_questions = questions.get_semantic_count()
-    print(f'{I_INFO}  Existing Questions: {semantic_count_questions}')
+    print(f'\n{I_INFO}  Existing Questions: {semantic_count_questions}')
 
     if semantic_count_questions > 0 and not data_refresh:
         print(f"✅ Hypothetical questions collection already has {semantic_count_questions} documents — skipping question generation.")
@@ -124,18 +126,19 @@ def run(dataset: dict) -> None:
 
     # Get table hypothetical questions and add them to the vector storage
     table_questions_dataset = {
-        'collection_name': 'table_hypothetical_questions',
+        'doc_type': 'table_hypothetical_questions',
         'doc_handle': doc_handle,
         'prompt': config.PROMPT_TABLE_QUESTION_GENERATOR,
-        'title': 'Hypothetical Table Questions'
+        #'title': 'Hypothetical Table Questions'
     }
 
     dataset = {**chroma_dataset, **table_questions_dataset}
-    print(f'new dataset for table questions:{dataset}')
+     
+    print(f'DEBUG: new dataset for table questions:{dataset}')
     table_questions = TableQuestionGenerator(dataset, chroma_db)
 
     semantic_count_table_questions = table_questions.get_semantic_count()
-    print(f'{I_INFO}  Existing Table Questions: {semantic_count_table_questions}')
+    print(f'\n{I_INFO}  Existing Table Questions: {semantic_count_table_questions}')
     
     if semantic_count_table_questions > 0 and not data_refresh:
         print(f"✅ Hypothetical table questions collection already has {semantic_count_table_questions} documents — skipping question generation.")
@@ -149,7 +152,7 @@ def run(dataset: dict) -> None:
         chroma_db.add_vector_documents(table_hypothetical_questions_doc)
 
     # --- Backup documents to Google Drive --- #
-    # backup_docs()
+    _backup_docs()
     # --- Backup documents to Google Drive --- #
 
     # Sample a random user query using hypothetical retriever
@@ -159,9 +162,11 @@ def run(dataset: dict) -> None:
     print(f'\n# --- {I_RUNNING} Completed data processor pipeline {I_RUNNING} --- #')
 
 
-def backup_docs():
+def _backup_docs():
     import os 
     import shutil
+
+    print(f'# --- {I_DISK} Backing up documents {I_DISK} --- #')
     
     # Define source and destination paths for vector storage
     source_path = config.CHROMA_VECTORS_DIR  # Complete the code to define the path to your vectorstore directory
@@ -185,4 +190,5 @@ def backup_docs():
     else:
         print(f"{source_path} directory was not copied to your source path.")  # Complete the code to confirm the directory name
         os.makedirs(destination_path, exist_ok=True)
+        os.chmod(destination_path, DOCUMENT_DIR_PERM)
         print(f"Making the directory {I_DIR}{destination_path} now...")

@@ -34,7 +34,7 @@ class TableQuestionGenerator(DataGenerator):
     def _with_free_models(self, page_texts: dict, tables: dict):
         # free tier version
         print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
-        print(f'{I_INFO} USING FREE TIER MODELS')
+        print(f'{I_INFO}  USING FREE TIER MODELS')
 
         start_time = start_timer()
         table_hypothetical_questions = []
@@ -80,7 +80,10 @@ class TableQuestionGenerator(DataGenerator):
                 except Exception as e:
                     questions = AGENT_EMPTY_RESP
                     current_sleep_time, rate_limit_hit = handle_rate_limit_error(
-                        e, self.collection_name, current_sleep_time, page_number
+                        e, 
+                        self.collection_name, 
+                        current_sleep_time, 
+                        page_number
                     )
 
                 if rate_limit_hit:
@@ -90,10 +93,11 @@ class TableQuestionGenerator(DataGenerator):
                 # --- Write to your single open database trait ---
                 if questions and questions != AGENT_EMPTY_RESP:
                     questions_metadata = {
+                        'batch_no': doc_index, # @todo - debug
+                        'doc_type': self.doc_type,  
                         'original_content': str(table_in_page), 
-                        'source': document,  
                         'page': page_number,  
-                        'doc_type': self.collection_name,  
+                        'source': document,  
                     }
 
                     table_hypothetical_questions.append(
@@ -101,7 +105,7 @@ class TableQuestionGenerator(DataGenerator):
                     )
 
                 processed_count += 1
-                print(f"{I_PEN} Page {page_number} Tables (Doc {doc_index}) complete. Throttling {current_sleep_time:.2f}s...")
+                print(f"\t{I_PEN} Table: {processed_count}, Page {page_number} Tables (Doc {doc_index}) complete. Throttling {current_sleep_time:.2f}s...")
                 
                 # Throttling happens exactly ONCE per page instead of once per nested table row artifact
                 time.sleep(current_sleep_time)
@@ -114,7 +118,7 @@ class TableQuestionGenerator(DataGenerator):
         return table_hypothetical_questions
   
     def _with_premium_models(self, page_texts: dict, tables: dict):
-        print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
+        print(f'\n# --- {I_QUES} Getting {self.doc_type.replace('_', ' ').title()} {I_QUES} --- #')
         
         start_time = start_timer()
         table_hypothetical_questions = []
@@ -160,10 +164,11 @@ class TableQuestionGenerator(DataGenerator):
 
                 if questions and questions != AGENT_EMPTY_RESP:
                     questions_metadata = {
+                        'batch_no': doc_index,
+                        'doc_type': self.doc_type,  
                         'original_content': str(table_in_page), 
-                        'source': document,  
                         'page': page_number,  
-                        'doc_type': self.collection_name,  
+                        'source': document,  
                     }
 
                     table_hypothetical_questions.append(
@@ -171,7 +176,7 @@ class TableQuestionGenerator(DataGenerator):
                     )
 
                 processed_count += 1
-                print(f"{I_PEN} Table {processed_count} (Doc: {doc_index}, Page: {page_number}) parsed. Throttling {current_sleep_time:.2f}s...")
+                print(f"\t{I_PEN} Processed: {processed_count} (Doc: {doc_index}, Page: {page_number}) parsed. Throttling {current_sleep_time:.2f}s...")
                 
                 # --- ⏳ PER-TABLE THROTTLING ⏳ ---
                 # Forces execution tracking to sleep gracefully right after invoking the gateway

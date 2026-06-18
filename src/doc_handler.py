@@ -11,6 +11,8 @@ import os
 import random
 import re
 import shutil
+import uuid
+from datetime import datetime, UTC
 from time import sleep
 from zipfile import ZipFile
 
@@ -39,6 +41,7 @@ from src.constants import (
 )
 
 from src.model_config import config
+from src.utils import show_timer, start_timer
 
 class DocHandler():
     def __init__(self, llama_parser: LlamaParse, skip_parse: bool = False):
@@ -53,40 +56,68 @@ class DocHandler():
     def create(self, content: str, metadata: dict) -> Document:
         """
         Creates and returns a LangChain Document object packed with metadata.
+        see: https://reference.langchain.com/python/langchain-core/documents/base/Document
+        
         :param content:
         :param metadata:
         :return: Document
         """
+
+        # Add additional keys to the meta data        
         if "source" in metadata and "filename" not in metadata:
             metadata["filename"] = os.path.basename(metadata["source"])
 
-        metadata["doc_id"] = self.gen_id(metadata["source"], metadata["page"], content)
-
+        # see: https://reference.langchain.com/python/langchain-core/documents/base/Document/type
         if "type" not in metadata:
             metadata["type"] = "Document"
 
-        # @todo - print(f'Creating document = {metadata}')
+        metadata["checksum"] = self._calc_checksum(metadata)
+        metadata["doc_id"] = self._generate_document_id() 
+
+        if "creationdate" not in metadata:
+            file_info = os.stat(DOCUMENT_FILEPATH)
+            metadata["creationdate"] = file_info.st_birthtime
+
+        # Get timestamp  of chunk
+        metadata["utc_datetime"] = datetime.now(UTC) 
+
+        # Sort metadata but have the doc_id key at the top.
+        metadata = {
+            "doc_id": metadata.pop("doc_id"), 
+            **dict(sorted(metadata.items()))
+        }
+    
+        #print(f'Creating document = {metadata}')
 
         return Document(
             id=metadata["doc_id"],
+            type=metadata["type"],
             page_content=content,
             metadata=metadata,
-            type=metadata["type"],
         )
 
-    @staticmethod
-    def gen_id(source: str, page_no: int, content: str) -> str:
-        """
-        Generates a deterministic unique SHA-256 fingerprint ID for a semantic chunk.
+    def _generate_document_id(self) -> str:
+        # Generate UUID without hyphens
+        # see: https://reference.langchain.com/python/langchain-core/documents/base/BaseMedia/id
+        doc_id = uuid.uuid4().hex
 
-        :param source:
-        :param page_no:
-        :param content:
-        :return:
-        """
+        return doc_id.lower()
 
-        id_str = f"source:{source}|page{page_no}|content:{content[:64]}"
-        return str(hashlib.sha256(id_str.encode('utf-8')).hexdigest())
+    def _calc_checksum(self, metadata: dict) -> str:
+        # Generates a deterministic unique SHA-256 fingerprint ID for creating a checksum.
+        filtered_metadata = {}
+
+        # Filter out the doc_id and any dates as we only want the data values
+        for key, value in metadata.items():
+            if 'date' not in key and key != 'batch_no' and key != 'doc_id':
+                filtered_metadata[key] = value
+
+        # Convert it to a string, trim and hash it.
+        metadata_str = str(filtered_metadata)
+        metadata_str = metadata_str.strip()
+        checksum_str = str(hashlib.sha256(metadata_str.encode('utf-8')).hexdigest())
+
+        return checksum_str
 
     def show_sample(self, samp_docs: list, samp_title: str = "") -> None:
         """
@@ -151,6 +182,7 @@ class DocHandler():
             print(f"{I_FLAG} Data folder path location '{self.folder_path}' doesn't exist.")
             return json_objs
 
+        start_time = start_timer()
         for pdf in os.listdir(self.folder_path):
             if pdf.endswith(".pdf"):
                 pdf_path = os.path.join(self.folder_path, pdf)
@@ -161,6 +193,8 @@ class DocHandler():
             print(f"{I_CHECKMARK} Sample file parsed metadata header structured.")
         else:
             print(f"{I_FLAG} No document payload arrays fetched.")
+
+        show_timer(start_time)
 
         return json_objs
 

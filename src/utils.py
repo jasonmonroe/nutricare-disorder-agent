@@ -73,6 +73,10 @@ def show_timer(start_time_int: float) -> None:
 
 def show_banner(title: str, section: str = '') -> None:
     """Prints a stylized banner for console readability."""
+
+    # PEP-8 Line length is 79
+    line_length = 79
+    # '+-----------------------------------------------------------------------------+'
     padding = 4
     strlen = len(title) + padding
     line = '+-' + '-' * strlen + '-+'
@@ -88,9 +92,60 @@ def show_banner(title: str, section: str = '') -> None:
     print('')
 
 
+def show_banner2(title: str, sub_titles: str='', padding: int=4):
+    # Prints a stylized banner for console readability.
+    # PEP-8 line length is 79. We also want to center padding
+    line_len = 79
+    
+    max_title_len = line_len - (padding * 2) - 2 # open and close of `+`
+    padding_str = ' ' * padding
+
+    # 79 - 2 (+) - 8( ) = 69
+    
+    line = '+' + ('-' * max_title_len) + '+'
+    print(f'DBG: new line len:{len(line)}')
+
+    # Title
+    title_line = '|' + padding_str + () + padding_str +  '|'
+
+    # Sub Title
+
+    pass
+
+
+def show_model_banner(title: str, padding: int=4) -> None:
+    
+    padding = 5 # each half
+    padding_str = ' ' * padding
+    max_model_strlen = max(len(LLAMA_MODEL), len(OPENAI_EMBEDDING_MODEL), len(OPENAI_MODEL))
+    strlen = max_model_strlen + padding*2
+
+    # line is open `+` then dashes based on the string length, close `+`
+    line = '+' +  ('-' * strlen) + '+'
+
+    # title line is open `|` then padding then title then padding again, then close `|`
+    title_line = '|' + padding_str + (title) + padding_str + '|'
+
+    print('')
+    print(line) # top line
+    print(title_line)
+    print(line) # bottom line
+    print('')
+
+    # Show sub content
+    sub_line_1 = '| LLAMA_MODEL: '
+    sub_line_2 = '| OPENAI_EMBEDDING_MODEL: '
+    sub_line_3 = '|'
+    print(sub_line_1)
+    print(sub_line_2)
+    print(sub_line_3)
+    print(line)
+    print("\n")
+
+
 def show_models():
     print('+----------------------------------------------------------------+')
-    print(f'| {I_GEAR}  MODELS                                                      |')
+    print(f'| {I_GEAR}  ({config.VERSION}) MODELS                                                      |')
     print('+----------------------------------------------------------------+')
     print(f'| LLAMA_MODEL: {LLAMA_MODEL}                           |')
     print(f'| OPENAI_EMBEDDING_MODEL: {OPENAI_EMBEDDING_MODEL} |')
@@ -109,6 +164,7 @@ def show_title_banner() -> None:
     print(f'\n{I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE}\n')
 
     show_models()
+    show_banner('Model Version', config.VERSION)
 
 
 def show_ai_agent_banner() -> None:

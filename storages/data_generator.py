@@ -9,6 +9,7 @@ class DataGenerator:
         self.chroma_db = chroma_db
         self.collection_name = ''
         self.doc_handle = None
+        self.doc_type = ''
         self.llm = None
         self.prompt = ''
         self.title = ''
@@ -26,6 +27,10 @@ class DataGenerator:
         for key, value in dataset.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+
+    @property
+    def title(self) -> str:
+        return self.doc_type.replace('_', ' ').title()
 
     # -- Wrapper Functions -- #
     def get_semantic_count(self) -> int:

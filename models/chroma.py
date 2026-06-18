@@ -11,7 +11,7 @@ import chromadb
 # Vector Libraries
 from langchain_chroma import Chroma
 from langchain_classic.retrievers.self_query.base import SelfQueryRetriever
-from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.query_constructors.chroma import ChromaTranslator
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_experimental.text_splitter import SemanticChunker
@@ -34,6 +34,8 @@ class ChromaModel:
     """
     Manages the persistent vector store lifecycle using ChromaDB and handles both similarity-based and
     metadata-structured Self-Query retrieval mechanisms.
+
+    see: https://docs.langchain.com/oss/python/langchain/rag?_gl=1*1jjuma6*_gcl_au*MTg3MjczODAzNS4xNzgxMjc3MDEx*_ga*MzU4MDUyMjIzLjE3ODEyNzcwMTE.*_ga_47WX3HKKY2*czE3ODE3NDE0MjkkbzMkZzEkdDE3ODE3NDE5NjkkajUyJGwwJGgw
     """
 
     def __init__(self, dataset: dict):
@@ -57,10 +59,11 @@ class ChromaModel:
         self._set_attrs(dataset)
 
         # Build downstream storage partitions
+        self.semantic_text_splitter = self._get_semantic_text_splitter()
         self.semantic_storage = self._get_semantic_storage()
         self.vector_storage = self._get_vector_storage()
         self.retriever = self.get_retriever()
-        self.semantic_text_splitter = self._get_semantic_text_splitter()
+       
 
     def _set_attrs(self, dataset: dict) -> None:
         """
@@ -92,7 +95,12 @@ class ChromaModel:
         )
 
     def _get_semantic_storage(self) -> Chroma:
-        """Instantiates the isolated semantic database research partition."""
+        """
+        Instantiates the isolated semantic database research partition.
+        Purpose: This holds the real text from your PDF (nutritional-disorders.pdf), chopped up into clean sentences or paragraphs using your SemanticChunker.
+        The Logic: When your AI agent needs to answer a user's medical question, it must pull facts from this collection to use as context.
+        """
+        print('DEBUG: Getting semantic storage with collection_name: semantic_chunks.')
         return Chroma(
             client=self.chromadb_client,
             embedding_function=self.embedding_model,
@@ -100,7 +108,12 @@ class ChromaModel:
         )
 
     def _get_vector_storage(self) -> Chroma:
-        """Instantiates the generalized primary target layout collection."""
+        """
+        Instantiates the generalized primary target layout collection.
+        Purpose: This holds the synthetic data (the hypothetical questions your LLM generated from the text and tables).
+ 	    The Logic: This acts as a "Retriever Booster." Instead of matching a user's question directly to a dense block of textbook prose, the database matches the user's question to a hypothetical question that an LLM thought a human might ask. Matching Question-to-Question is mathematically much cleaner for embedding models than matching Question-to-Textbook-Paragraph.
+        """
+        print(f'DEBUG: Getting vector storage with collection_name: {self.collection_name}.')
         return Chroma(
             client=self.chromadb_client,
             embedding_function=self.embedding_model,
@@ -117,7 +130,7 @@ class ChromaModel:
         )
 
     def _get_structured_retriever(self) -> SelfQueryRetriever:
-
+        print('DEBUG: Getting structured retreiever with vectorstore: self.semantic_storage.')
         return SelfQueryRetriever.from_llm(
             llm=self.llm,
             vectorstore=self.semantic_storage,
@@ -129,7 +142,7 @@ class ChromaModel:
         )
 
     def _get_structured_hyp_retriever(self) -> SelfQueryRetriever:
-
+        print('DEBUG: Getting structured hyper retreiever with vectorstore: self.vector_storage.')
         return SelfQueryRetriever.from_llm(
             llm=self.llm,
             vectorstore=self.vector_storage,
@@ -140,9 +153,10 @@ class ChromaModel:
             use_original_query=ModelConfig.is_premium()
         )
 
-    def get_semantic_chunks(self, folder_path: str) -> list:
+    def get_semantic_chunks(self, filepath: str) -> list:
         semantic_chunks = []
-        pdf_loader = PyPDFDirectoryLoader(folder_path)
+        #pdf_loader = PyPDFDirectoryLoader(folder_path)
+        pdf_loader = PyPDFLoader(filepath)
         chunks = pdf_loader.load_and_split(self.semantic_text_splitter)
         semantic_chunks.extend(chunks)
 
@@ -156,14 +170,18 @@ class ChromaModel:
             return 0
 
     def add_semantic_documents(self, semantic_chunks: list) -> None:
-        print('# --- Adding semantic documents --- #')
+        
         batch_size = config.DOCUMENT_CHUNK_BATCH_SIZE 
+        print(f'# --- Adding semantic documents with a batch size of {batch_size}. --- #')
+
         for i in range(0, len(semantic_chunks), batch_size):
             self.semantic_storage.add_documents(semantic_chunks[i: i + batch_size])
 
     def add_vector_documents(self, documents: list) -> None:
-        print('# --- Adding vector documents --- #')
+        
         batch_size = config.DOCUMENT_CHUNK_BATCH_SIZE
+        print(f'# --- Adding vector documents with a batch size of {batch_size}. --- #')
+
         for i in range(0, len(documents), batch_size):
             self.vector_storage.add_documents(documents[i : i + batch_size])
 
@@ -211,16 +229,30 @@ class ChromaModel:
                 ques_semantic_chunks_retrieved = retriever.invoke(question)
                 retrieved_count = len(ques_semantic_chunks_retrieved)
 
-                print(f"\n----- {I_QUES}Question #{i+1} {I_QUES} -----")
-                print(question)
-                print(f"\n{I_INFO} Number of Semantic Chunks Retrieved: {retrieved_count}")
-                
+                fallback_str = ""
+
                 # Display empty retrieval
                 if retrieved_count == 0:
-                    print(f'{I_WARNING}  Nothing was retrieved! {I_WARNING}')
-                else:
-                    print(f"{I_DOCUMENT} Retrieved Documents:\n{ques_semantic_chunks_retrieved}")
-                
+                    print(f'{I_WARNING}  Nothing was retrieved! Swapping to vector similarity as a fallback... {I_WARNING}')
+
+                    # Fallback with the regular retriever
+                    ques_semantic_chunks_retrieved = self.retriever.invoke(question)
+                    retrieved_count = len(ques_semantic_chunks_retrieved)
+
+                    print(f"\n----- {I_QUES}Question #{i+1} {I_QUES} -----")
+                    print(question)
+                    print(f"\n{I_INFO} Number of Semantic Chunks Retrieved: {retrieved_count}")
+
+                    if retrieved_count == 0:
+                        print(f'{I_WARNING}  Again, nothing was retrieved across fallback storage layer indexes! {I_WARNING}')
+                    else:
+                        fallback_str = "Fallback"
+                        #print(f"{I_DOCUMENT} Fallback Retrieved Documents:\n{ques_semantic_chunks_retrieved}")
+                    
+                #results_count.append(retrieved_count)
+                        
+                #else:
+                print(f"{I_DOCUMENT} {fallback_str} Retrieved Documents:\n{ques_semantic_chunks_retrieved}")
                 results_count.append(retrieved_count)
 
             except Exception as e:

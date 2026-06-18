@@ -52,8 +52,8 @@ AI_TITLE = "SMART NUTRITION DISORDER SPECIALIST BOT"
 APP_TITLE = 'NUTRICARE DISORDER AGENT'
 
 # Agents
-AGENT_EVAL_THRESHOLD = 0.8 # 80% evaluation threshold
 AGENT_EMPTY_RESP = "[]" # Empty response
+AGENT_EVAL_THRESHOLD = 0.8 # 80% evaluation threshold
 AGENT_EXIT_CMDS = ['exit', 'quit', 'bye']
 AGENT_RETRIEVAL_LIMIT = 5
 AGENT_WORKFLOW_IMAGE = "outputs/graph_workflow.png"
@@ -74,11 +74,12 @@ ARG_PARAMS = [
 # Batch sizes (per batch) for processing documents and text chunks
 DEFAULT_COLL_NAME = 'nutritional'
 
-DOCUMENT_DIR = "data/nutritional-medical-reference"
+# The Merck Manual of Diagnosis & Therapy,
+DOCUMENT_DIR = "data/the-merck-manual"
 DOCUMENT_DIR_PERM = 0o755
 DOCUMENT_FILE = 'nutritional-disorders.pdf'
 DOCUMENT_FILEPATH = DOCUMENT_DIR + '/' + DOCUMENT_FILE
-DOCUMENT_ZIP = "data/nutritional-medical-reference.zip" # Zip file name
+DOCUMENT_ZIP = "data/the-merck-manual-of-diagnosis-and-therapy.zip" # Zip file name
 
 # Chroma related constants
 CHROMA_VECTOR_RESULT_CNT = 5 # controls the quantity of context blocks the database returns
@@ -90,6 +91,7 @@ RATE_LIMIT_RESP_CODE = "429" # Http Response code for rate limit
 # This query asks a specific question about vitamin deficiencies and memory impairment.
 # Match keywords and map them with embedding models.
 SIMILARITY_SEARCH_QUERY = "What nutritional deficiency, such as folate deficiency or that caused by alcoholism, is clinically linked to anemia, and what specific standard diagnostic metric, laboratory value, or test parameter is used for its confirmation?"
+
 """
 Define prompt messages and queries
 
