@@ -88,27 +88,19 @@ def _create_title_banner(text: str, center_text: bool=True) -> None:
     text = text[0: max_line_len - open_close_len]
     text_len = len(text)
     padding_len = max_line_len - text_len    
-    #print(f'\nbefore padding_len = {padding_len}')
    
     if center_text:
-        #title_line = "|" + text.center(padding_len) + "|"
         # If uneven padding add an extra length for the right side
         extra_len = 0 if padding_len % 2 == 0 else 1
-        print(f'extra_len={extra_len}')
+      
         padding_len = padding_len // 2
         title_line = "| " + (' ' * padding_len) + text + (' ' * (padding_len + extra_len)) + " |"
-        #print(f'DEBUG: 2 + {len((' ' * padding_len))} + {len(text)} + {len((' ' * (padding_len + extra_len)))} + 2')
-        #print(f'DEBUG: 2 + {padding_len} + {len(text)} + {padding_len + extra_len} + 2')
-
+    
     else:
         # Remove last two characters to account for open/close spacing
-        #text = text[0: max_line_len - 2]
-        #padding_len -= 2
         title_line = "| " + text + (' ' * padding_len) + " |"
         
     top_btm_line = _make_top_btm_line()
-    #print(f'DEBUG max_line_len={max_line_len}, text len= {text_len}, Center text: {center_text}, after padding len: {padding_len}')
-    #print(f'len = {len(title_line)}, title_line = {title_line}')
 
     # Print title banner
     print(top_btm_line)

@@ -174,7 +174,7 @@ class ChromaModel:
         batch_size = config.DOCUMENT_CHUNK_BATCH_SIZE 
         semantic_chunks_cnt = len(semantic_chunks)
 
-        print(f'\n# --- {I_PLUS} Adding {semantic_chunks_cnt} semantic documents with a batch size of {batch_size} {I_PLUS}--- #')
+        print(f'\n# --- {I_PLUS} Adding {semantic_chunks_cnt} semantic documents with a batch size of {batch_size} {I_PLUS} --- #')
 
         for i in range(0, semantic_chunks_cnt, batch_size):
             self.semantic_storage.add_documents(semantic_chunks[i: i + batch_size])

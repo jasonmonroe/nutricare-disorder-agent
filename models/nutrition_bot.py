@@ -84,10 +84,10 @@ class NutritionBot:
 
     def has_session_exp(self) -> bool:
         # If chat session just started return False.  Next time it will be evaluated
+        # Max session is 20 minutes.  Anything after that needs to be run again.
         if self._latest_input_at is None:
             return False
 
-        # Max session is 20 minutes.  Anything after that needs to be run again.
         diff_in_secs = abs(start_timer() - self._latest_input_at)
 
         if diff_in_secs > INACTIVE_SESSION_DUR:
@@ -210,6 +210,7 @@ class NutritionBot:
         :param user_input:
         :return:
         """
+        
         input_str = user_input.strip()
 
         # Define the logic for exiting the loop' [if the user types in exit]

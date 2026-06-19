@@ -168,7 +168,6 @@ class AgenticRagTool:
         expanded_query = chain.invoke({
             "query": original_query,
             "AI_ROLE": state['AI_ROLE'],
-            # 👑 LangChain now handles the raw stringified JSON safely here without Python f-string collisions!
             "feedback": query_feedback if query_feedback else ""
         })
 

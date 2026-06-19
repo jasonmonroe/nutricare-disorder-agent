@@ -12,7 +12,6 @@ class DataGenerator:
         self.doc_type = ''
         self.llm = None
         self.prompt = ''
-        #self.title = ''
 
         self._set_attrs(dataset)
 
@@ -30,6 +29,7 @@ class DataGenerator:
 
     @property
     def title(self) -> str:
+        # Any time `title` is references take the doc_type value and format it.
         return self.doc_type.replace('_', ' ').title()
 
     # -- Wrapper Functions -- #
@@ -41,3 +41,6 @@ class DataGenerator:
 
     def add_semantic_documents(self, documents: list) -> None:
         self.chroma_db.add_semantic_documents(documents)
+
+    def add_vector_documents(self, documents: list) -> None:
+        self.chroma_db.add_vector_documents(documents)

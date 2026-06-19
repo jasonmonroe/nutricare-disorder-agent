@@ -10,7 +10,7 @@
 **/*.pyc
 .vscode
 
-chroma_db
-free_chroma_db
-premium_chroma_db
+chroma_db/
+free_chroma_db/
+premium_chroma_db/
 data/the-merck-manual/

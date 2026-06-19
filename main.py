@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 # main.py
 
 """
@@ -104,7 +103,7 @@ from src.constants import (
 )
 from src.doc_handler import DocHandler
 from src.model_config import ModelConfig
-from src.utils import get_run_id, show_ai_agent_banner, show_model_banner, show_title_banner, start_timer, show_timer
+from src.utils import get_run_id, show_title_banner, start_timer, show_timer
 
 
 def _parse_args(command_line_args: list[str]) -> dict:
@@ -152,21 +151,7 @@ def _set_logger(args):
 
 
 if __name__ == '__main__':
-    import random
-    rand_int = random.randint(0, 256)
-    print(f'rand_int = {rand_int}')
-    #rand_int = 192
-    text = 'Word' * rand_int
-
-    text = ['WordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWor', 'dWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWo', 'rdWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordW', 'ordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWord', 'WordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWor', 'dWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWo', 'rdWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordWordW', 'ordWordWordWordWordWordWordWordWordWordWord']
-
-    #text = "Serum folate reflects folate status unless intake has recently increased."
-    #create_title_banner(text, True)
-    #create_subtitle_banner(text, False)
-    #show_ai_agent_banner()
-    show_ai_agent_banner()
-    sys.exit(1)
-
+ 
     start_time = start_timer()
     run_id = get_run_id()
     print(f'\n==== {I_BOT} START RUN ID: {run_id} {I_BOT} ====\n')

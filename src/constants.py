@@ -48,7 +48,7 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL")  # Fill in the OpenAI model name (e.g.,
 
 # Titles
 AI_ROLE = "Nutrition Disorder Specialist"
-AI_TITLE = "SMART NUTRITION DISORDER SPECIALIST BOT"
+AI_TITLE = "SMART NUTRITION DISORDER CHATBOT"
 APP_TITLE = 'NUTRICARE DISORDER AGENT'
 
 # Agents

@@ -92,7 +92,7 @@ class DocHandler():
             **dict(sorted(metadata.items()))
         }
     
-        #print(f'Creating document = {metadata}')
+        print(f'DEBUG: creating Document() {metadata}')
 
         return Document(
             id=metadata["doc_id"],
@@ -114,7 +114,7 @@ class DocHandler():
 
         # Filter out the doc_id and any dates as we only want the data values
         for key, value in metadata.items():
-            if 'date' not in key and key != 'batch_no' and key != 'doc_id':
+            if 'date' not in key and key != 'batch_no' and key != 'doc_id' and key != 'id':
                 filtered_metadata[key] = value
 
         # Convert it to a string, trim and hash it.
@@ -133,7 +133,7 @@ class DocHandler():
         :return: None
         """
 
-        print(f'\n# --- {I_DOCUMENT} Show sample {samp_title} documents {I_DOCUMENT} --- #')
+        print(f'\n# --- {I_DOCUMENT} Show sample {samp_title} document {I_DOCUMENT} --- #')
         
         doc_cnt = len(samp_docs)
         if doc_cnt == 0:

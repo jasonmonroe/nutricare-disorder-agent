@@ -100,7 +100,7 @@ def run(dataset: dict) -> None:
     _process_table_questions(doc_handle, chroma_db, data_refresh)
 
     # --- Backup documents to a third party storage system --- #
-    _backup_docs()
+    #_backup_docs()
     # --- Backup documents to a third party storage system --- #
 
     # Sample a random user query using hypothetical retriever
@@ -115,8 +115,8 @@ def _process_questions(doc_handle: DocHandler, chroma_db: ChromaModel, document_
     # Create a merged dataset for questions.
     questions_dataset = {
         'batch_size': config.DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
-        'doc_type': 'hypothetical_questions',
         'doc_handle': doc_handle,
+        'doc_type': 'hypothetical_questions',
         'prompt': config.PROMPT_QUESTION_GENERATOR,
     }
     
@@ -131,12 +131,12 @@ def _process_questions(doc_handle: DocHandler, chroma_db: ChromaModel, document_
     if semantic_count_questions > 0 and not data_refresh:
         print(f"✅ Hypothetical questions collection already has {semantic_count_questions} documents — skipping question generation.")
     elif document_chunks is not None or data_refresh:
-        print(f"\nGenerating new {questions_dataset.get('title')}...")
+        print(f"\nGenerating new {questions.title}...")
 
         hypothetical_questions_doc = questions.get_hypothetical_questions(document_chunks)
         questions.add_semantic_documents(hypothetical_questions_doc)
-        doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name.title())
-        chroma_db.add_vector_documents(hypothetical_questions_doc)
+        doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name + ' ' + questions.title)
+        questions.add_vector_documents(hypothetical_questions_doc)
     else:
         print(f"{I_FLAG} Cannot generate hypothetical questions: document chunks unavailable.")
 
@@ -146,8 +146,8 @@ def _process_table_questions(doc_handle: DocHandler, chroma_db: ChromaModel, dat
 
     # Get table hypothetical questions and add them to the vector storage
     table_questions_dataset = {
-        'doc_type': 'table_hypothetical_questions',
         'doc_handle': doc_handle,
+        'doc_type': 'table_hypothetical_questions',
         'prompt': config.PROMPT_TABLE_QUESTION_GENERATOR,
     }
 
@@ -161,12 +161,12 @@ def _process_table_questions(doc_handle: DocHandler, chroma_db: ChromaModel, dat
     if semantic_count_table_questions > 0 and not data_refresh:
         print(f"✅ Hypothetical table questions collection already has {semantic_count_table_questions} documents — skipping question generation.")
     else:
-        print(f"\nGenerating new {table_questions_dataset.get('title')}...")
+        print(f"\nGenerating new {table_questions.title}...")
 
         table_hypothetical_questions_doc = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
         table_questions.add_semantic_documents(table_hypothetical_questions_doc)
-        doc_handle.show_sample(table_hypothetical_questions_doc, table_questions.collection_name.title())
-        chroma_db.add_vector_documents(table_hypothetical_questions_doc)
+        doc_handle.show_sample(table_hypothetical_questions_doc, table_questions.collection_name + ' ' + table_questions.title)
+        table_questions.add_vector_documents(table_hypothetical_questions_doc)
     
 
 def _backup_docs():
@@ -198,4 +198,4 @@ def _backup_docs():
         print(f"{source_path} directory was not copied to your source path.")  # Complete the code to confirm the directory name
         os.makedirs(destination_path, exist_ok=True)
         os.chmod(destination_path, DOCUMENT_DIR_PERM)
-        print(f"Making the directory {I_DIR}{destination_path} now...")
+        print(f"Making the directory {I_DIR}{destination_path} now with permissions: {DOCUMENT_DIR_PERM}...")

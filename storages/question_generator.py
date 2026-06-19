@@ -3,6 +3,8 @@
 # Python Libraries
 import time
 
+from sympy.tensor.indexed import Idx
+
 # Local Libraries
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
@@ -96,20 +98,26 @@ class QuestionGenerator(DataGenerator):
             if batch_questions_dict and isinstance(batch_questions_dict, dict):
                 for idx, document in enumerate(batch, start=batch_start):
 
-                    # Match the key back to the specific chunk index from the JSON payload
-                    questions_for_chunk = batch_questions_dict.get(str(idx)) or batch_questions_dict.get(id)
-                    
+                    questions_for_chunk = batch_questions_dict.get(str(idx)) or batch_questions_dict.get(idx)
+
                     if questions_for_chunk:
+                        # Safely convert a list of strings into one clean, newline-delimited string
+                        if isinstance(questions_for_chunk, list):
+                            page_content_str = "\n".join(questions_for_chunk)
+                        else:
+                            page_content_str = str(questions_for_chunk)
+
                         questions_metadata = {
-                            'batch_no': batch_start, # @todo - debug
+                            'batch_no': batch_start, 
                             'doc_type': self.doc_type,
                             'original_content': document.page_content,
                             'page': document.metadata['page'],
                             'source': document.metadata['source'],
                         }
                         
+                        # Pass the serialized string to satisfy validation
                         hypothetical_questions.append(
-                            self.doc_handle.create(questions_for_chunk, questions_metadata)
+                            self.doc_handle.create(page_content_str, questions_metadata)
                         )
 
             # --- ⏳ PER-BATCH THROTTLING ⏳ ---
@@ -133,7 +141,7 @@ class QuestionGenerator(DataGenerator):
 
         # Track total items for progress logging
         total_chunks = len(semantic_chunks)
-        
+
         print(f'{I_INFO}  Processing {total_chunks} chunks using batch size {self.batch_size}.\n')
 
         for batch_start in range(0, total_chunks, self.batch_size):
@@ -185,7 +193,7 @@ class QuestionGenerator(DataGenerator):
                 # --- ⏳ PER-REQUEST THROTTLING ⏳ ---
                 # We cool down immediately AFTER the execution inside the loop, rather than dumping a massive burst and
                 # sleeping at the end of the batch.
-                print(f"\t{I_PEN}  Chunk {idx+1}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
+                print(f"\t{I_PEN}  Chunk {(idx + 1)}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")
                 time.sleep(current_sleep_time)
 
             hypothetical_questions.extend(batched_hypothetical_questions)
@@ -197,3 +205,5 @@ class QuestionGenerator(DataGenerator):
         show_timer(start_time)
 
         return hypothetical_questions
+
+
