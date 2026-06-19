@@ -35,7 +35,7 @@ CHROMA_VECTORS_DIR = "free_chroma_db"
 DOCUMENT_CHUNK_BATCH_SIZE = 32 
 DOCUMENT_CHUNK_TEXT_BATCH_SIZE = 5
 
-RATE_LIMIT_TIME = 8 #15 # Testing 8 and 15 next @todo!
+RATE_LIMIT_TIME = 15 # 8 # Testing 8 and 15 next @todo!
 SEMANTIC_THRESH_LIMIT = 75  # Strict percentile boundary for high-precision chunks
 SLEEP_TIME_SEC = 3
 SLEEP_TIME_INC = 0.50 

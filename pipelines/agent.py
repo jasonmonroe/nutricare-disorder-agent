@@ -21,11 +21,11 @@ from src.constants import (
     LLAMA_SAFE,
 )
 from src.model_config import ModelConfig
-from src.utils import is_jupyter, show_ai_agent_banner, show_datetime, start_timer, get_time
+from src.utils import is_jupyter, show_ai_agent_banner, show_datetime, start_timer, get_time, show_banner
 
 
 def build(dataset: dict):
-    print(f'\n# --- {I_RUNNING} Start Building agent pipeline {I_RUNNING} --- #')
+    show_banner(f'{I_RUNNING} Start Building agent pipeline {I_RUNNING}')
     
     chroma_db = dataset['chroma_db']
     openai_model = dataset['openai_model']
@@ -43,7 +43,7 @@ def build(dataset: dict):
 
 def start(dataset: dict) -> None:
 
-    print(f'\n# --- {I_RUNNING} Starting agent pipeline {I_RUNNING} --- #')
+    show_banner(f'{I_RUNNING} Starting agent pipeline {I_RUNNING}')
 
     if is_jupyter():
         nest_asyncio.apply()

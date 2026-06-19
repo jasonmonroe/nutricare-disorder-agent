@@ -37,7 +37,7 @@ class ChromaModel:
     Manages the persistent vector store lifecycle using ChromaDB and handles both similarity-based and
     metadata-structured Self-Query retrieval mechanisms.
 
-    see: https://docs.langchain.com/oss/python/langchain/rag?_gl=1*1jjuma6*_gcl_au*MTg3MjczODAzNS4xNzgxMjc3MDEx*_ga*MzU4MDUyMjIzLjE3ODEyNzcwMTE.*_ga_47WX3HKKY2*czE3ODE3NDE0MjkkbzMkZzEkdDE3ODE3NDE5NjkkajUyJGwwJGgw
+    see: https://docs.langchain.com/oss/python/langchain/rag?_gl=1
     """
 
     def __init__(self, dataset: dict):
@@ -49,12 +49,10 @@ class ChromaModel:
         # Ensures everything stays tightly isolated inside your db directory
         self.chromadb_client = chromadb.PersistentClient(path=os.path.abspath(config.CHROMA_VECTORS_DIR))
 
-        #self.batch_size = 0 # remove
         self.collection_name = ''
         self.embedding_model = None 
         self.force_rebuild = False
         self.llm = None
-        self.metadata_info = {} # remove
         self.title = ''
 
         # Set incoming pipeline dictionary variables
@@ -132,7 +130,7 @@ class ChromaModel:
         )
 
     def _get_structured_retriever(self) -> SelfQueryRetriever:
-        print('DEBUG: Getting structured retreiever with vectorstore: self.semantic_storage.')
+        print('DEBUG: Getting structured retriever with vectorstore: self.semantic_storage.')
         return SelfQueryRetriever.from_llm(
             llm=self.llm,
             vectorstore=self.semantic_storage,
@@ -144,7 +142,7 @@ class ChromaModel:
         )
 
     def _get_structured_hyp_retriever(self) -> SelfQueryRetriever:
-        print('DEBUG: Getting structured hyper retreiever with vectorstore: self.vector_storage.')
+        print('DEBUG: Getting structured hyper retriever with vectorstore: self.vector_storage.')
         return SelfQueryRetriever.from_llm(
             llm=self.llm,
             vectorstore=self.vector_storage,
@@ -155,7 +153,23 @@ class ChromaModel:
             use_original_query=ModelConfig.is_premium()
         )
 
+    #from langchain_community.document_loaders import PyPDFLoader
+
     def get_semantic_chunks(self, filepath: str) -> list:
+        """
+        Load raw documents directly.  nvoke splitting directly on your semantic chunker instance.
+        This completely bypasses the legacy base loader's nominal type hint constraint.
+
+        :param filepath:
+        :return:
+        """
+        pdf_loader = PyPDFLoader(filepath)
+        raw_documents = pdf_loader.load()
+
+        return self.semantic_text_splitter.split_documents(raw_documents)
+
+    # @todo - original version.  delete if not necesary
+    def get_semantic_chunks_orig(self, filepath: str) -> list:
         semantic_chunks = []
         pdf_loader = PyPDFLoader(filepath)
         chunks = pdf_loader.load_and_split(self.semantic_text_splitter)
@@ -224,7 +238,7 @@ class ChromaModel:
         print(f'\n# --- {I_GEAR} Hypothetical Retriever {I_GEAR} --- #' if is_hyp else f'\n# --- {I_GEAR} Retriever {I_GEAR} --- #')
 
         queries_to_run = [random.choice(self.queries())] if pluck else self.queries()
-        print(f'Number of queries to run: {len(queries_to_run)}')
+        print(f'\tNumber of queries to run: {len(queries_to_run)}')
 
         results_count = []
         for i, question in enumerate(queries_to_run):
@@ -236,41 +250,41 @@ class ChromaModel:
 
                 # Display empty retrieval
                 if retrieved_count == 0:
-                    print(f'{I_WARNING}  Nothing was retrieved! Swapping to vector similarity as a fallback... {I_WARNING}')
+                    print(f'\t{I_WARNING}  Nothing was retrieved! Swapping to vector similarity as a fallback... {I_WARNING}')
 
                     # Fallback with the regular retriever
                     ques_semantic_chunks_retrieved = self.retriever.invoke(question)
                     retrieved_count = len(ques_semantic_chunks_retrieved)
 
-                    print(f"\n----- {I_QUES} Question #{i+1} {I_QUES} -----")
+                    print(f"\n\t----- {I_QUES} Question #{i+1} {I_QUES} -----")
                     print(question)
-                    print(f"\n{I_INFO}  Number of Semantic Chunks Retrieved: {retrieved_count}")
+                    print(f"\n\t{I_INFO}  Number of Semantic Chunks Retrieved: {retrieved_count}")
 
                     if retrieved_count == 0:
-                        print(f'{I_WARNING}  Again, nothing was retrieved across fallback storage layer indexes! {I_WARNING}')
+                        print(f'\t{I_WARNING}  Again, nothing was retrieved across fallback storage layer indexes! {I_WARNING}')
                     else:
                         fallback_str = "Fallback"
                         #print(f"{I_DOCUMENT} Fallback Retrieved Documents:\n{ques_semantic_chunks_retrieved}")
                     
                 #results_count.append(retrieved_count)
                 else:
-                    print(f"\n----- {I_QUES} Question #{i+1} {I_QUES} -----")
-                    print(question)
-                    print(f"\n{I_INFO}  Number of Semantic Chunks Retrieved: {retrieved_count}")
+                    print(f"\n\t----- {I_QUES} Question #{i+1} {I_QUES} -----")
+                    print("\t" + question)
+                    print(f"\n\t{I_INFO}  Number of Semantic Chunks Retrieved: {retrieved_count}")
 
                         
                 #else:
-                print(f"{I_DOCUMENT} {fallback_str} Retrieved Documents:\n{ques_semantic_chunks_retrieved}")
+                print(f"\t{I_DOCUMENT} {fallback_str} Retrieved Documents:\n\t{ques_semantic_chunks_retrieved}")
                 results_count.append(retrieved_count)
 
             except Exception as e:
-                print(f"⚠️ Skipping query due to parser error: {question}.")
-                print(f"\tReason: {e}")
+                print(f"\t⚠️ Skipping query due to parser error: {question}.")
+                print(f"\t\tReason: {e}")
                 results_count.append(0)
 
-            print(f"+---- Question #{i+1} ----+\n")
+            print(f"\t+---- Question #{i+1} ----+\n")
             time.sleep(config.SLEEP_TIME_SEC)
 
         total = len(queries_to_run)
         successful = sum(1 for c in results_count if c > 0)
-        print(f"{I_PEN} Retriever Quality: {successful}/{total} queries returned results ({successful/total*100:.0f}%)")
+        print(f"\t{I_PEN} Retriever Quality: {successful}/{total} queries returned results ({successful/total*100:.0f}%)")

@@ -15,6 +15,7 @@ from src.constants import (
     AGENT_EXIT_CMDS,
     AI_TITLE,
     APP_TITLE,
+    DEFAULT_COLL_NAME,
     DOCUMENT_DIR,
     DOCUMENT_ZIP,
     GROQ_API_KEY,
@@ -24,7 +25,6 @@ from src.constants import (
     I_DOCUMENT,
     I_FLAG,
     I_FROWN,
-    I_GEAR,
     I_SAD,
     I_SMILING,
     I_THINKING,
@@ -38,7 +38,7 @@ from src.constants import (
     OPENAI_API_KEY,
     OPENAI_API_BASE,
     OPENAI_EMBEDDING_MODEL,
-    OPENAI_MODEL,
+    OPENAI_MODEL
 )
 from src.utils import show_datetime
 from tools.agentic_rag import make_agentic_rag_tool
@@ -54,7 +54,7 @@ def get_nutrition_bot_params() -> tuple:
     chroma_db = ChromaModel({
         'llm': llm,
         'embedding_model': openai_model.embedding_model,
-        'collection_name': 'nutritional',
+        'collection_name': DEFAULT_COLL_NAME
     })
 
     retriever = chroma_db.retriever

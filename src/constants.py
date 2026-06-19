@@ -70,7 +70,7 @@ ARG_PARAMS = [
     '--start'      # Starts AI agent in local environment
     ]
 
-# Define backup diretory if needed.  Usually your backup directory is outside the codebase.
+# Define backup directory if needed.  Usually your backup directory is outside the codebase.
 BACKUP_DIR = "backups/"
 
 # Define document directory paths and chunk sizes

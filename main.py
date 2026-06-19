@@ -179,8 +179,6 @@ if __name__ == '__main__':
 
     llama = LlamaModel(openai_model.llm, openai_model.embedding_model, log)
 
-    # --- Check Models --- #
-
     # Safeguard block evaluation order prevents unhandled NoneType errors
     ModelConfig.check_models(chroma_db, openai_model, llama)
 
@@ -193,8 +191,6 @@ if __name__ == '__main__':
         'log_debug': log_debug,
         'refresh': refresh
     }
-    
-    # --- Execute based on parsed flags --- #
     
     if args.get('data'):
         run_data_retrieval_pipeline(dataset)

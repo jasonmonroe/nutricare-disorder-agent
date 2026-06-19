@@ -41,6 +41,7 @@ from src.constants import (
     I_PEN,
     I_WARNING
 )
+from src.doc_metadata import DocumentMetadata
 
 from src.model_config import config
 from src.utils import show_timer, start_timer
@@ -55,8 +56,33 @@ class DocHandler():
         if not skip_parse and self._unzip():
             json_objs = self._parse(llama_parser)
             self.page_texts, self.tables = self._extract_tables(json_objs)
-        
-    def create(self, content: str, metadata: dict) -> Document:
+
+    def create(self, content: str, metadata_dataset: dict) -> Document:
+        """
+        Creates and returns a LangChain Document object packed with metadata.
+        see: https://reference.langchain.com/python/langchain-core/documents/base/Document
+
+        :param content:
+        :param metadata:
+        :return: Document
+        """
+
+        # @todo - load metadata class and use current metadata as a dataset
+        metadata_instance = DocumentMetadata(metadata_dataset)
+
+        # 2. Access the property directly (NO parentheses)
+        metadata_dict = metadata_instance.to_dict
+
+        return Document(
+            id=metadata_dict["doc_id"],
+            type=metadata_dict["type"],
+            page_content=content,
+            metadata=metadata_dict,
+        )
+
+
+
+    def create_orig(self, content: str, metadata: dict) -> Document:
         """
         Creates and returns a LangChain Document object packed with metadata.
         see: https://reference.langchain.com/python/langchain-core/documents/base/Document
@@ -66,9 +92,14 @@ class DocHandler():
         :return: Document
         """
 
+
+
         # Add additional keys to the metadata
-        if "source" in metadata and "filename" not in metadata:
+        if "source" in metadata:
             metadata["filename"] = os.path.basename(metadata["source"])
+        elif "filename" in metadata and "source" not in metadata:
+            # Fallback to make sure 'source' is never empty if only filename is provided
+            metadata["source"] = metadata["filename"]
 
         # see: https://reference.langchain.com/python/langchain-core/documents/base/Document/type
         if "type" not in metadata:
@@ -81,9 +112,10 @@ class DocHandler():
                 pass # Fallback if page is not a numeric string
 
         # Check for duplicates before adding
-        metadata["checksum"] = self._calc_checksum(metadata)
+        metadata["checksum"] = self._calc_checksum(metadata, content)
         metadata["doc_id"] = self._generate_document_id()
 
+        # `creationdate` key originates from PyPDFLoader()
         if not metadata.get("creationdate"):
             metadata["creationdate"] = self.creation_date
 
@@ -95,9 +127,8 @@ class DocHandler():
             "doc_id": metadata.pop("doc_id"), 
             **dict(sorted(metadata.items()))
         }
-    
-        print(f'creating Document() {metadata}')
 
+        print(f'metadata={metadata}')
         return Document(
             id=metadata["doc_id"],
             type=metadata["type"],
@@ -126,10 +157,17 @@ class DocHandler():
 
         return doc_id.lower()
 
-    def _calc_checksum(self, metadata: dict) -> str:
-        """Generates a deterministic unique SHA-256 fingerprint for a metadata dict."""
+    def _calc_checksum(self, metadata: dict, content: str) -> str:
+        """
+        Generates a deterministic unique SHA-256 fingerprint for a metadata dict.
+
+        :param metadata:
+        :param content:
+        :return:
+        """
+
         # Explicitly isolate changing or non-data keys
-        excluded_keys = {"batch_no", "doc_id", "id"}
+        excluded_keys = {"doc_id", "id", "chunk_id"}
 
         filtered_metadata = {
             key: value
@@ -137,13 +175,19 @@ class DocHandler():
                 if key not in excluded_keys and "date" not in key.lower()
         }
 
+        # Add page content to ensure a unique hash for each document
+        # Note: content is used for checksum but is not included in metadata intentionally!
+        filtered_metadata['page_content'] = content
+
+        # @todo - print(f'filtered_metadata={filtered_metadata}')
+
         # Serialize to a strictly ordered JSON string to ensure stability
         # separators removes random whitespace differences
         metadata_json = json.dumps(
             filtered_metadata, sort_keys=True, separators=(",", ":")
         )
 
-        # 3. Compute and return the clean SHA-256 string
+        # Compute and return the clean SHA-256 string
         return hashlib.sha256(metadata_json.encode("utf-8")).hexdigest()
 
     def show_sample(self, samp_docs: list, samp_title: str = "") -> None:
@@ -159,19 +203,19 @@ class DocHandler():
         
         doc_cnt = len(samp_docs)
         if doc_cnt == 0:
-            print(f"{I_WARNING} Checked baseline collection is empty. No sample to show.")
+            print(f"\t{I_WARNING} Checked baseline collection is empty. No sample to show.")
             return
 
         index = random.randint(0, doc_cnt - 1)
-        print(f"Count = {doc_cnt}, Index = {index}")
+        print(f"\tCount = {doc_cnt}, Index = {index}")
 
         if 0 <= index < doc_cnt:
-            print("ID: ", samp_docs[index].id, "\n")
-            print("Metadata:")
+            print("\tID: ", samp_docs[index].id, "\n")
+            print("\tMetadata:")
             print(json.dumps(samp_docs[index].metadata, indent=4), "\n")
-            print(f"{samp_title}:\n", samp_docs[index].page_content)
+            print(f"\t{samp_title}:\n", samp_docs[index].page_content)
         else:
-            print(f"\nIndex {index} is out of range for the list with length {doc_cnt}.")
+            print(f"\n\tIndex {index} is out of range for the list with length {doc_cnt}.")
 
     def get_semantic_chunks(self, semantic_chunks: list) -> list[Document]:
         """
@@ -189,11 +233,12 @@ class DocHandler():
         print(f'\n# --- {I_BOOK} Showing {len(self.documents)} Documents {I_BOOK} --- #')
 
         for i, doc in enumerate(self.documents):
-            print(f'\n----- {I_DOCUMENT} Document: {i+1} -----')
-            print("Source:", doc.metadata.get('source', 'Unknown'))
-            print("Page:", doc.metadata.get('page', 'Unknown'))
-            print("Page Content:", doc.page_content)
-            print(f'+---- {I_DOCUMENT} Document: {i+1} ----+')
+            print(f'\n\t{I_DOCUMENT} Document: {i+1} -----')
+            print("\t\tSource:", doc.metadata.get('source', 'Unknown'))
+            print("\t\tFilename:", doc.metadata.get('filename', 'Unknown filename'))
+            print("\t\tPage:", doc.metadata.get('page', 'Unknown'))
+            print("\t\tPage Content:", doc.page_content)
+            print(f'\t+-- Document: {i+1} ----+')
 
     def _parse(self, llama_parser: LlamaParse) -> list:
         """
@@ -235,12 +280,12 @@ class DocHandler():
 
         page_texts, tables = {}, {}
         for obj in json_objs:
-            # Extract file identification name safely
+            # ✅ Extract full file path string safely from the source JSON object
             file_path_str = obj.get("file_path", "unknown-source.pdf")
-            name = file_path_str.split("/")[-1]
 
-            page_texts[name] = {}
-            tables[name] = {}
+            # Use the full path as the primary key dictionary anchor
+            page_texts[file_path_str] = {}
+            tables[file_path_str] = {}
 
             for json_item in obj.get('pages', []):
                 page_number = json_item.get("page")
@@ -249,13 +294,13 @@ class DocHandler():
                 table_rows, table_ref_string = self._process_page_tables(json_item)
 
                 if table_rows:
-                    tables[name][page_number] = table_rows
+                    tables[file_path_str][page_number] = table_rows
 
                 # Re-route pure extraction strings into cleanup components
                 page_content_full = json_item.get('text', '')
                 cleaned_text = self._clean_page_text(page_content_full, table_rows, table_ref_string)
 
-                page_texts[name][page_number] = cleaned_text
+                page_texts[file_path_str][page_number] = cleaned_text
 
         return page_texts, tables
 
@@ -293,13 +338,24 @@ class DocHandler():
 
                 except Exception as e:
                     # Graceful exception logging boundary handling
-                    flag_symbol = I_FLAG if hasattr(self, 'I_FLAG') else '[FLAG]'
+                    flag_symbol = I_FLAG
                     print(f"{flag_symbol} No table ref string. Error: {e}")
                     table_ref_string = None
 
                 break  # Enforce processing limit threshold context trace constraint
 
         return table_rows, table_ref_string
+
+    def show_tables(self) -> None:
+        """Displays formatted representation profiles of isolated layout data tables."""
+
+        print(f'\n# --- {I_DB} Showing Table Information {I_DB} --- #')
+        for file_name, file_tables in self.tables.items():
+            print(f"\tTables from {file_name}:")
+            for page_num, table_rows in file_tables.items():
+                print(f"\tPage {page_num}:")
+                for row in table_rows:
+                    print(f"\t{row}")
 
     @staticmethod
     def _clean_page_text(page_content_full: str, table_rows: list | None, table_ref_string: str | None) -> str:
@@ -332,17 +388,6 @@ class DocHandler():
 
         # Scenario C: Stable ordinary string sheet, return flat asset normalized
         return page_content_full.strip()
-
-    def show_tables(self) -> None:
-        """Displays formatted representation profiles of isolated layout data tables."""
-        
-        print(f'\n# --- {I_DB} Showing Table Information {I_DB} --- #')
-        for file_name, file_tables in self.tables.items():
-            print(f"Tables from {file_name}:")
-            for page_num, table_rows in file_tables.items():
-                print(f"Page {page_num}:")
-                for row in table_rows:
-                    print(f"\t{row}")
 
     @staticmethod
     def wipe_db_dir() -> None:

@@ -3,8 +3,6 @@
 # Python Libraries
 import time
 
-from sympy.tensor.indexed import Idx
-
 # Local Libraries
 from models.chroma import ChromaModel
 from models.openai import OpenAIModel
@@ -40,7 +38,7 @@ class QuestionGenerator(DataGenerator):
         else:
             return self._with_free_models(semantic_chunks)
 
-    def _with_free_models(self, semantic_chunks):
+    def _with_free_models(self, semantic_chunks) -> list:
 
         # --- Free tier version --- #
         print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
@@ -59,9 +57,12 @@ class QuestionGenerator(DataGenerator):
             # --- COMPACT THE BATCH INTO XML BLOCKS ---
             compacted_docs_list = []
             for idx, doc in enumerate(batch, start=batch_start):
-                compacted_docs_list.append(
-                    f'<chunk id="{idx}">\n{doc.page_content}\n</chunk>'
-                )
+
+                # Capture the parent's unique ID (falling back to idx if missing)
+                parent_id = getattr(doc, 'id', None) or doc.metadata.get('doc_id', str(idx))
+                chunk_html = f'<chunk id="{parent_id}">\n{doc.page_content}\n</chunk>'
+                compacted_docs_list.append(chunk_html)
+
             compacted_docs_str = "\n".join(compacted_docs_list)
 
             # --- SINGLE API TRANSACTION PER BATCH ---
@@ -98,8 +99,11 @@ class QuestionGenerator(DataGenerator):
             # --- PARSE AND MAP THE GENERATED QUESTIONS ---
             if batch_questions_dict and isinstance(batch_questions_dict, dict):
                 for idx, document in enumerate(batch, start=batch_start):
-
+                    print(f'line 102 ques document={document}')
                     questions_for_chunk = (batch_questions_dict.get(str(idx)) or batch_questions_dict.get(idx))
+
+                    # Get the exact same parent_id identifier used in the XML generation step
+                    parent_id = getattr(document, 'id', None) or document.metadata.get('doc_id', str(idx))
 
                     # Safely convert a list of strings into one clean, newline-delimited string
                     if questions_for_chunk:
@@ -109,10 +113,11 @@ class QuestionGenerator(DataGenerator):
                             page_content_str = str(questions_for_chunk)
 
                         questions_metadata = {
-                            'batch_no': batch_start, 
+                            'chunk_id': idx,
                             'doc_type': self.doc_type,
                             'original_content': document.page_content,
                             'page': document.metadata['page'],
+                            'parent_id': parent_id,
                             'source': document.metadata['source'],
                         }
                         
@@ -130,13 +135,6 @@ class QuestionGenerator(DataGenerator):
         show_timer(start_time)
 
         return hypothetical_questions
-
-
-    def _handle_free_response(self):
-        pass
-
-    def _get_free_doc_data(self):
-        pass
 
     def _with_premium_models(self, semantic_chunks) -> list:
         # Use this function is models are premium.
@@ -158,7 +156,10 @@ class QuestionGenerator(DataGenerator):
 
             for idx, document in enumerate(batch, start=batch_start):
                 rate_limit_hit = False
-                
+
+                # Get the exact same parent_id identifier used in the XML generation step
+                parent_id = getattr(document, 'id', None) or document.metadata.get('doc_id', str(idx))
+
                 # Dynamic per-request jittered sleep to keep the API gateway happy
                 current_sleep_time = get_new_sleep_time()
 
@@ -188,10 +189,11 @@ class QuestionGenerator(DataGenerator):
 
                 if questions and questions != AGENT_EMPTY_RESP:
                     questions_metadata = {
-                        'batch_no': batch_start, # @todo - debug
+                        'chunk_id': idx,
                         'doc_type': self.doc_type,
                         'original_content': document.page_content,
                         'page': document.metadata['page'],
+                        'parent_id': parent_id,
                         'source': document.metadata['source'],
                     }
 

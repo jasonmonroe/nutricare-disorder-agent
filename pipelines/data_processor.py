@@ -14,7 +14,7 @@ import warnings
 # Local Libraries
 from models.chroma import ChromaModel
 from src.eda import show_histogram
-from src.utils import is_jupyter
+from src.utils import is_jupyter, show_banner
 from storages.question_generator import QuestionGenerator
 from storages.table_question_generator import TableQuestionGenerator
 
@@ -51,10 +51,12 @@ def run(dataset: dict) -> None:
     :return:
     """
 
+    show_banner(f'{I_RUNNING} Running data processor pipeline {I_RUNNING}')
+
     if not dataset.get('log_debug'):
         warnings.filterwarnings('ignore', category=DeprecationWarning)
 
-    print(f'\n# --- {I_RUNNING} Running data processor pipeline {I_RUNNING} --- #')
+    #print(f'\n# --- {I_RUNNING} Running data processor pipeline {I_RUNNING} --- #')
 
     # Pluck all the datasets needed to run this
     llama = dataset.get('llama')
@@ -112,6 +114,7 @@ def run(dataset: dict) -> None:
 
 
 def _process_questions(doc_handle: DocHandler, chroma_db: ChromaModel, document_chunks: list, data_refresh: bool):
+
     # Get hypothetical questions and add them to the vector storage.
     questions_dataset = {
         'batch_size': config.DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
@@ -125,7 +128,9 @@ def _process_questions(doc_handle: DocHandler, chroma_db: ChromaModel, document_
     semantic_questions_count = questions.get_semantic_count()
     title = f'{questions.collection_name.capitalize()} {questions.title}'
 
-    print(f'\n{I_INFO}  Existing Questions: {semantic_questions_count}')
+    show_banner(title, f'{I_INFO}  Existing Questions: {semantic_questions_count}')
+
+    #print(f'\n{I_INFO}  Existing Questions: {semantic_questions_count}')
 
     if semantic_questions_count > 0 and not data_refresh:
         print(f"✅ {title} collection already has {semantic_questions_count} documents — skipping question generation.")
@@ -142,6 +147,7 @@ def _process_questions(doc_handle: DocHandler, chroma_db: ChromaModel, document_
 
 
 def _process_table_questions(doc_handle: DocHandler, chroma_db: ChromaModel, data_refresh: bool):
+
     # Get table hypothetical questions and add them to the vector storage
     table_questions_dataset = {
         'doc_handle': doc_handle,
@@ -154,7 +160,9 @@ def _process_table_questions(doc_handle: DocHandler, chroma_db: ChromaModel, dat
     semantic_table_questions_count = table_questions.get_semantic_count()
     title = f'{table_questions.collection_name.capitalize()} {table_questions.title}'
 
-    print(f'\n{I_INFO}  Existing {title}: {semantic_table_questions_count}')
+    show_banner(title, f'{I_INFO}  Existing {title}: {semantic_table_questions_count}')
+
+    #print(f'\n{I_INFO}  Existing {title}: {semantic_table_questions_count}')
     
     if semantic_table_questions_count > 0 and not data_refresh:
         print(f"✅ {title} collection already has {semantic_table_questions_count} documents — skipping question generation.")
@@ -178,11 +186,13 @@ def _backup_docs():
     import os 
     import shutil
 
-    print(f'\n# --- {I_DISK} Backing up documents {I_DISK} --- #')
+    show_banner(f'{I_DISK} Backing up documents {I_DISK}')
     
     # Define source and destination paths for vector storage
-    source_path = config.CHROMA_VECTORS_DIR  # Complete the code to define the path to your vectorstore directory
-    destination_path = '_backups/' + config.CHROMA_VECTORS_DIR  # Complete the code to define the destination path in your Drive
+    # Complete the code to define the path to your vectorstore directory.
+    # Complete the code to define the destination path in your Drive.
+    source_path = config.CHROMA_VECTORS_DIR
+    destination_path = '_backups/' + config.CHROMA_VECTORS_DIR
     
     # Copy the directory to Google Drive
     try:
@@ -197,10 +207,10 @@ def _backup_docs():
     
     # Verify if the directory was copied successfully
     if os.path.exists(destination_path):
-        print(f"{I_DIR} {source_path} directory exists on your hard drive.")  # Complete the code to confirm the directory name
+        print(f"{I_DIR} {source_path} directory exists on your hard drive.")
     
     else:
-        print(f"{source_path} directory was not copied to your source path.")  # Complete the code to confirm the directory name
+        print(f"{source_path} directory was not copied to your source path.")
         os.makedirs(destination_path, exist_ok=True)
         os.chmod(destination_path, DOCUMENT_DIR_PERM)
         print(f"Making the directory {I_DIR}{destination_path} now with permissions: {DOCUMENT_DIR_PERM}...")

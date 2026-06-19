@@ -12,7 +12,7 @@ from src.constants import (
     AI_ROLE,
     I_INFO,
     I_PEN,
-    I_QUES,
+    I_QUES, DOCUMENT_FILEPATH,
 )
 from src.model_config import config, ModelConfig
 from src.utils import get_new_sleep_time, handle_rate_limit_error, show_timer, start_timer
@@ -23,16 +23,49 @@ class TableQuestionGenerator(DataGenerator):
     def __init__(self, dataset: dict, chroma_db: ChromaModel):
         super().__init__(dataset, chroma_db)
 
-    def get_hypothetical_questions(self, page_texts, tables):
+    def get_hypothetical_questions(self, page_texts, tables) -> list:
 
         # Check tier status, if we're using the expensive models run this function instead and return
         if ModelConfig.is_premium():
             return self._with_premium_models(page_texts, tables)
         else:
             return self._with_free_models(page_texts, tables)
-        
-    def _with_free_models(self, page_texts: dict, tables: dict):
-        # free tier version
+
+
+    def get_parent_id(self, filename, page_number) -> str:
+        """
+        Looks up the primary base text chunk's unique doc_id from ChromaDB
+
+        to form a precise parent link. Falls back to a deterministic string identifier
+        if no metadata matches exist.
+
+        :param filename:
+        :param page_number:
+        :return:
+        """
+
+        try:
+            # Query ChromaDB collection for the corresponding page asset
+            results = self.chroma_db.collection.get(
+                where={
+                    "$and": [
+                        {"source": filename},
+                        {"page": int(page_number)}
+                    ]
+                },
+                limit=1
+            )
+            if results and results.get('ids'):
+                return results['ids'][0]
+        except Exception:
+            pass
+
+        # Consistent fallback layout signature if database lookup is offline or unpopulated
+        # @todo - return f"parent_{filename.replace('.', '_')}_p{page_number}"
+        return f"p{page_number}"
+
+    def _with_free_models(self, page_texts: dict, tables: dict) -> list:
+        # Free tier version
         print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
         print(f'{I_INFO}  USING FREE TIER MODELS')
 
@@ -56,12 +89,17 @@ class TableQuestionGenerator(DataGenerator):
                 # Compute independent jitter per page run
                 current_sleep_time = get_new_sleep_time()
 
+                parent_id = self.get_parent_id(filename=document, page_number=page_number)
+                print(f'DEBUG: line 97: parent_id={parent_id}')
+
                 # Structure the table explicitly so the LLM can parse its context
                 compacted_table_str = (
-                    f'<table_context page="{page_number}">\n'
+                    f'<table_context id="{parent_id}" page="{page_number}">\n'
                     f'{str(table_in_page)}\n'
                     f'</table_context>'
                 )
+
+                # Get LLM response of questions
 
                 try:
                     # Pass the aggregated data structure in a single request
@@ -93,11 +131,11 @@ class TableQuestionGenerator(DataGenerator):
                 # --- Write to your single open database trait ---
                 if questions and questions != AGENT_EMPTY_RESP:
                     questions_metadata = {
-                        'batch_no': doc_index, # @todo - debug
                         'doc_type': self.doc_type,  
                         'original_content': str(table_in_page), 
-                        'page': page_number,  
-                        'source': document,  
+                        'page': page_number,
+                        'parent_id': parent_id,
+                        'source': document,
                     }
 
                     table_hypothetical_questions.append(
@@ -117,7 +155,7 @@ class TableQuestionGenerator(DataGenerator):
 
         return table_hypothetical_questions
   
-    def _with_premium_models(self, page_texts: dict, tables: dict):
+    def _with_premium_models(self, page_texts: dict, tables: dict) -> list:
         print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
         
         start_time = start_timer()
@@ -165,11 +203,11 @@ class TableQuestionGenerator(DataGenerator):
 
                 if questions and questions != AGENT_EMPTY_RESP:
                     questions_metadata = {
-                        'batch_no': doc_index,
+                        'parent_id': self.get_parent_id(filename=document, page_number=page_number),
                         'doc_type': self.doc_type,  
                         'original_content': str(table_in_page), 
                         'page': page_number,  
-                        'source': document,  
+                        'source': document,
                     }
 
                     table_hypothetical_questions.append(

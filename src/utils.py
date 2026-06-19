@@ -22,7 +22,6 @@ from src.constants import (
     HF_TOKEN,
     I_BOT,
     I_FLAG,
-    I_GEAR,
     I_HANDSHAKE,
     I_TIMER,
     LLAMA_KEY,
@@ -103,6 +102,7 @@ def _create_title_banner(text: str, center_text: bool=True) -> None:
     top_btm_line = _make_top_btm_line()
 
     # Print title banner
+    print("\n")
     print(top_btm_line)
     print(title_line)
     print(top_btm_line)
@@ -122,8 +122,6 @@ def _create_subtitle_banner(text: str | list, center_text: bool=False) -> None:
         wrapped_lines = text
 
     elif isinstance(text, str):
-        import textwrap
-
         wrapped_lines = textwrap.wrap(text, width=max_line_len)
 
     # Now that the data is a list format it for display.
@@ -141,13 +139,21 @@ def _create_subtitle_banner(text: str | list, center_text: bool=False) -> None:
   
         print(padded_line)
        
-    # Close the sub title 
+    # Close the subtitle
     if len(wrapped_lines) > 0:
         print(_make_top_btm_line())
 
+    return None
+
+def show_banner(title: str, subtitle: str | list | None="", center_title_text: bool=True, center_subtitle_text: bool=False) -> None:
+    _create_title_banner(title, center_title_text)
+
+    if subtitle:
+        _create_subtitle_banner(subtitle, center_subtitle_text)
+
 
 def show_title_banner() -> None:
-    _create_title_banner(APP_TITLE, f'{I_BOT} An AI Agent')
+    _create_title_banner(APP_TITLE)
     print(f'\n{I_HANDSHAKE} You are a {AI_ROLE}. {I_HANDSHAKE}\n')
 
 
@@ -161,7 +167,7 @@ def show_model_banner() -> None:
 
 def show_ai_agent_banner() -> None:
     title = f'{I_BOT} SMART NUTRITION DISORDER SPECIALIST BOT {I_BOT}'
-    subtitle = f'Welcome! I\'m your dedicated AI Nutrition Agent.\nAsk me anything about nutrition disorders, including their symptoms,\ncauses, treatments, or preventative measures. I am here to assist with your\nhealth-related questions.'
+    subtitle = 'Welcome! I\'m your dedicated AI Nutrition Agent.\nAsk me anything about nutrition disorders, including their symptoms,\ncauses, treatments, or preventative measures. I am here to assist with your\nhealth-related questions.'
  
     _create_title_banner(title)
     _create_subtitle_banner(subtitle)
