@@ -51,5 +51,5 @@ class ModelConfig:
             print(f"{I_CROSSMARK} No documents found in the vector storage. Please run with --data first! {I_CROSSMARK}")
             raise RuntimeError("Vector database is completely empty!")
 
-# Set the global config variable
+# --- Set the global config variable --- #
 config = c_prem if ModelConfig.is_premium() else c_free

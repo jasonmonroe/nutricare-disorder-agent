@@ -43,7 +43,8 @@ def run(dataset: dict) -> None:
     # Consumer Version:
     # https://www.merckmanuals.com/home/disorders-of-nutrition/overview-of-nutrition/overview-of-nutrition
     
-    Note: ❗ The Merck Manual of Diagnosis & Therapy, 19th Edition is a highly copyrighted commercial work owned by Merck & Co., Inc. 
+    Note: ❗ The Merck Manual of Diagnosis & Therapy, 19th Edition is a highly copyrighted commercial work owned by
+    Merck & Co., Inc.
     Please do not make the full manual public or risk a DMCA takedown request.
 
     :param dataset:
@@ -112,38 +113,35 @@ def run(dataset: dict) -> None:
 
 def _process_questions(doc_handle: DocHandler, chroma_db: ChromaModel, document_chunks: list, data_refresh: bool):
     # Get hypothetical questions and add them to the vector storage.
-    # Create a merged dataset for questions.
     questions_dataset = {
         'batch_size': config.DOCUMENT_CHUNK_TEXT_BATCH_SIZE,
         'doc_handle': doc_handle,
         'doc_type': 'hypothetical_questions',
         'prompt': config.PROMPT_QUESTION_GENERATOR,
     }
-    
-    chroma_dataset = chroma_db.export()
-    dataset = {**chroma_dataset, **questions_dataset}
-    #print(f'DEBUG: new dataset for questions:{dataset}')
+
+    dataset = _merge_datasets(chroma_db, questions_dataset)
     questions = QuestionGenerator(dataset, chroma_db)
+    semantic_questions_count = questions.get_semantic_count()
+    title = f'{questions.collection_name.capitalize()} {questions.title}'
 
-    semantic_count_questions = questions.get_semantic_count()
-    print(f'\n{I_INFO}  Existing Questions: {semantic_count_questions}')
+    print(f'\n{I_INFO}  Existing Questions: {semantic_questions_count}')
 
-    if semantic_count_questions > 0 and not data_refresh:
-        print(f"✅ Hypothetical questions collection already has {semantic_count_questions} documents — skipping question generation.")
+    if semantic_questions_count > 0 and not data_refresh:
+        print(f"✅ {title} collection already has {semantic_questions_count} documents — skipping question generation.")
     elif document_chunks is not None or data_refresh:
-        print(f"\nGenerating new {questions.title}...")
+        print(f"\nGenerating new {title}...")
 
         hypothetical_questions_doc = questions.get_hypothetical_questions(document_chunks)
+        doc_handle.show_sample(hypothetical_questions_doc, title)
+
         questions.add_semantic_documents(hypothetical_questions_doc)
-        doc_handle.show_sample(hypothetical_questions_doc, questions.collection_name + ' ' + questions.title)
         questions.add_vector_documents(hypothetical_questions_doc)
     else:
         print(f"{I_FLAG} Cannot generate hypothetical questions: document chunks unavailable.")
 
 
 def _process_table_questions(doc_handle: DocHandler, chroma_db: ChromaModel, data_refresh: bool):
-    chroma_dataset = chroma_db.export()
-
     # Get table hypothetical questions and add them to the vector storage
     table_questions_dataset = {
         'doc_handle': doc_handle,
@@ -151,23 +149,30 @@ def _process_table_questions(doc_handle: DocHandler, chroma_db: ChromaModel, dat
         'prompt': config.PROMPT_TABLE_QUESTION_GENERATOR,
     }
 
-    dataset = {**chroma_dataset, **table_questions_dataset}
-    #print(f'DEBUG: new dataset for table questions:{dataset}')
+    dataset = _merge_datasets(chroma_db, table_questions_dataset)
     table_questions = TableQuestionGenerator(dataset, chroma_db)
+    semantic_table_questions_count = table_questions.get_semantic_count()
+    title = f'{table_questions.collection_name.capitalize()} {table_questions.title}'
 
-    semantic_count_table_questions = table_questions.get_semantic_count()
-    print(f'\n{I_INFO}  Existing Table Questions: {semantic_count_table_questions}')
+    print(f'\n{I_INFO}  Existing {title}: {semantic_table_questions_count}')
     
-    if semantic_count_table_questions > 0 and not data_refresh:
-        print(f"✅ Hypothetical table questions collection already has {semantic_count_table_questions} documents — skipping question generation.")
+    if semantic_table_questions_count > 0 and not data_refresh:
+        print(f"✅ {title} collection already has {semantic_table_questions_count} documents — skipping question generation.")
     else:
-        print(f"\nGenerating new {table_questions.title}...")
+        print(f"\nGenerating new {title}...")
 
         table_hypothetical_questions_doc = table_questions.get_hypothetical_questions(doc_handle.page_texts, doc_handle.tables)
+        doc_handle.show_sample(table_hypothetical_questions_doc, title)
+
         table_questions.add_semantic_documents(table_hypothetical_questions_doc)
-        doc_handle.show_sample(table_hypothetical_questions_doc, table_questions.collection_name + ' ' + table_questions.title)
         table_questions.add_vector_documents(table_hypothetical_questions_doc)
-    
+
+
+def _merge_datasets(chroma_db: ChromaModel, dataset: dict) -> dict:
+    # Create a merged dataset for questions.
+    chroma_dataset = chroma_db.export()
+    return {**chroma_dataset, **dataset}
+
 
 def _backup_docs():
     import os 

@@ -41,6 +41,7 @@ class QuestionGenerator(DataGenerator):
             return self._with_free_models(semantic_chunks)
 
     def _with_free_models(self, semantic_chunks):
+
         # --- Free tier version --- #
         print(f'\n# --- {I_QUES} Getting {self.title} {I_QUES} --- #')
         print(f'{I_INFO}  USING FREE TIER MODELS')
@@ -98,10 +99,10 @@ class QuestionGenerator(DataGenerator):
             if batch_questions_dict and isinstance(batch_questions_dict, dict):
                 for idx, document in enumerate(batch, start=batch_start):
 
-                    questions_for_chunk = batch_questions_dict.get(str(idx)) or batch_questions_dict.get(idx)
+                    questions_for_chunk = (batch_questions_dict.get(str(idx)) or batch_questions_dict.get(idx))
 
+                    # Safely convert a list of strings into one clean, newline-delimited string
                     if questions_for_chunk:
-                        # Safely convert a list of strings into one clean, newline-delimited string
                         if isinstance(questions_for_chunk, list):
                             page_content_str = "\n".join(questions_for_chunk)
                         else:
@@ -129,6 +130,13 @@ class QuestionGenerator(DataGenerator):
         show_timer(start_time)
 
         return hypothetical_questions
+
+
+    def _handle_free_response(self):
+        pass
+
+    def _get_free_doc_data(self):
+        pass
 
     def _with_premium_models(self, semantic_chunks) -> list:
         # Use this function is models are premium.
@@ -165,6 +173,7 @@ class QuestionGenerator(DataGenerator):
 
                 except Exception as e:
                     questions = AGENT_EMPTY_RESP
+
                     # Single call to cleanly parse the exception payload
                     current_sleep_time, rate_limit_hit = handle_rate_limit_error(
                         e, 
@@ -205,5 +214,3 @@ class QuestionGenerator(DataGenerator):
         show_timer(start_time)
 
         return hypothetical_questions
-
-

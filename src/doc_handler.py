@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import platform
 import random
 import re
 import shutil
@@ -48,6 +49,7 @@ class DocHandler():
     def __init__(self, llama_parser: LlamaParse, skip_parse: bool = False):
         self.documents = []
         self.folder_path = DOCUMENT_DIR
+        self.creation_date = self._get_creation_date()
         self.page_texts, self.tables = {}, {}
 
         if not skip_parse and self._unzip():
@@ -64,7 +66,7 @@ class DocHandler():
         :return: Document
         """
 
-        # Add additional keys to the meta data        
+        # Add additional keys to the metadata
         if "source" in metadata and "filename" not in metadata:
             metadata["filename"] = os.path.basename(metadata["source"])
 
@@ -72,18 +74,20 @@ class DocHandler():
         if "type" not in metadata:
             metadata["type"] = "Document"
 
+        if "page" in metadata:
+            try:
+                metadata["page"] = int(metadata["page"])
+            except (ValueError, TypeError):
+                pass # Fallback if page is not a numeric string
+
         # Check for duplicates before adding
         metadata["checksum"] = self._calc_checksum(metadata)
-        metadata["doc_id"] = self._generate_document_id() 
+        metadata["doc_id"] = self._generate_document_id()
 
-        if "creationdate" not in metadata:
-            file_info = os.stat(DOCUMENT_FILEPATH)
-            timestamp = getattr(file_info, "st_birthtime", file_info.st_mtime)
-            metadata["creationdate"] = datetime.fromtimestamp(timestamp).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+        if not metadata.get("creationdate"):
+            metadata["creationdate"] = self.creation_date
 
-        # Get timestamp  of chunk
+        # Get timestamp of chunk
         metadata["utc_datetime"] = str(datetime.now(UTC))
 
         # Sort metadata but have the doc_id key at the top.
@@ -92,7 +96,7 @@ class DocHandler():
             **dict(sorted(metadata.items()))
         }
     
-        print(f'DEBUG: creating Document() {metadata}')
+        print(f'creating Document() {metadata}')
 
         return Document(
             id=metadata["doc_id"],
@@ -100,6 +104,20 @@ class DocHandler():
             page_content=content,
             metadata=metadata,
         )
+
+    def _get_creation_date(self) -> str:
+        """Retrieves a reliable file creation timestamp across Windows, Mac, and Linux."""
+        file_info = os.stat(DOCUMENT_FILEPATH)
+
+        # Handle Windows vs Unix-like OS splits
+        if platform.system() == "Windows":
+            timestamp = file_info.st_ctime
+        else:
+            # Mac uses st_birthtime; Linux falls back to st_mtime (modification time)
+            timestamp = getattr(file_info, "st_birthtime", file_info.st_mtime)
+
+        # Return clean formatted string
+        return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d")
 
     def _generate_document_id(self) -> str:
         # Generate UUID without hyphens
@@ -109,20 +127,24 @@ class DocHandler():
         return doc_id.lower()
 
     def _calc_checksum(self, metadata: dict) -> str:
-        # Generates a deterministic unique SHA-256 fingerprint ID for creating a checksum.
-        filtered_metadata = {}
+        """Generates a deterministic unique SHA-256 fingerprint for a metadata dict."""
+        # Explicitly isolate changing or non-data keys
+        excluded_keys = {"batch_no", "doc_id", "id"}
 
-        # Filter out the doc_id and any dates as we only want the data values
-        for key, value in metadata.items():
-            if 'date' not in key and key != 'batch_no' and key != 'doc_id' and key != 'id':
-                filtered_metadata[key] = value
+        filtered_metadata = {
+            key: value
+            for key, value in metadata.items()
+                if key not in excluded_keys and "date" not in key.lower()
+        }
 
-        # Convert it to a string, trim and hash it.
-        metadata_str = str(filtered_metadata)
-        metadata_str = metadata_str.strip()
-        checksum_str = str(hashlib.sha256(metadata_str.encode('utf-8')).hexdigest())
+        # Serialize to a strictly ordered JSON string to ensure stability
+        # separators removes random whitespace differences
+        metadata_json = json.dumps(
+            filtered_metadata, sort_keys=True, separators=(",", ":")
+        )
 
-        return checksum_str
+        # 3. Compute and return the clean SHA-256 string
+        return hashlib.sha256(metadata_json.encode("utf-8")).hexdigest()
 
     def show_sample(self, samp_docs: list, samp_title: str = "") -> None:
         """
@@ -141,7 +163,7 @@ class DocHandler():
             return
 
         index = random.randint(0, doc_cnt - 1)
-        print(f"Index = {index}, Count = {doc_cnt}")
+        print(f"Count = {doc_cnt}, Index = {index}")
 
         if 0 <= index < doc_cnt:
             print("ID: ", samp_docs[index].id, "\n")
@@ -182,7 +204,6 @@ class DocHandler():
         """
 
         json_objs = []
-
         if not os.path.exists(self.folder_path):
             print(f"{I_FLAG} Data folder path location '{self.folder_path}' doesn't exist.")
             return json_objs
@@ -213,7 +234,6 @@ class DocHandler():
         """
 
         page_texts, tables = {}, {}
-
         for obj in json_objs:
             # Extract file identification name safely
             file_path_str = obj.get("file_path", "unknown-source.pdf")
@@ -397,7 +417,8 @@ class DocHandler():
                 with zip_handle.open(archive_target_key) as source_stream:
                     with open(DOCUMENT_FILEPATH, 'wb') as dest_file:
                         dest_file.write(source_stream.read())
-                
+
+                print(f'\nSleeping for {config.SLEEP_TIME_SEC} seconds...')
                 sleep(config.SLEEP_TIME_SEC)
 
         # --- Check if file was successfully unzipped! --- #

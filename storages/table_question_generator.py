@@ -150,6 +150,7 @@ class TableQuestionGenerator(DataGenerator):
 
                 except Exception as e:
                     questions = AGENT_EMPTY_RESP
+
                     # Single execution point prevents log thrashing and double mutations
                     current_sleep_time, rate_limit_hit = handle_rate_limit_error(
                         e, 

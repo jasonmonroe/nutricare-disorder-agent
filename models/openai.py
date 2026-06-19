@@ -2,7 +2,7 @@ from __future__ import annotations
 # models/openai.py
 
 # Python Libraries
-import json
+import os
 from typing import Any
 
 # Vendor Libraries
@@ -26,6 +26,7 @@ class OpenAIModel:
     # Documentation: https://developers.openai.com/api/docs
 
     def __init__(self):
+        os.environ["HF_HOME"] = os.path.abspath("./.hf_cache")
 
         self.embedding_model = self._get_embedding_model() if ModelConfig.is_premium() else self._get_hf_embedding_model()
         self.llm = self._load_llm()
@@ -98,112 +99,94 @@ class OpenAIModel:
         )
 
     @staticmethod
-    def filter_response(resp: Any, index: int | None = None) -> dict:
+    def filter_response(resp: Any, index: int | None = None) -> str:
+        """Filters the LLM response object, extracts clean string data,
+
+        and prepares it for dictionary parsing.
         """
-        Filters the LLM response object, cleans surrounding syntax wrappers,
-        and returns a parsed Python dictionary.
-        """
-        
-        # Extract content payload cleanly
+        # Safely extract raw text from payload
         content = OpenAIModel._extract_content(resp, index)
 
-        if not content:
-            print(f'⚠️ No content found for chunk {index}.')
-            return {}
+        # Halt if content payload is structurally empty
+        if len(content) == 0:
+            print(
+                f"{I_FLAG} No generated hypothetical questions found for chunk {index}."
+            )
+            return AGENT_EMPTY_RESP
 
-        # Clean outer parentheses/quotes formatting wrappers
-        content = OpenAIModel._filter_content(content)
-        
-        # Strip any markdown block layout code elements
-        content = OpenAIModel._convert_to_dict_string(content)
-        
-        # Safely convert the cleaned JSON string into a native Python Dictionary
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError as e:
-            print(f'⚠️ Error parsing JSON string to dict for chunk {index}: {e}')
-            return {}
+        # Strip outer wrapper layout characters (parentheses/quotes)
+        content = OpenAIModel._filter_content_layout(content)
+
+        # Clean Markdown fences to expose the raw JSON dict structure
+        content = OpenAIModel._extract_json_block(content)
+
+        return content
 
     @staticmethod
-    def _extract_content(resp: Any, idx: int | None = None) -> str:
-        """
-        Safely extract content string regardless of incoming object type.
-        """
-        if hasattr(resp, 'content'):
-            return resp.content.strip()
-        elif isinstance(resp, str):
+    def _extract_content(resp: Any, index: int | None = None) -> str:
+        """Safely extracts text regardless of whether payload is a string or object."""
+        if isinstance(resp, str):
             return resp.strip()
-        else:
-            print(f'⚠️ Warning: Unexpected response type for chunk {idx}. Type: {type(resp)}')
-            return ""
+        elif hasattr(resp, "content"):
+            # Ensure the output is cast to a native string cleanly
+            return str(resp.content).strip()
 
-    @staticmethod    
-    def _filter_content(content: str) -> str:
-        if content.startswith('(') and content.endswith(')'):
-            content = content[1:-1].strip()
-        if content.startswith('"') and content.endswith('"'):
-            content = content[1:-1].strip()
-        if content.startswith("'") and content.endswith("'"):
-            content = content[1:-1].strip()
+        print(
+            f"{I_WARNING} Warning: Unexpected response type for chunk {index}. Type: {type(resp)}"
+        )
+        return ""
+
+    @staticmethod
+    def _filter_content_layout(content: str) -> str:
+        """Sequentially strips off outer layers of matching parentheses, double quotes,
+
+        and single quotes from the LLM output.
+        """
+        content = content.strip()
+
+        # Loop ensures we peel off layered wrappers like ("['...']") completely
+        while True:
+            original = content
+
+            # Remove outer parentheses
+            if content.startswith("(") and content.endswith(")"):
+                content = content[1:-1].strip()
+
+            # Remove outer double quotes
+            if content.startswith('"') and content.endswith('"'):
+                content = content[1:-1].strip()
+
+            # Remove outer single quotes
+            if content.startswith("'") and content.endswith("'"):
+                content = content[1:-1].strip()
+
+            # If the string stopped changing, we have stripped all outer layers
+            if content == original:
+                break
 
         return content
 
     @staticmethod
-    def _convert_to_dict_string(content: str) -> str:
+    def _extract_json_block(content: str) -> str:
+        """Strips Markdown code blocks, leaving only the dictionary string ready for parsing."""
+        content = content.strip()
+
+        # Targets explicit json Markdown blocks
         if "```json" in content:
+            # Grab what follows ```json, then split on the closing backticks and pick the first element
             content = content.split("```json")[-1].split("```")[0].strip()
+
+        # Fallback for plain untagged triple backtick blocks
         elif "```" in content:
-            content = content.split("```")[1].strip()
+            parts = content.split("```")
+            # In a standard Markdown block, the text sits cleanly between the 1st and 2nd split markers
+            if len(parts) >= 3:
+                content = parts[1].strip()
 
         return content
 
-
-
-    # --- Depracated functions below, IGNORE --- #
-
     @staticmethod
-    def filter_response3(resp: Any, index: int | None = None) -> dict:
-        """
-        Filters the LLM response object, cleans surrounding syntax wrappers,
-        and returns a parsed Python dictionary.
-        """
-        # Safely extract content string regardless of incoming object type
-        if hasattr(resp, 'content'):
-            content = resp.content.strip()
-        elif isinstance(resp, str):
-            content = resp.strip()
-        else:
-            print(f'{I_WARNING} Warning: Unexpected response type for chunk {index}. Type: {type(resp)}')
-            return {}
-
-        if not content:
-            print(f'{I_FLAG} No generated hypothetical questions found for chunk {index}.')
-            return {}
-
-        # Clean outer parentheses/quotes formatting wrappers
-        if content.startswith('(') and content.endswith(')'):
-            content = content[1:-1].strip()
-        if content.startswith('"') and content.endswith('"'):
-            content = content[1:-1].strip()
-        if content.startswith("'") and content.endswith("'"):
-            content = content[1:-1].strip()
-
-        # CRITICAL: Safely convert the cleaned string into a native Python Dictionary
-        try:
-            # If the LLM wrapped it in markdown code blocks, strip them
-            if "```json" in content:
-                content = content.split("```json")[-1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].strip()
-
-            return json.loads(content)
-            
-        except json.JSONDecodeError as e:
-            print(f'{I_WARNING} Error parsing JSON string to dict for chunk {index}: {e}')
-            return {}
-
-    @staticmethod
-    def filter_response2(resp: str, index=None) -> str:
+    def filter_response_orig(resp: str, index=None) -> str:
         # Check if the response is already a string (raw output)
         if isinstance(resp, str):
             content = resp.strip()
