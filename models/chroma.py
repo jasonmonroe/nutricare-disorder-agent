@@ -118,7 +118,6 @@ class ChromaModel:
             client=self.chromadb_client,
             embedding_function=self.embedding_model,
             collection_name=self.collection_name,
-            #persist_directory=format_dir(self.collection_name)
         )
 
     def _get_semantic_text_splitter(self) -> SemanticChunker:
@@ -153,11 +152,9 @@ class ChromaModel:
             use_original_query=ModelConfig.is_premium()
         )
 
-    #from langchain_community.document_loaders import PyPDFLoader
-
     def get_semantic_chunks(self, filepath: str) -> list:
         """
-        Load raw documents directly.  nvoke splitting directly on your semantic chunker instance.
+        Load raw documents directly.  Invoke splitting directly on your semantic chunker instance.
         This completely bypasses the legacy base loader's nominal type hint constraint.
 
         :param filepath:
@@ -168,6 +165,7 @@ class ChromaModel:
 
         return self.semantic_text_splitter.split_documents(raw_documents)
 
+    """
     # @todo - original version.  delete if not necesary
     def get_semantic_chunks_orig(self, filepath: str) -> list:
         semantic_chunks = []
@@ -176,6 +174,7 @@ class ChromaModel:
         semantic_chunks.extend(chunks)
 
         return semantic_chunks
+    """
 
     def get_semantic_count(self) -> int:
         """Returns the number of documents in the semantic storage collection."""
@@ -237,6 +236,13 @@ class ChromaModel:
         retriever = self._get_structured_hyp_retriever() if is_hyp else self._get_structured_retriever()
         print(f'\n# --- {I_GEAR} Hypothetical Retriever {I_GEAR} --- #' if is_hyp else f'\n# --- {I_GEAR} Retriever {I_GEAR} --- #')
 
+        # 👑 FIX: fallback must search the SAME underlying collection as the primary retriever
+        fallback_retriever = (
+            self.vector_storage.as_retriever(search_type="similarity", search_kwargs={"k": CHROMA_VECTOR_RESULT_CNT})
+            if is_hyp else
+            self.semantic_storage.as_retriever(search_type="similarity", search_kwargs={"k": CHROMA_VECTOR_RESULT_CNT})
+        )
+
         queries_to_run = [random.choice(self.queries())] if pluck else self.queries()
         print(f'\tNumber of queries to run: {len(queries_to_run)}')
 
@@ -245,35 +251,28 @@ class ChromaModel:
             try:
                 ques_semantic_chunks_retrieved = retriever.invoke(question)
                 retrieved_count = len(ques_semantic_chunks_retrieved)
-
                 fallback_str = ""
 
-                # Display empty retrieval
                 if retrieved_count == 0:
                     print(f'\t{I_WARNING}  Nothing was retrieved! Swapping to vector similarity as a fallback... {I_WARNING}')
 
-                    # Fallback with the regular retriever
-                    ques_semantic_chunks_retrieved = self.retriever.invoke(question)
+                    # Fallback with the matching-collection retriever
+                    ques_semantic_chunks_retrieved = fallback_retriever.invoke(question)
                     retrieved_count = len(ques_semantic_chunks_retrieved)
 
                     print(f"\n\t----- {I_QUES} Question #{i+1} {I_QUES} -----")
-                    print(question)
+                    print("\t" + question)
                     print(f"\n\t{I_INFO}  Number of Semantic Chunks Retrieved: {retrieved_count}")
 
                     if retrieved_count == 0:
                         print(f'\t{I_WARNING}  Again, nothing was retrieved across fallback storage layer indexes! {I_WARNING}')
                     else:
                         fallback_str = "Fallback"
-                        #print(f"{I_DOCUMENT} Fallback Retrieved Documents:\n{ques_semantic_chunks_retrieved}")
-                    
-                #results_count.append(retrieved_count)
                 else:
                     print(f"\n\t----- {I_QUES} Question #{i+1} {I_QUES} -----")
                     print("\t" + question)
                     print(f"\n\t{I_INFO}  Number of Semantic Chunks Retrieved: {retrieved_count}")
 
-                        
-                #else:
                 print(f"\t{I_DOCUMENT} {fallback_str} Retrieved Documents:\n\t{ques_semantic_chunks_retrieved}")
                 results_count.append(retrieved_count)
 

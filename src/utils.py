@@ -11,6 +11,7 @@ import random
 import sys
 import textwrap
 import time
+import uuid
 
 # Local Libraries
 from src.constants import (
@@ -45,6 +46,10 @@ from src.model_config import config
 def get_run_id() -> str:
     """ Generates a unique ID for the current run. """
     return str(random.randint(RUN_MIN_ID, RUN_MAX_ID))
+
+
+def gen_uuid() -> str:
+    return uuid.uuid4().hex.lower()
 
 
 def start_timer() -> float:

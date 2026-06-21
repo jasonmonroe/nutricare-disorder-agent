@@ -2,6 +2,7 @@ from __future__ import annotations
 # models/openai.py
 
 # Python Libraries
+import json
 import os
 from typing import Any
 
@@ -99,28 +100,25 @@ class OpenAIModel:
         )
 
     @staticmethod
-    def filter_response(resp: Any, index: int | None = None) -> str:
+    def filter_response(resp: Any, index: int | None = None) -> dict | str:
         """Filters the LLM response object, extracts clean string data,
-
-        and prepares it for dictionary parsing.
+        and parses it into a dictionary.
         """
-        # Safely extract raw text from payload
         content = OpenAIModel._extract_content(resp, index)
 
-        # Halt if content payload is structurally empty
         if len(content) == 0:
-            print(
-                f"{I_FLAG} No generated hypothetical questions found for chunk {index}."
-            )
+            print(f"{I_FLAG} No generated hypothetical questions found for chunk {index}.")
             return AGENT_EMPTY_RESP
 
-        # Strip outer wrapper layout characters (parentheses/quotes)
         content = OpenAIModel._filter_content_layout(content)
-
-        # Clean Markdown fences to expose the raw JSON dict structure
         content = OpenAIModel._extract_json_block(content)
 
-        return content
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as e:
+            print(f"{I_WARNING} Failed to parse JSON for chunk {index}: {e}")
+            print(f"{I_WARNING} Raw content was: {content[:200]}...")
+            return AGENT_EMPTY_RESP
 
     @staticmethod
     def _extract_content(resp: Any, index: int | None = None) -> str:
