@@ -35,7 +35,7 @@ from src.model_config import config, ModelConfig
 class ChromaModel:
     """
     Manages the persistent vector store lifecycle using ChromaDB and handles both similarity-based and
-    metadata-structured Self-Query retrieval mechanisms.
+    metadata-structured Self-Query retrieval mechanisms using a clean, flat architecture.
 
     see: https://docs.langchain.com/oss/python/langchain/rag?_gl=1
     """
@@ -50,7 +50,7 @@ class ChromaModel:
         self.chromadb_client = chromadb.PersistentClient(path=os.path.abspath(config.CHROMA_VECTORS_DIR))
 
         self.collection_name = ''
-        self.embedding_model = None 
+        self.embedding_model = None
         self.force_rebuild = False
         self.llm = None
         self.title = ''
@@ -63,16 +63,10 @@ class ChromaModel:
         self.semantic_storage = self._get_semantic_storage()
         self.vector_storage = self._get_vector_storage()
         self.retriever = self.get_retriever()
-       
+
 
     def _set_attrs(self, dataset: dict) -> None:
-        """
-        Safely maps dataset keys to class attributes, avoiding method overwrites.
-
-        :param dataset:
-        :return:
-        """
-
+        """Safely maps dataset keys to class attributes, avoiding method overwrites."""
         for key, value in dataset.items():
             if hasattr(self, key):
                 setattr(self, key, value)
@@ -87,19 +81,13 @@ class ChromaModel:
 
     def get_retriever(self) -> VectorStoreRetriever:
         """Initializes vector retriever using the unified client runtime pool."""
-
-        # The underlying 'client' object safely handles the persistent directory paths now.
         return self.vector_storage.as_retriever(
             search_type="similarity",
             search_kwargs={"k": CHROMA_VECTOR_RESULT_CNT}
         )
 
     def _get_semantic_storage(self) -> Chroma:
-        """
-        Instantiates the isolated semantic database research partition.
-        Purpose: This holds the real text from your PDF (nutritional-disorders.pdf), chopped up into clean sentences or paragraphs using your SemanticChunker.
-        The Logic: When your AI agent needs to answer a user's medical question, it must pull facts from this collection to use as context.
-        """
+        """Instantiates the isolated semantic database research partition for textbook prose."""
         print('DEBUG: Getting semantic storage with collection_name: semantic_chunks.')
         return Chroma(
             client=self.chromadb_client,
@@ -108,11 +96,7 @@ class ChromaModel:
         )
 
     def _get_vector_storage(self) -> Chroma:
-        """
-        Instantiates the generalized primary target layout collection.
-        Purpose: This holds the synthetic data (the hypothetical questions your LLM generated from the text and tables).
- 	    The Logic: This acts as a "Retriever Booster." Instead of matching a user's question directly to a dense block of textbook prose, the database matches the user's question to a hypothetical question that an LLM thought a human might ask. Matching Question-to-Question is mathematically much cleaner for embedding models than matching Question-to-Textbook-Paragraph.
-        """
+        """Instantiates the primary flattened synthetic layout collection."""
         print(f'DEBUG: Getting vector storage with collection_name: {self.collection_name}.')
         return Chroma(
             client=self.chromadb_client,
@@ -121,7 +105,6 @@ class ChromaModel:
         )
 
     def _get_semantic_text_splitter(self) -> SemanticChunker:
-
         return SemanticChunker(
             self.embedding_model,
             breakpoint_threshold_type='percentile',
@@ -153,28 +136,10 @@ class ChromaModel:
         )
 
     def get_semantic_chunks(self, filepath: str) -> list:
-        """
-        Load raw documents directly.  Invoke splitting directly on your semantic chunker instance.
-        This completely bypasses the legacy base loader's nominal type hint constraint.
-
-        :param filepath:
-        :return:
-        """
+        """Load raw documents directly and invoke splitting via the semantic chunker instance."""
         pdf_loader = PyPDFLoader(filepath)
         raw_documents = pdf_loader.load()
-
         return self.semantic_text_splitter.split_documents(raw_documents)
-
-    """
-    # @todo - original version.  delete if not necesary
-    def get_semantic_chunks_orig(self, filepath: str) -> list:
-        semantic_chunks = []
-        pdf_loader = PyPDFLoader(filepath)
-        chunks = pdf_loader.load_and_split(self.semantic_text_splitter)
-        semantic_chunks.extend(chunks)
-
-        return semantic_chunks
-    """
 
     def get_semantic_count(self) -> int:
         """Returns the number of documents in the semantic storage collection."""
@@ -184,7 +149,7 @@ class ChromaModel:
             return 0
 
     def add_semantic_documents(self, semantic_chunks: list) -> None:
-        batch_size = config.DOCUMENT_CHUNK_BATCH_SIZE 
+        batch_size = config.DOCUMENT_CHUNK_BATCH_SIZE
         semantic_chunks_cnt = len(semantic_chunks)
 
         print(f'\n# --- {I_PLUS} Adding {semantic_chunks_cnt} semantic documents with a batch size of {batch_size} {I_PLUS} --- #')
@@ -201,9 +166,14 @@ class ChromaModel:
         for i in range(0, document_cnt, batch_size):
             self.vector_storage.add_documents(documents[i : i + batch_size])
 
-    def get_documents(self) -> list:
-        return self.semantic_storage.similarity_search(
-            query=SIMILARITY_SEARCH_QUERY,
+    def get_documents(self, query: str = SIMILARITY_SEARCH_QUERY) -> list:
+        """
+        🎯 SIMPLIFIED FLAT RETRIEVAL:
+        Queries the flattened target collection directly. Because data chunks are bundled together
+        at ingestion, a single hit returns questions and original context with zero cross-collection lookup logic.
+        """
+        return self.vector_storage.similarity_search(
+            query=query,
             k=CHROMA_VECTOR_RESULT_CNT
         )
 
@@ -216,7 +186,6 @@ class ChromaModel:
 
     def export(self) -> dict:
         """Exports attributes to be injected into child or dependent pipeline classes."""
-
         return {
             'collection_name': self.collection_name,
             'embedding_model': self.embedding_model,
@@ -225,18 +194,10 @@ class ChromaModel:
         }
 
     def query_questions(self, is_hyp: bool=False, pluck: bool=False) -> None:
-        """
-        Query questions using either structured hypothetical retriever or structured retriever.
-
-        :param is_hyp:
-        :param pluck:
-        :return:
-        """
-
+        """Query questions using either structured hypothetical retriever or structured retriever."""
         retriever = self._get_structured_hyp_retriever() if is_hyp else self._get_structured_retriever()
         print(f'\n# --- {I_GEAR} Hypothetical Retriever {I_GEAR} --- #' if is_hyp else f'\n# --- {I_GEAR} Retriever {I_GEAR} --- #')
 
-        # 👑 FIX: fallback must search the SAME underlying collection as the primary retriever
         fallback_retriever = (
             self.vector_storage.as_retriever(search_type="similarity", search_kwargs={"k": CHROMA_VECTOR_RESULT_CNT})
             if is_hyp else

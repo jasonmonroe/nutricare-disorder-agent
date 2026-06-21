@@ -88,6 +88,9 @@ def run(dataset: dict) -> None:
         doc_handle.document_chunks = document_chunks
         chroma_db.add_semantic_documents(document_chunks)
 
+        print(f'\nDocument Chunks: {doc_handle.count_document_chunks()}.')
+
+
     # Show Histogram
     # @todo - show_histogram(document_chunks)
 
@@ -103,14 +106,14 @@ def run(dataset: dict) -> None:
 
 
     # --- Hypothetical Questions --- #
-    #_process_questions(doc_handle, chroma_db, document_chunks, data_refresh)
+    _process_questions(doc_handle, chroma_db, document_chunks, data_refresh)
     #print('### TERMINATE ###')
     #sys.exit(1)
     # --- Hypothetical Table Questions --- #
     _process_table_questions(doc_handle, chroma_db, data_refresh)
 
     # --- Backup documents to a third party storage system --- #
-    #_backup_docs()
+    _backup_docs()
     # --- Backup documents to a third party storage system --- #
 
     # Sample a random user query using hypothetical retriever

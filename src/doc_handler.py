@@ -247,6 +247,9 @@ class DocHandler():
         # Scenario C: Stable ordinary string sheet, return flat asset normalized
         return page_content_full.strip()
 
+    def count_document_chunks(self) -> int:
+        return len(self.document_chunks)
+
     def get_semantic_chunks(self, semantic_chunks: list) -> list[Document]:
         """
         Maps continuous semantic raw chunks into formal wrapped LangChain Documents.
@@ -364,7 +367,7 @@ class DocHandler():
         metadata_dict = metadata_instance.to_dict
 
         #f flag:
-        print(f'metadata_dict={metadata_dict}')
+        print(f'\nmetadata_dict={metadata_dict}')
            # print(f'page_content={page_content}')
             #import sys
             #print('Running questions\nTERMINATE!')
