@@ -88,7 +88,7 @@ class ChromaModel:
 
     def _get_semantic_storage(self) -> Chroma:
         """Instantiates the isolated semantic database research partition for textbook prose."""
-        print('DEBUG: Getting semantic storage with collection_name: semantic_chunks.')
+
         return Chroma(
             client=self.chromadb_client,
             embedding_function=self.embedding_model,
@@ -97,7 +97,6 @@ class ChromaModel:
 
     def _get_vector_storage(self) -> Chroma:
         """Instantiates the primary flattened synthetic layout collection."""
-        print(f'DEBUG: Getting vector storage with collection_name: {self.collection_name}.')
         return Chroma(
             client=self.chromadb_client,
             embedding_function=self.embedding_model,
@@ -112,7 +111,7 @@ class ChromaModel:
         )
 
     def _get_structured_retriever(self) -> SelfQueryRetriever:
-        print('DEBUG: Getting structured retriever with vectorstore: self.semantic_storage.')
+
         return SelfQueryRetriever.from_llm(
             llm=self.llm,
             vectorstore=self.semantic_storage,
@@ -124,7 +123,6 @@ class ChromaModel:
         )
 
     def _get_structured_hyp_retriever(self) -> SelfQueryRetriever:
-        print('DEBUG: Getting structured hyper retriever with vectorstore: self.vector_storage.')
         return SelfQueryRetriever.from_llm(
             llm=self.llm,
             vectorstore=self.vector_storage,

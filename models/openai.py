@@ -9,6 +9,7 @@ from typing import Any
 # Vendor Libraries
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from openai import max_retries
 
 # Local Libraries
 from src.constants import (
@@ -96,7 +97,10 @@ class OpenAIModel:
             model=OPENAI_MODEL,
             openai_api_base=OPENAI_API_BASE,
             openai_api_key=OPENAI_API_KEY,  # API key for authentication
-            temperature=0  # Controls randomness in responses; 0 ensures deterministic results
+            temperature=0,  # Controls randomness in responses; 0 ensures deterministic results
+            max_retries=5,
+            request_timeout=60.0,
+            max_concurrency=1,
         )
 
     @staticmethod

@@ -99,10 +99,10 @@ class TableQuestionGenerator(DataGenerator):
                         questions_str = str(questions)
 
                     flattened_table_content = f"""### Target Search Terms & Synthetic Questions:
-{questions_str}
-
-### Source Table Data:
-{str(table_in_page)}"""
+                    {questions_str}
+                    
+                    ### Source Table Data:
+                    {str(table_in_page)}""".strip()
 
                     questions_metadata = {
                         'doc_type': self.doc_type,

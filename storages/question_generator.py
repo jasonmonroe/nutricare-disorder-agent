@@ -113,7 +113,7 @@ class QuestionGenerator(DataGenerator):
                         }
 
                         hypothetical_questions.append(
-                            self.doc_handle.create(flattened_page_content, questions_metadata, True)
+                            self.doc_handle.create(flattened_page_content, questions_metadata)
                         )
 
             # --- Throttle ---
@@ -192,7 +192,7 @@ class QuestionGenerator(DataGenerator):
                     }
 
                     batched_hypothetical_questions.append(
-                        self.doc_handle.create(flattened_page_content, questions_metadata, True)
+                        self.doc_handle.create(flattened_page_content, questions_metadata)
                     )
 
                 print(f"\t{I_PEN}  Chunk {(idx + 1)}/{total_chunks} completed. Throttling for {current_sleep_time:.2f}s...")

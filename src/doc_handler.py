@@ -8,6 +8,7 @@ from __future__ import annotations
 # Python Libraries
 import hashlib
 import json
+import logging
 import os
 import platform
 import random
@@ -47,6 +48,14 @@ from src.model_config import config
 from src.utils import show_timer, start_timer, gen_uuid
 
 
+# --- Logging Configuration ---
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # Capture everything
+
+# Create a formatter for professional output
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+
 class DocHandler():
     def __init__(self, llama_parser: LlamaParse, skip_parse: bool = False):
         self.document_chunks = []
@@ -69,20 +78,20 @@ class DocHandler():
 
         json_objs = []
         if not os.path.exists(self.folder_path):
-            print(f"{I_FLAG} Data folder path location '{self.folder_path}' doesn't exist.")
+            logger.error(f"{I_FLAG} Data folder path location '{self.folder_path}' doesn't exist.")
             return json_objs
 
         start_time = start_timer()
         for pdf in os.listdir(self.folder_path):
             if pdf.endswith(".pdf"):
                 pdf_path = os.path.join(self.folder_path, pdf)
-                print(f"{I_DOCUMENT} Parsing file target: {pdf_path}")
+                logger.info(f"{I_DOCUMENT} Parsing file target: {pdf_path}")
                 json_objs.extend(llama_parser.get_json_result(pdf_path))
 
         if json_objs:
-            print(f"{I_CHECKMARK} Sample file parsed metadata header structured.")
+            logger.info(f"{I_CHECKMARK} Sample file parsed metadata header structured.")
         else:
-            print(f"{I_FLAG} No document payload arrays fetched.")
+            logger.warning(f"{I_FLAG} No document payload arrays fetched.")
 
         show_timer(start_time)
 
@@ -96,10 +105,10 @@ class DocHandler():
         page_texts, tables = {}, {}
 
         for obj in json_objs:
-            file_path_str = obj.get("file_path", "unknown-source.pdf")
-            clean_filename = os.path.basename(file_path_str).replace(".", "_")
+            file_path_str = obj.get("file_path", "unknown_source.pdf")
+            # Ensure filename is safe for ID string usage
+            clean_filename = os.path.basename(file_path_str).replace(".", "_").replace(" ", "_")
 
-            # Initialize file path tracking roots
             page_texts[file_path_str] = {}
             tables[file_path_str] = {}
 
@@ -129,47 +138,6 @@ class DocHandler():
                         "table_id": table_id,
                         "rows": table_rows
                     }
-
-        return page_texts, tables
-
-    # @todo - defunct
-    def _extract_tables_orig(self, json_objs: list) -> tuple[dict, dict]:
-        """
-        Orchestrates extracting tables and processing corresponding adjacent clear strings.
-        Successfully refactored implementation logic branches.
-
-        :param json_objs:
-        :return: tuple
-        """
-
-        page_texts, tables = {}, {}
-        for obj in json_objs:
-            # ✅ Extract full file path string safely from the source JSON object
-            file_path_str = obj.get("file_path", "unknown-source.pdf")
-
-            # Use the full path as the primary key dictionary anchor
-            page_texts[file_path_str] = {}
-            tables[file_path_str] = {}
-            # Add a unique identifier @todo -look into this
-            tables['table_id'] = gen_uuid()
-
-            for json_item in obj.get('pages', []):
-                page_number = json_item.get("page")
-
-                # Isolate embedded matrix layers and structural title labels
-                table_rows, table_ref_string = self._process_page_tables(json_item)
-
-                if table_rows:
-                    tables[file_path_str][page_number] = table_rows
-
-                # Re-route pure extraction strings into cleanup components
-                page_content_full = json_item.get('text', '')
-                cleaned_text = self._clean_page_text(page_content_full, table_rows, table_ref_string)
-
-                page_texts[file_path_str][page_number] = cleaned_text
-
-                # Add a unique identifier @todo -look into this
-                page_texts[file_path_str]['text_id'] = gen_uuid()
 
         return page_texts, tables
 
@@ -207,8 +175,7 @@ class DocHandler():
 
                 except Exception as e:
                     # Graceful exception logging boundary handling
-                    flag_symbol = I_FLAG
-                    print(f"{flag_symbol} No table ref string. Error: {e}")
+                    print(f"{I_FLAG} No table ref string. Error: {e}")
                     table_ref_string = None
 
                 break  # Enforce processing limit threshold context trace constraint
@@ -290,10 +257,10 @@ class DocHandler():
         print(f'\n# --- {I_DB} Showing Table Information {I_DB} --- #')
         for file_name, file_tables in self.tables.items():
             print(f"\tTables from {file_name}:")
-            for page_num, table_rows in file_tables.items():
-                print(f"\tPage {page_num}:")
-                for row in table_rows:
-                    print(f"\t{row}")
+            for page_num, table_data in file_tables.items():
+                print(f"\tPage {page_num} (table_id: {table_data['table_id']}):")
+                for row in table_data['rows']:
+                    print(f"\t\t{row}")
 
     def show_sample(self, samp_docs: list, samp_title: str = "") -> None:
         """
@@ -322,9 +289,7 @@ class DocHandler():
         else:
             print(f"\n\tIndex {index} is out of range for the list with length {doc_cnt}.")
 
-
-
-    def create(self, page_content: str, metadata_dataset: dict, flag: bool=False) -> Document:
+    def create(self, page_content: str, metadata_dataset: dict) -> Document:
         """
         Creates the actual document.  We have two document types semantic and vector documents.
         Semantic documents:
@@ -347,14 +312,8 @@ class DocHandler():
         :param metadata:
         :return:
         """
+
         # Add additional metadata to create the offical document.
-
-        #print(f'flag = {flag}')
-
-        #if flag:
-         #   print("Flagged for child creation")
-          #  print(f'init_metadata={metadata_dataset}')
-
         if isinstance(page_content, dict):
             page_content = json.dumps(page_content)
 
@@ -366,254 +325,12 @@ class DocHandler():
         metadata_instance = DocumentMetadata(metadata, page_content)
         metadata_dict = metadata_instance.to_dict
 
-        #f flag:
-        print(f'\nmetadata_dict={metadata_dict}')
-           # print(f'page_content={page_content}')
-            #import sys
-            #print('Running questions\nTERMINATE!')
-            #sys.exit(1)
-
-
-        #print('END!!!')
-        #import sys
-        #sys.exit(1)
-
         return Document(
             id=metadata_dict["doc_id"],
             type=metadata_dict["type"],
             page_content=page_content,
             metadata=metadata_dict,
         )
-
-    # @todo - defunct
-    def create_(self, content: str, metadata_dataset: dict) -> Document:
-        """Creates a LangChain Document, dynamically adopting its metadata strategy
-        based on whether the asset is a raw parent chunk or a synthetic child generation.
-        """
-        # 👑 DEFENSIVE: Ensure content is a string to prevent Pydantic ValidationErrors
-
-        metadata_dataset = sorted(metadata_dataset)
-        print(f'dataset={metadata_dataset}')
-        if isinstance(content, dict):
-            content = json.dumps(content)
-
-        dataset = metadata_dataset.copy()
-        doc_type = dataset.get("doc_type", "semantic_chunk")
-
-        # Strategy A: Use the strict metadata class for core chunks and synthetic question layers
-        if doc_type in ["semantic_chunk", "questions", "table_questions"]:
-            #print(f'[INFO] Creating Document for type: {doc_type}')
-
-            # For synthetic layers, ensure we have a fresh ID if one wasn't provided
-            if doc_type != "semantic_chunk" and "doc_id" not in dataset:
-                dataset["doc_id"] = uuid.uuid4().hex.lower()
-
-            metadata_instance = DocumentMetadata(dataset)
-            metadata_dict = metadata_instance.to_dict
-
-            # For synthetic layers, we must include content in the checksum
-            # to ensure idempotency of LLM generations.
-            if doc_type != "semantic_chunk":
-                metadata_dict["checksum"] = self._calc_checksum(metadata_dict, content)
-
-        # Strategy B: Use the flexible mapping strategy for child synthetic layers
-        else:
-            print(f'[DEBUG] Using flexible mapping for doc_type: {doc_type}')
-            metadata_dict = {
-                "doc_id": dataset.get("doc_id", uuid.uuid4().hex.lower()),
-                "doc_type": doc_type,
-                "source": dataset.get("source", ""),
-                "filename": os.path.basename(dataset.get("source", "")),
-                "page": int(dataset.get("page", 0)),
-                "parent_id": dataset.get("parent_id", ""),
-                "chunk_id": dataset.get("chunk_id", ""),
-                "utc_datetime": datetime.now(UTC).isoformat(),
-                "type": "Document"
-            }
-            metadata_dict["checksum"] = self._calc_checksum(metadata_dict, content)
-
-        # Cleanly sort the metadata with doc_id at the top row
-        sorted_metadata = {"doc_id": metadata_dict.pop("doc_id"), **dict(sorted(metadata_dict.items()))}
-
-        print(f'sorted_metadata={sorted_metadata}')
-
-        return Document(
-            id=sorted_metadata["doc_id"],
-            type=metadata_dict["type"],
-            page_content=content,
-            metadata=metadata_dict,
-        )
-
-    # @todo - defunct (child?)??
-    def create_semantic(self, metadata:dict):
-
-        # Add additional
-        pass
-
-    # @todo - defunct (child?)??
-    def create_vector(self):
-        """
-        metadata_dict = {
-            # Existing core tracking keys
-            "doc_id": doc_id,
-            "doc_type": doc_type, # 'table_hypothetical_questions'
-            "source": dataset.get("source", ""),
-            "filename": os.path.basename(dataset.get("source", "")),
-            "page": int(dataset.get("page", 0)),
-            "parent_id": dataset.get("parent_id", ""),
-            "chunk_id": dataset.get("chunk_id", ""),
-            "utc_datetime": str(datetime.now(UTC)),
-            "type": "Document",
-
-            # 🔥 NEW: Search & Sorting Enhancements
-            "document_domain": "medical",
-            "version": "19th_edition",
-            "child_index": int(dataset.get("chunk_id", 0)), # Tracks question index in loop
-
-            # 🔥 NEW: Telemetry & Quality Benchmarking
-            "generation_model": "llama-3.1-8b-instant",
-            "retrieval_strategy": "parent_jump"
-        }
-        :return:
-        """
-        pass
-
-    # @todo - defunct (child?)??
-    def create__(self, content: str, metadata_dataset: dict) -> Document:
-        """Creates and returns a LangChain Document object packed with metadata.
-
-        see:
-        https://reference.langchain.com/python/langchain-core/documents/base/Document
-        """
-        dataset = metadata_dataset.copy()
-        metadata_instance = DocumentMetadata(dataset)
-        metadata_dict = metadata_instance.to_dict
-
-        return Document(
-            id=metadata_dict["doc_id"],
-            type=metadata_dict["type"],
-            page_content=content,
-            metadata=metadata_dict,
-        )
-
-    # @todo - defunct (parent) ??
-    def create_semantic_chunks(self, content: str, metadata: dict) -> Document:
-        """
-        Creates and returns a LangChain Document object packed with metadata.
-        see: https://reference.langchain.com/python/langchain-core/documents/base/Document
-
-        :param content:
-        :param metadata:
-        :return: Document
-        """
-
-        metadata = metadata.copy()  # 👑 PROTECT: Prevent in-place mutation of the original dict
-        # Add additional keys to the metadata
-        if "source" in metadata:
-            metadata["filename"] = os.path.basename(metadata["source"])
-        elif "filename" in metadata and "source" not in metadata:
-            # Fallback to make sure 'source' is never empty if only filename is provided
-            metadata["source"] = metadata["filename"]
-
-        # see: https://reference.langchain.com/python/langchain-core/documents/base/Document/type
-        if "type" not in metadata:
-            metadata["type"] = "Document"
-
-        if "page" in metadata:
-            try:
-                metadata["page"] = int(metadata["page"])
-            except (ValueError, TypeError):
-                pass # Fallback if page is not a numeric string
-
-        # Check for duplicates before adding
-        metadata["checksum"] = self._calc_checksum(metadata, content)
-        metadata["doc_id"] = self._generate_document_id()
-
-        # `creationdate` key originates from PyPDFLoader()
-        if not metadata.get("creationdate"):
-            metadata["creationdate"] = self.creation_date
-
-        # Get timestamp of chunk
-        metadata["utc_datetime"] = str(datetime.now(UTC))
-
-        # Sort metadata but have the doc_id key at the top.
-        metadata = {
-            "doc_id": metadata.pop("doc_id"),
-            **dict(sorted(metadata.items()))
-        }
-
-        print(f'metadata={metadata}')
-        return Document(
-            id=metadata["doc_id"],
-            type=metadata["type"],
-            page_content=content,
-            metadata=metadata,
-        )
-
-    # @todo - defunct -
-    def _get_creation_date(self) -> str:
-        """Retrieves a reliable file creation timestamp across Windows, Mac, and Linux."""
-        file_info = os.stat(DOCUMENT_FILEPATH)
-
-        # Handle Windows vs Unix-like OS splits
-        if platform.system() == "Windows":
-            timestamp = file_info.st_ctime
-        else:
-            # Mac uses st_birthtime; Linux falls back to st_mtime (modification time)
-            timestamp = getattr(file_info, "st_birthtime", file_info.st_mtime)
-
-        # Return clean formatted string
-        return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d")
-
-    # @todo - defunct -
-    def _generate_document_id(self) -> str:
-        # Generate UUID without hyphens
-        # see: https://reference.langchain.com/python/langchain-core/documents/base/BaseMedia/id
-        doc_id = uuid.uuid4().hex
-
-        return doc_id.lower()
-
-    # @todo - defunct ??
-    def _calc_checksum(self, metadata: dict, content: str) -> str:
-        """Generates a deterministic SHA-256 fingerprint.
-
-        👑 FIX: Excluded 'utc_datetime' from hash calculation to ensure
-        the checksum remains stable across different execution runs.
-        :param metadata:
-        :param content:
-        :return:
-        """
-
-        # Explicitly isolate changing or non-data keys
-        excluded_keys = {"doc_id", "id", "chunk_id", "utc_datetime"}
-
-        filtered_metadata = {
-            key: value
-            for key, value in metadata.items()
-                if key not in excluded_keys and "date" not in key.lower()
-        }
-
-        # Add page content to ensure a unique hash for each document
-        # Note: content is used for checksum but is not included in metadata intentionally!
-        filtered_metadata['page_content'] = content
-
-        # @todo - print(f'filtered_metadata={filtered_metadata}')
-
-        # Serialize to a strictly ordered JSON string to ensure stability
-        # separators removes random whitespace differences
-        metadata_json = json.dumps(
-            filtered_metadata, sort_keys=True, separators=(",", ":")
-        )
-
-        # Compute and return the clean SHA-256 string
-        return hashlib.sha256(metadata_json.encode("utf-8")).hexdigest()
-
-
-
-
-
-
-
 
     @staticmethod
     def wipe_db_dir() -> None:
@@ -701,8 +418,3 @@ class DocHandler():
         print(f'{I_FLAG} {DOCUMENT_FILE} not unzipped!')
 
         return False
-
-
-
-
-

@@ -131,6 +131,9 @@ def _create_subtitle_banner(text: str | list, center_text: bool=False) -> None:
 
     # Now that the data is a list format it for display.
     for line in wrapped_lines:
+        if "\n" in line:
+            line = ""
+
         line_len = len(line)
     
         padding_len = max_line_len - line_len
