@@ -100,7 +100,7 @@ class OpenAIModel:
             temperature=0,  # Controls randomness in responses; 0 ensures deterministic results
             max_retries=5,
             request_timeout=60.0,
-            max_concurrency=1,
+            #max_concurrency=1,
         )
 
     @staticmethod

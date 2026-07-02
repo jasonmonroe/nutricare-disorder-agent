@@ -74,7 +74,7 @@ class NutritionBot:
         agent = create_tool_calling_agent(self.client, tools, prompt)
 
         # Wrap the agent in an executor to manage tool interactions and execution flow
-        self.agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+        self.agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=3, early_stopping_method="generate")
 
     def start_session(self):
         self._session_starts_at = start_timer()
@@ -85,7 +85,7 @@ class NutritionBot:
     def has_session_exp(self) -> bool:
         # If chat session just started return False.  Next time it will be evaluated
         # Max session is 20 minutes.  Anything after that needs to be run again.
-        if self._latest_input_at is None:
+        if not self._latest_input_at:
             return False
 
         diff_in_secs = abs(start_timer() - self._latest_input_at)
@@ -191,9 +191,15 @@ class NutritionBot:
         {query}
         """.strip()
 
-        #logger.info('DEBUG: Executing agent invocation with structured input.')
+        try:
+            response = self.agent_executor.invoke({"input": structured_input})
 
-        response = self.agent_executor.invoke({"input": structured_input})
+        except Exception as e:
+            # If it's a tool call failure, check the underlying LLM output
+            if hasattr(e, 'failed_generation'):
+                print(f"🚨 RAW LLM OUTPUT THAT BROKE THE TOOL CALL: {e.failed_generation}")
+            else:
+                print(f"🚨 General Agent Loop Crash: {str(e)}")
 
         self.store_customer_interaction(
             user_id=user_id,

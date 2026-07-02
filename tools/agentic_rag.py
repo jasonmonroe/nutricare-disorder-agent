@@ -10,6 +10,7 @@ from langchain_core.tools.structured import StructuredTool
 from langchain_openai import ChatOpenAI
 from langchain_core.vectorstores import VectorStoreRetriever
 from langgraph.graph.state import CompiledStateGraph
+from langchain_core.runnables import RunnableConfig
 
 # Local Libraries
 from models.agentic_rag_tool import AgenticRagTool
@@ -51,15 +52,17 @@ def make_agentic_rag_tool(llm: ChatOpenAI, retriever: VectorStoreRetriever, work
 
         # Use a local reference variable to avoid the scoping trap
         active_app = workflow_app
-        
+
+        config: RunnableConfig = {"configurable": {"thread_id": "1"}}
+
         if isinstance(active_app, CompiledStateGraph):
-            return active_app.invoke(inputs)
+            return active_app.invoke(inputs, config=config)
 
         # Fallback: If workflow_app was passed in as None, compile it inline
         agentic_rag_tool = AgenticRagTool(llm, retriever, log)
         active_app = agentic_rag_tool.compile()
         
-        return active_app.invoke(inputs)
+        return active_app.invoke(inputs, config=config)
 
     # Returns the @tool function
     return agentic_rag

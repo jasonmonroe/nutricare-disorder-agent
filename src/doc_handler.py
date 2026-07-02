@@ -10,6 +10,7 @@ import hashlib
 import json
 import logging
 import os
+from pathlib import Path
 import platform
 import random
 import re
@@ -55,7 +56,6 @@ logger.setLevel(logging.DEBUG)  # Capture everything
 # Create a formatter for professional output
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-
 class DocHandler():
     def __init__(self, llama_parser: LlamaParse, skip_parse: bool = False):
         self.document_chunks = []
@@ -67,6 +67,25 @@ class DocHandler():
         if not skip_parse and self._unzip():
             json_objs = self._parse(llama_parser)
             self.page_texts, self.tables = self._extract_tables(json_objs)
+
+    def _get_creation_date(self) -> str:
+        """
+        Retrieves the file creation date, handling cross-platform differences.
+        Defaults to the current time if the file is not found.
+        """
+        path = Path(DOCUMENT_FILEPATH)
+        if not path.exists():
+            return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
+
+        stat = path.stat()
+        try:
+            # macOS and some Unix systems support st_birthtime
+            timestamp = stat.st_birthtime
+        except AttributeError:
+            # Windows: st_ctime is creation. Linux: st_ctime is metadata change.
+            timestamp = stat.st_ctime
+            
+        return datetime.fromtimestamp(timestamp, UTC).strftime("%Y-%m-%d %H:%M:%S")
 
     def _parse(self, llama_parser: LlamaParse) -> list:
         """
