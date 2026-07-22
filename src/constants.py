@@ -61,7 +61,7 @@ AGENT_WORKFLOW_IMAGE = "outputs/graph_workflow.png"
 # Arguments
 ARG_PARAMS = [
     '--build',     # Build AI Agent
-    '--data',      # Create and confiirm vectorized data
+    '--data',      # Create and confirm vectorized data
     '--deploy',    # Deploy code to Huggingface
     '--log',       # Logs information in the output (terminal)
     '--log.debug', # Logs additional information
